@@ -1,0 +1,18 @@
+{
+  "schema_version": "durable-admission-receipt-v1",
+  "ticketId": "tk-821a34a387e07772",
+  "identity": {
+    "workId": "spencer-shadley/.github#32",
+    "workDigest": "f9fe2e866e5a3d4005a95632b2aefe21a94bef9887e363cd5eeae6c7424208ec",
+    "consumerStage": "reviewer",
+    "intentHash": "65754adf3407d0803ad483afdcc3030e58f73cd551b16c4f1eb05ddfdea529ec",
+    "generation": 1,
+    "callerHostId": "mangekyo",
+    "targetRepo": "spencer-shadley/.github"
+  },
+  "requestDigest": "sha256:14a16c60f715a82c91e84c7799ad1e51a8d3ea984eb1d02ac7e0396d49a0421e",
+  "state": "dispatched",
+  "recordedAt": "2026-10-07T20:12:47.877Z",
+  "authoritativeStoreRef": "evidence-only:mangekyo/tk-821a34a387e07772",
+  "generation": 1
+}
