@@ -1,0 +1,37 @@
+{
+  "repository": "spencer-shadley/.github",
+  "issue": 15,
+  "scope": "commissioned .github repository guidance and machine-surface sweep",
+  "outcome": "landed-and-live-verified",
+  "writerJob": "job-1791879630689-c6it34",
+  "sourceRoot": "C:/Users/spenc/AppData/Local/agent-orchestrator/worktrees/github-attempt-impl-github-15-1",
+  "branch": "fix/15-active-intake-guidance",
+  "pr": 73,
+  "base": "c1dc604e6ec489b3cce83e2f4c6518b3826aba6a",
+  "head": "e9317e1e4a01708573f79d727a036bb31ea7f085",
+  "merge": "be5f9102b899441e392437bb55c14c0acd8794be",
+  "review": {
+    "job": "job-1791880279903-hiow4m",
+    "host": "ems",
+    "ticket": "tk-cc85a00908b5c849",
+    "verdict": "APPROVE",
+    "url": "https://github.com/spencer-shadley/.github/pull/73#pullrequestreview-5500893728",
+    "independence": "code-dispatch-producer",
+    "terminal": "exit 1, posted-verdict observation-missing; actual published review reconciled, no duplicate"
+  },
+  "landing": {
+    "command": "skills/governed-git-delivery/scripts/land.ts",
+    "invocations": 1,
+    "exitCode": 0,
+    "result": "merged",
+    "warningOwner": "https://github.com/spencer-shadley/code/issues/8036#issuecomment-6141758770"
+  },
+  "liveAcceptance": {
+    "testedSha": "be5f9102b899441e392437bb55c14c0acd8794be",
+    "treesEqual": true,
+    "focused": { "tests": 9, "failures": 0, "exitCode": 0 },
+    "npmTest": { "tests": 392, "failures": 0, "exitCode": 0, "elapsedMs": 92914.4211 },
+    "issueState": "OPEN",
+    "remainingAcceptance": "Original fleet-wide sweep/native-inheritance acceptance is not certified by the bounded .github commission."
+  }
+}
