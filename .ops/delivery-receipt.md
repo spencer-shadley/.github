@@ -1,0 +1,19 @@
+Delivery receipt for implementation job `job-1791391417182-cy71ci` on MANGEKYO, preserving the explicit **DO NOT MERGE/PUBLISH** hold.
+
+- Final pushed PR head: `67f0c9b1641d1885f6c92b04f16f3ac06ff26d3b`.
+- Release source: `50d7a802889eaba2814bbf53d74b1f3b7e97e84f`; carrier: `71821a6639f274d9d90a0c050873147337d80513`.
+- Revision 23 digest: `sha256:6ca0de6f3ecf3364ce7c2485670906171811543fecf79b7b7a29d3626a2c7d66`.
+- Manifest blob: `4fa9cadeaa9fd3892434a07c1ec93aa0da0351d9`; semantic-source blob: `335d509b5ccc7f3c5b6cbe277721c30bd3f7397a`.
+- Main `d67bfba1f9b7ff3df0333d39b7bec541ec74dda2` incorporated. The final head's only post-carrier change constructs a synthetic bearer fixture at runtime; payload bytes are unchanged.
+
+Verification: full `node --experimental-strip-types --test test/*.test.ts` **321 pass / 0 fail**. Focused direction-impact/public-completion/portable-JS regressions, delta planner, combined-cutover and canonical-label fingerprint tests pass. `triage-policy:check`, `task-profile:check`, `generate --check`, `release:check`, release `--verify`, and `git diff --check` pass. Every producer-owned projection was regenerated. The captured actual r22 -> combined r23 delta changes six obligations and preserves every other valid item receipt.
+
+Live consumer gate at exact final head: **refused**, `commit_mismatch`, against Code master `cc1e8d42a8102c135bce417d8aa041a6e8796cf2`: prepared slot still names `ac886d5a96ac06cfaa54ada31ab791c6e47d5c50`. Parent coordinator must refresh/deploy the new consumer before publication; this worker did not change pins. Land attempt: **none**. Merge: **none**. Live effect: **r22 retained**, no producer publication.
+
+GitGuardian investigation: both reported values are synthetic redaction fixtures, not credentials. Current source uses runtime construction and retains every assertion. GitGuardian check `112910349850` still flags historical occurrences: Basic Auth incident 37861618 at `ac886d5a` and Bearer Token incident 37940363 at `dbb5a792` (main's test fixture). No real secret was exposed/rotated, no coverage was deleted, and no history was rewritten. The historical false-positive incident disposition remains a publication-gate residual on this existing PR, not a new issue.
+
+Independent review: **not reviewed**. Routed review ticket `tk-00f6b86d9d868a2e` settled `terminal_refused` before reviewer launch. Remote placement refused `missing-target-canonical`; local placement waited on `ReservationConflictV1` for this implementation's source path. The exact stalled placement launcher was stopped; no reviewer or background job remains running from this attempt. CodeRabbit's green status says draft review was skipped and is not an approval.
+
+`source-handoff-required` receipt (job `job-1791391417182-cy71ci`): source root `C:/Users/spenc/AppData/Local/agent-orchestrator/worktrees/.github-cutover-32-composed` is committed/pushed at the final head, with existing `.ops` preserved. The existing proposed review root `C:/Users/spenc/AppData/Local/agent-orchestrator/worktrees/.github-cutover-32-composed.stage-review-3bd8edef3fe79697` remains unchanged at `c6c58530dfeedb8f6171add70a8102c3870482bd` (only its existing `.ops` is untracked). No sibling tree was created or written. Per the commission's custody fence, coordinator re-admission must establish exact issue/path/process custody for a read-only review of the new head; no approval is claimed and no lander was dispatched.
+
+Transport evidence: Git push returned GitHub Internal Server Error for the final merge/carrier objects. The Git Data API recreated those same objects with SHA equality checked for every blob/tree/commit and fast-forwarded only this existing branch with `force:false`. Subsequent ordinary Git push reports up-to-date; the final test-only commit pushed normally. No competing PR, branch or publication was created.
