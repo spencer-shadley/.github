@@ -1,0 +1,11 @@
+# GitGuardian / ggshield configuration (https://docs.gitguardian.com/ggshield-docs/configuration).
+# Allowlist only non-secret scanner hits, by exact value, never by detector or broad path.
+version: 2
+secret:
+  ignored_matches:
+    # GitGuardian incident 37861618 ("Basic Auth String", .github#40 / #55):
+    # test/intake-producer.test.ts feeds the fake password `s3cr3t` into
+    # stripRemoteUrlCredentials/redactRemoteUrl to prove credentials are removed
+    # (.github#39). It is not, and never was, a real credential.
+    - name: fake credential in remote-URL redaction tests (.github#39)
+      match: s3cr3t

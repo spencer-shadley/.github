@@ -1,0 +1,2 @@
+# Preserve the historical producer contract byte-for-byte for revision migration tests.
+test/fixtures/governed-intake-r22.json -text

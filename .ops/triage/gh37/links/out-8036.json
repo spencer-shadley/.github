@@ -1,0 +1,42 @@
+{
+  "ok": true,
+  "tool": "get_issue",
+  "status": 200,
+  "continuationRequired": false,
+  "result": {
+    "triage_binding": {
+      "repository": "spencer-shadley/code",
+      "issue_number": 8036,
+      "work_unit_key": "sha256:34b953d3cb0179dd21ee18bb9d8385bb6678dcfe3ba9633e70d7426b3a0ec2bc",
+      "scope_fingerprint": "sha256:873592df201b161a8d740cb723e936e277ab10de8ee33c466cba31da6152f5ec",
+      "policy_identity": "sha256:9d48ffb07961a4d11b86bb19cf000dc47ffd022a69281a635e929ceea84d898e",
+      "rubric_identity": "sha256:c7fad2c3b84a70c78950877c64ba8e27d58fcfad92f71638997ad273bd2138df",
+      "checklist_revision": 25,
+      "producer_payload_digest": "sha256:8eba76404af71ac792bab42a27932eed923024cef4c8470ee8524bfa823dd161"
+    },
+    "triage_task_profile_contract_identity": "sha256:a6d0fa818e20362871292d5341afcfa819e57c68ba1186c12d53af08fe293eb0",
+    "number": 8036,
+    "title": "Remove the .github consumer-pin check: no pins at all (code#8197, Spencer 8:24 PM PT)",
+    "state": "open",
+    "html_url": "https://github.com/spencer-shadley/code/issues/8036",
+    "user": "spencer-shadley",
+    "labels": [
+      "agent-review",
+      "priority:rubric-v1",
+      "priority:repo:p1",
+      "priority:fleet:p1",
+      "effort:low",
+      "task:implement",
+      "source:human",
+      "delivers:reliability",
+      "decomp:unnecessary",
+      "progress:planned",
+      "type:deletion",
+      "metadata:triage-v25"
+    ],
+    "created_at": "2026-10-07T03:06:17Z",
+    "updated_at": "2026-10-19T21:26:55Z",
+    "body": "<!-- governed-work-unit-key: sha256:34b953d3cb0179dd21ee18bb9d8385bb6678dcfe3ba9633e70d7426b3a0ec2bc -->\n\ndirection-checked-at: 2026-10-19T04:35:00Z\n## Work type\nTask\n\n## Current scope (direction audit for spencer-shadley/code#8197, Oct 7, 2026 ~8:40 PM PT).\nSpencer ruling: \"We shouldn't even have pins at all.\" The PR flow has zero hard stops. Remove the consumer-pin check entirely. Delete the `consumer-pin:check` wiring and worker pins it compares.\n\n## Initial priority guess\nP1\n\n## Why this initial priority?\nAligns merge path with CEO direction; removes unnecessary fences and blocking checks.\n\n## Triage checklist\n<!-- governed-triage-checklist: revision=25 -->\n<!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->\n<!-- governed-triage-item: canonical-flow -->\n- [x] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.\n<!-- governed-triage-item: value-direction -->\n- [x] **Value + direction evidence**: Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator.\n<!-- governed-triage-item: fix-owner-responsibility -->\n- [x] **Fix-owner + responsibility**: Resolve fix ownership from the current FleetRegistryReleaseV1 and repository charter evidence. Reuse a prior high-confidence ownership receipt for an existing issue while its durable outcome, repository, relevant scope, and governing charter identity are unchanged.\n<!-- governed-triage-item: dedup-queue-synergy -->\n- [x] **Dedup + queue synergy**: Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive.\n<!-- governed-triage-item: scope-decomposition -->\n- [x] **Scope + decomposition**: Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp:unnecessary`, low/medium).\n<!-- governed-triage-item: task-profile -->\n- [x] **Task profile (10-point reasoning vector)**: Allocate exactly 10 integer points across the five reasoning categories (implement: 7, diagnose: 1, design: 1, review: 1, judgment: 0) using the canonical TaskProfileV1 contract. Scores >= 4 project category label `task:implement`.\n<!-- governed-triage-item: priority-work-dimensions -->\n- [x] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Assigned P1 / effort:low.\n<!-- governed-triage-item: verify-human-required -->\n- [x] **Verify + human-required fences**: `tier:auto` executable leaves require a bounded scoped verification contract before an implementation writer starts. No human-required gate applies.\n<!-- governed-triage-item: cloud-runnable -->\n- [x] **Cloud vs local execution**: Assess implementation-stage suitability. Code repo deletion runs in cloud or fleet-local: `environment:fleet-local`.\n<!-- governed-triage-item: disposition-effect-authority -->\n- [x] **Disposition != effect authority**: Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Keep open as an actionable task.\n<!-- governed-triage-item: higher-intelligence-handoff -->\n- [x] **Higher-intelligence handoff**: Sized on current scope (low effort).\n<!-- governed-triage-item: github-effects-quota -->\n- [x] **GitHub effects + quota**: Use the governed GitHub mutation/read path.\n<!-- governed-triage-item: confirm-receipt -->\n- [x] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied.\n<!-- governed-triage-item: taxonomy -->\n- [x] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy.\n<!-- governed-triage-item: outcome-shaped-acceptance -->\n- [x] **Outcome-shaped acceptance**: Confirm 'Durable fix and acceptance' states binding acceptance criteria.\n<!-- governed-triage-item: proposal-classification -->\n- [x] **Proposal classification**: Task work; not a proposal.\n<!-- /governed-triage-checklist -->\n\n## Relevant details\nPer #7658's bounded settlement, #8036 owns consumer-pin check wiring and #7658 owns pin files.\n\n## Root-cause taxonomy and disposition\n\n| Rank | Finding | Disposition | Reified as |\n|---|---|---|---|\n| Subspecies | Consumer-pin check wiring persists in native-land and dotgithub-release-admission | assigned-issue | this issue |\n| Species | Fences in merge path block PR flow contrary to no-pins direction | assigned-issue | this issue |\n| Genus | Deprecated verification checks remain wired | assigned-issue | this issue |\n| Family | Land-gate / PR merge path checks | assigned-issue | this issue |\n| Order | Removal of obsolete gate machinery | assigned-issue | this issue |\n| Class | Merge gate policy | assigned-issue | this issue |\n| Phylum | Code owns release-admission scripts | assigned-issue | this issue |\n| Kingdom | Developer velocity and gate simplification | evidence-ceiling | this issue |\n| Domain | Zero-fence PR pipeline | evidence-ceiling | this issue |\n\n## Durable fix and acceptance\n- Delete the `consumer-pin:check` wiring and calls in Code repo.\n- Remove references to `consumer-pin.gate.ts` in `dotgithub-release-admission.ts` and `native-land.ts`.\n- Retain observability via #8070 without restoring pin comparison.\n",
+    "comments": []
+  }
+}

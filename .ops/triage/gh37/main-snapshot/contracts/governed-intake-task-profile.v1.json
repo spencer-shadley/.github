@@ -1,0 +1,82 @@
+{
+  "schema": "GovernedTaskProfileContractV1",
+  "profileSchemaVersion": "task-profile.v1",
+  "owner": "spencer-shadley/.github",
+  "designOwner": "spencer-shadley/code#6458",
+  "purpose": "Provider/model/benchmark-independent semantic description of which kinds of reasoning determine whether one executable work unit succeeds. Triage describes the work; runtime owners interpret it.",
+  "placement": {
+    "after": "scope-decomposition",
+    "before": "final-attributes",
+    "appliesTo": ["ordinary", "atomic-high"],
+    "trackingParents": "No aggregate profile; profile a distinct executable coordinator stage separately; never average, add or inherit child vectors.",
+    "childInheritance": false,
+    "samePass": "Produced by the triage agent in the same semantic pass; no extra model invocation, reviewer, panel or tournament."
+  },
+  "categories": [
+    { "id": "implement", "aliases": "code, build, refactor, test, configure, migrate", "question": "How much of success is producing or modifying the actual artifact when the intended outcome/structure is substantially known?" },
+    { "id": "diagnose", "aliases": "debug, investigate, research, RCA, localize", "question": "How much of success depends on discovering what is wrong/true and why from symptoms, evidence, experiments or system behavior?" },
+    { "id": "design", "aliases": "architect, API, schema, protocol, algorithm", "question": "How much of success depends on choosing the technical structure of a future solution among meaningful alternatives?" },
+    { "id": "review", "aliases": "review, audit, critique, verify, inspect", "question": "How much of success depends on evaluating an existing artifact/decision against requirements, invariants or quality expectations and identifying flaws?" },
+    { "id": "judgment", "aliases": "decide, prioritize, compare, trade off, synthesize", "question": "How much of success depends on resolving ambiguous tradeoffs or making a semantic decision across multiple reasonable possibilities where there is no single mechanical answer?" }
+  ],
+  "scoring": {
+    "totalPoints": 10,
+    "minScore": 0,
+    "maxScore": 10,
+    "integersOnly": true,
+    "prompt": "Spend 10 points on the kinds of reasoning that determine whether this task succeeds.",
+    "notMeaning": ["lines of code", "files touched", "number of subtasks", "wall-clock time", "expected token count", "issue description length", "percentage of implementation steps", "provider/model difficulty", "priority", "blast radius"],
+    "anchors": {
+      "0": "not material", "1": "incidental", "2": "supporting", "3": "substantial secondary",
+      "4": "major (tag threshold)", "5": "co-dominant", "6-7": "dominant", "8-9": "strongly dominant", "10": "pure"
+    }
+  },
+  "confidence": {
+    "levels": ["high", "medium", "low"],
+    "labels": false,
+    "definitions": {
+      "high": "Another competent profiler would probably produce the same dominant allocation with only one-point movement.",
+      "medium": "Dominant shape is clear; a credible alternate reading could move about two points.",
+      "low": "Ambiguous enough to change the dominant category or move three or more points; record the best vector; not a blocker."
+    }
+  },
+  "rationale": { "required": true, "maxLength": 400 },
+  "labelProjection": {
+    "threshold": 4,
+    "categoryLabels": {
+      "implement": "task:implement", "diagnose": "task:diagnose", "design": "task:design",
+      "review": "task:review", "judgment": "task:judgment"
+    },
+    "mixedLabel": "task:mixed",
+    "maxCategoryLabels": 2,
+    "runtimeInput": false
+  },
+  "forbiddenFields": ["model", "modelFamily", "provider", "account", "pool", "effort", "harness", "benchmark", "benchmarkWeighting"],
+  "reuse": {
+    "reconsiderTriggers": [
+      "acceptance-criteria-changed", "issue-substantively-rewritten", "decomposition-changed-executable-unit",
+      "investigation-revealed-different-reasoning-shape", "current-value-or-supersession-changed-remaining-work"
+    ],
+    "nonTriggers": [
+      "model-released", "benchmark-rankings-changed", "provider-credits-changed", "machine-or-harness-availability-changed",
+      "bot-or-comment-updated-at", "unrelated-branch-commits", "profiler-preference"
+    ]
+  },
+  "legacy": {
+    "runtimeFallback": "legacy-unprofiled",
+    "rule": "Opportunistic acquisition during semantic triage only; no bulk backfill; runtime records an explicit fallback and never fabricates or persists a vector; absence never manufactures human-required."
+  },
+  "examples": [
+    { "id": "TP-IMPL-KNOWN", "scores": { "implement": 10, "diagnose": 0, "design": 0, "review": 0, "judgment": 0 }, "labels": ["task:implement"] },
+    { "id": "TP-IMPL-FEATURE", "scores": { "implement": 8, "diagnose": 0, "design": 2, "review": 0, "judgment": 0 }, "labels": ["task:implement"] },
+    { "id": "TP-IMPL-DESIGN", "scores": { "implement": 6, "diagnose": 0, "design": 4, "review": 0, "judgment": 0 }, "labels": ["task:implement", "task:design"] },
+    { "id": "TP-DIAG-PATCH", "scores": { "implement": 4, "diagnose": 6, "design": 0, "review": 0, "judgment": 0 }, "labels": ["task:implement", "task:diagnose"] },
+    { "id": "TP-DIAG-RCA", "scores": { "implement": 0, "diagnose": 9, "design": 0, "review": 0, "judgment": 1 }, "labels": ["task:diagnose"] },
+    { "id": "TP-REVIEW-PR", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 8, "judgment": 2 }, "labels": ["task:review"] },
+    { "id": "TP-REVIEW-ARCH", "scores": { "implement": 0, "diagnose": 0, "design": 3, "review": 4, "judgment": 3 }, "labels": ["task:review"] },
+    { "id": "TP-DESIGN-NEW", "scores": { "implement": 0, "diagnose": 0, "design": 7, "review": 0, "judgment": 3 }, "labels": ["task:design"] },
+    { "id": "TP-JUDGE-PROPOSALS", "scores": { "implement": 0, "diagnose": 0, "design": 3, "review": 2, "judgment": 5 }, "labels": ["task:judgment"] },
+    { "id": "TP-JUDGE-BACKLOG", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 2, "judgment": 8 }, "labels": ["task:judgment"] },
+    { "id": "TP-MIXED", "scores": { "implement": 3, "diagnose": 3, "design": 2, "review": 0, "judgment": 2 }, "labels": ["task:mixed"] }
+  ]
+}
