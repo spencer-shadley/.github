@@ -1,0 +1,200 @@
+name: Defect / task
+description: File a triage-ready defect, task, or risk-reduction issue with required priority evidence.
+title: ""
+labels:
+  - agent-review
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Complete every required field. Priority is a derived scheduling request, not a statement of importance.
+        See the [fleet issue-priority policy](https://github.com/spencer-shadley/code/blob/master/docs/guides/issue-priority.md).
+
+  - type: dropdown
+    id: work-type
+    attributes:
+      label: Work type
+      options:
+        - Defect
+        - Task
+        - Risk reduction
+        - Mixed
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: For defects, include the symptom and a bounded reproduction. For tasks, state the observable outcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why-evidence
+    attributes:
+      label: Why / evidence
+      description: Provide receipts, incident links, measurements, user evidence, or a clearly marked estimate.
+    validations:
+      required: true
+
+  - type: input
+    id: accountable-owner
+    attributes:
+      label: Accountable owner repository
+      description: Repository whose policy or implementation must change to close the durable class.
+      placeholder: spencer-shadley/repository
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-repositories
+    attributes:
+      label: Affected repositories
+      description: Where harm or value manifests. Write "single - <repo>" when only one repository is affected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: change-repositories
+    attributes:
+      label: Change repositories
+      description: Where source changes must land. This may differ from the affected and owner repositories.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: occurrence-frequency
+    attributes:
+      label: Occurrence frequency
+      description: Use repo-local evidence here; explain materially different fleet frequency in the economic case.
+      options:
+        - F1 - isolated; less than quarterly or under 0.1% of eligible operations
+        - F2 - rare; roughly monthly or under 1%
+        - F3 - recurring; roughly weekly or 1-10%
+        - F4 - common; daily or 10-50%
+        - F5 - pervasive; over 50% or repeatedly fleet-wide
+    validations:
+      required: true
+
+  - type: dropdown
+    id: occurrence-severity
+    attributes:
+      label: Severity per occurrence
+      options:
+        - S1 - cosmetic or negligible outcome loss
+        - S2 - minor friction with an easy retry or workaround
+        - S3 - meaningful degradation or failure with a bounded workaround
+        - S4 - core workflow blocked, major SLO failure, or material recoverable loss
+        - S5 - irreversible loss, corruption, security/authority breach, safety/legal harm, or total critical-path loss
+    validations:
+      required: true
+
+  - type: dropdown
+    id: delay-urgency
+    attributes:
+      label: Delay urgency
+      description: Measure the added cost of waiting, not how strongly someone wants the work.
+      options:
+        - U1 - materially stable for more than 90 days
+        - U2 - materially worsens in 31-90 days
+        - U3 - materially worsens or reaches a deadline in 8-30 days
+        - U4 - additional material harm within 1-7 days
+        - U5 - harm is active now or becomes irreversible within 24 hours
+    validations:
+      required: true
+
+  - type: textarea
+    id: economic-case
+    attributes:
+      label: Economic case
+      description: |
+        State the evaluation horizon; expected return or avoided loss (low/base/high);
+        implementation, ongoing, and change-risk cost; expected net value; cost of delay;
+        expected time-to-land; and confidence (measured, observed, estimated, or speculative).
+        For a defect, frequency x loss per occurrence is the avoided-return model.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: service-class
+    attributes:
+      label: Service class
+      options:
+        - Expedite requested - immediate unblock; P0 admission is validated separately
+        - Fixed date - value changes sharply at a real non-movable deadline
+        - Standard - value or loss changes steadily
+        - Long horizon - positive value with initially shallow delay cost
+    validations:
+      required: true
+
+  - type: dropdown
+    id: repo-priority
+    attributes:
+      label: Requested repository priority
+      description: Orders work within the accountable repository. The intake authority validates the selection.
+      options:
+        - RP0 requested - start within 1 hour; immediate-unblock predicate required
+        - RP1 - start within 24 hours
+        - RP2 - start within 48 hours
+        - RP3 - start within 72 hours
+        - RP4 - start within 96 hours
+        - RP5 - start within 120 hours
+    validations:
+      required: true
+
+  - type: dropdown
+    id: fleet-priority
+    attributes:
+      label: Requested fleet priority
+      description: Uses aggregate fleet harm or return; breadth of the change alone does not raise priority.
+      options:
+        - FP0 requested - start within 1 hour; immediate-unblock predicate required
+        - FP1 - start within 24 hours
+        - FP2 - start within 48 hours
+        - FP3 - start within 72 hours
+        - FP4 - start within 96 hours
+        - FP5 - start within 120 hours
+    validations:
+      required: true
+
+  - type: textarea
+    id: p0-evidence
+    attributes:
+      label: P0 request evidence
+      description: |
+        Required only when RP0 or FP0 is requested. Name the path blocked now, prove that no safe
+        workaround can restore it in a normal scheduling cycle, bound the smallest unblock, provide
+        live evidence, and state the exit condition. A filer cannot self-assign P0.
+
+  - type: textarea
+    id: response-shape
+    attributes:
+      label: Containment, immediate unblock, and durable fix
+      description: Use "none" where a category genuinely does not apply; do not conflate containment with the class fix.
+    validations:
+      required: true
+
+  - type: textarea
+    id: relationships
+    attributes:
+      label: Relationships
+      description: Link the parent, children, dependencies, duplicate/superseding issue, and plan or receipt. Use "none found" when applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Provide objective checks that prove the outcome and the economic or operational claim.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: priority-assertion
+    attributes:
+      label: Filing assertion
+      options:
+        - label: I supplied a positive-value or obligation case, selected both RP and FP, and did not treat wait SLO as execution TTL or staleness.
+          required: true

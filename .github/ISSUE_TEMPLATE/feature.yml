@@ -1,0 +1,205 @@
+name: Feature / engineering leverage
+description: File a feature, engineering-leverage improvement, or discovery item with a required economic case.
+title: ""
+labels:
+  - agent-review
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feature priority is based on confidence-adjusted return, implementation cost, cost of delay,
+        and time-to-land. Positive-value engineering leverage must be conserved and starvation-protected.
+        See the [fleet issue-priority policy](https://github.com/spencer-shadley/code/blob/master/docs/guides/issue-priority.md).
+
+  - type: dropdown
+    id: work-type
+    attributes:
+      label: Work type
+      options:
+        - Feature
+        - Engineering leverage
+        - Risk reduction
+        - Discovery / experiment
+        - Mixed
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: User or system outcome
+      description: State who benefits, the capability delivered, and the measurable outcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: design-source
+    attributes:
+      label: Design source and evidence
+      description: Link the exact spec section, research, measurements, user evidence, or clearly marked hypothesis.
+    validations:
+      required: true
+
+  - type: textarea
+    id: visuals
+    attributes:
+      label: Visuals / wireframes
+      description: Link screenshots, wireframes, or design references when relevant. Write "not applicable" otherwise.
+    validations:
+      required: true
+
+  - type: input
+    id: accountable-owner
+    attributes:
+      label: Accountable owner repository
+      placeholder: spencer-shadley/repository
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-repositories
+    attributes:
+      label: Affected repositories
+      description: Where value will be realized. Write "single - <repo>" when only one repository is affected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: change-repositories
+    attributes:
+      label: Change repositories
+      description: Where source changes must land. Change breadth alone does not raise fleet priority.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reach-return
+    attributes:
+      label: Reach, adoption, and expected return
+      description: |
+        State the evaluation horizon, reachable population, expected adoption, value per use or
+        period, probability of producing the outcome, and expected return (low/base/high).
+    validations:
+      required: true
+
+  - type: dropdown
+    id: confidence
+    attributes:
+      label: Evidence confidence
+      options:
+        - Measured
+        - Observed
+        - Estimated
+        - Speculative
+    validations:
+      required: true
+
+  - type: textarea
+    id: costs
+    attributes:
+      label: Implementation and continuing costs
+      description: State implementation cost (low/base/high), expected time-to-land, ongoing cost, migration cost, and expected change-risk cost.
+    validations:
+      required: true
+
+  - type: textarea
+    id: net-value
+    attributes:
+      label: Expected net value and cost of delay
+      description: |
+        Expected net value = confidence-adjusted return - implementation - ongoing - expected risk cost.
+        State local and fleet net value, value lost per day of delay, payback period, and value per time-to-land.
+    validations:
+      required: true
+
+  - type: textarea
+    id: engineering-leverage
+    attributes:
+      label: Engineering time returned
+      description: |
+        For leverage work, provide time saved per event x events per period x affected agents/people,
+        minus implementation and maintenance time. State whether payback occurs before the current queue empties.
+        Write "not applicable" for other feature types.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: service-class
+    attributes:
+      label: Service class
+      options:
+        - Expedite requested - immediate unblock; P0 admission is validated separately
+        - Fixed date - value changes sharply at a real non-movable deadline
+        - Standard - value or loss changes steadily
+        - Long horizon - positive value with initially shallow delay cost
+    validations:
+      required: true
+
+  - type: dropdown
+    id: repo-priority
+    attributes:
+      label: Requested repository priority
+      options:
+        - RP0 requested - start within 1 hour; immediate-unblock predicate required
+        - RP1 - start within 24 hours
+        - RP2 - start within 48 hours
+        - RP3 - start within 72 hours
+        - RP4 - start within 96 hours
+        - RP5 - start within 120 hours
+    validations:
+      required: true
+
+  - type: dropdown
+    id: fleet-priority
+    attributes:
+      label: Requested fleet priority
+      options:
+        - FP0 requested - start within 1 hour; immediate-unblock predicate required
+        - FP1 - start within 24 hours
+        - FP2 - start within 48 hours
+        - FP3 - start within 72 hours
+        - FP4 - start within 96 hours
+        - FP5 - start within 120 hours
+    validations:
+      required: true
+
+  - type: textarea
+    id: p0-evidence
+    attributes:
+      label: P0 request evidence
+      description: |
+        Required only when RP0 or FP0 is requested. High upside, executive interest, or a desirable
+        launch date does not qualify. Prove a currently blocked path, no safe workaround, the
+        smallest bounded unblock, live evidence, and an exit condition.
+
+  - type: textarea
+    id: non-goals
+    attributes:
+      label: Non-goals
+      description: Bound the change and prevent adjacent value claims from silently expanding scope.
+    validations:
+      required: true
+
+  - type: textarea
+    id: relationships
+    attributes:
+      label: Relationships
+      description: Link parents, repo-local children, dependencies, duplicates, plans, and receipts. Use "none found" when applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria and outcome measurement
+      description: Include delivery checks and how predicted return will be reconciled with realized value after landing.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: priority-assertion
+    attributes:
+      label: Filing assertion
+      options:
+        - label: I supplied a positive expected-net-value, accepted-obligation, or bounded value-of-information case and selected both RP and FP.
+          required: true
