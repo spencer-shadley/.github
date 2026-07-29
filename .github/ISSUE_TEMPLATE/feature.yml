@@ -9,7 +9,7 @@ body:
     attributes:
       value: |
         File the smallest useful description. Your priority is an initial guess, not a self-assignment.
-        Triage records a durable confirmation within 30 minutes; that confirmation is not an execution TTL or stale-date.
+        Triage scans this label at least every 30 minutes; confirmation follows the target for the selected band and is not an execution TTL or stale-date.
 
   - type: dropdown
     id: work-type
