@@ -10,9 +10,11 @@ here is a public open-source project soliciting outside contributors.
 `spencer-shadley/.github` supplies account-wide GitHub defaults that apply to every repository
 that does not override them:
 
-- [`.github/ISSUE_TEMPLATE/task.md`](.github/ISSUE_TEMPLATE/task.md) — the sole canonical issue
-  template content authority for the fleet's issue-intake law. Every repository's fail-closed
+- [`.github/ISSUE_TEMPLATE/task.yml`](.github/ISSUE_TEMPLATE/task.yml) — the sole canonical task
+  issue-form content authority for the fleet's issue-intake law. Every repository's fail-closed
   intake resolves this file's exact commit/tree/blob before filing.
+- [`.github/ISSUE_TEMPLATE/feature.yml`](.github/ISSUE_TEMPLATE/feature.yml) — the canonical
+  feature-request issue form.
 - [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) — default PR template.
 - [`SECURITY.md`](SECURITY.md), [`SUPPORT.md`](SUPPORT.md), [`CONTRIBUTING.md`](CONTRIBUTING.md),
   [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) — account-wide community-health defaults.
