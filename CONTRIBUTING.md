@@ -6,7 +6,7 @@ contributors. These are the conventions that apply when a human or an agent open
 
 ## Issues
 
-- File findings using the [task template](.github/ISSUE_TEMPLATE/task.md): `What`, `Why /
+- File findings using the [task form](.github/ISSUE_TEMPLATE/task.yml): `What`, `Why /
   evidence`, `Acceptance`, `Severity / tier hints`.
 - Search for an existing same-class issue before opening a new one; update and conserve the
   occurrence instead of duplicating it.

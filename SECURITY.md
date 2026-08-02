@@ -21,6 +21,6 @@ ship its own `SECURITY.md`.
 
 There is no public bug bounty; every repository under this account is privately owned and
 operated. To report a suspected leak or vulnerability, file an issue in the affected repository
-using the [task template](.github/ISSUE_TEMPLATE/task.md) with severity `P1` and no reproduction
+using the [task form](.github/ISSUE_TEMPLATE/task.yml) with severity `P1` and no reproduction
 detail that would itself leak the secret — describe the exposure class and where it was found
 instead.

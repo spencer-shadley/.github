@@ -9,7 +9,9 @@ from paths under `.github/` and from files at its own root — see
 
 | Path | Purpose |
 |---|---|
-| `.github/ISSUE_TEMPLATE/task.md` | Canonical issue-template content authority for the fleet's issue-intake law |
+| `.github/ISSUE_TEMPLATE/task.yml` | Canonical task issue-form content authority for the fleet's issue-intake law |
+| `.github/ISSUE_TEMPLATE/feature.yml` | Canonical feature-request issue form |
+| `.github/ISSUE_TEMPLATE/config.yml` | Account issue-form chooser and routing configuration |
 | `.github/PULL_REQUEST_TEMPLATE.md` | Default PR template |
 | `profile/README.md` | Org profile page |
 | `SECURITY.md` | Secrets / leak playbook, account default |
@@ -27,8 +29,7 @@ a workflow file living in `.github` would apply account-wide by default.
 
 ## Source
 
-Templates and `SECURITY.md` are sourced from [`spencer-shadley/repo-template`](https://github.com/spencer-shadley/repo-template)
-(its `.github/ISSUE_TEMPLATE/task.md`, `.github/pull_request_template.md`, and `SECURITY.md`),
-which is the fleet's canonical per-repo template. This repository carries forward what genuinely
-belongs at account scope. `CONTRIBUTING.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md` did not exist
-in `repo-template` and were written fresh for this account.
+This repository is the content authority for account-wide issue forms. Repo Template separately
+owns portable per-repository structure and currently retains a legacy local `task.md` compatibility
+artifact pending its governed migration. `SECURITY.md` and the PR-template shape originate from
+Repo Template; account-specific community-health files are owned here.
