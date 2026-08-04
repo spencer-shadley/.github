@@ -63,3 +63,17 @@ body:
       description: |
         Add only what applies: expected user or system value, evidence, engineering workflow friction or time saved,
         failure or harm reduced, or the hypothesis and decision a discovery item will inform.
+
+        If this changes fleet lifecycle projection or projects.json shedAbovePct, also complete the shed checklist below.
+
+  - type: checkboxes
+    id: shed-lifecycle-checklist
+    attributes:
+      label: Shed / lifecycle change checklist (when applicable)
+      description: Required evidence when changing lifecycle or shedAbovePct. Enforcement is the AO projects.json shed gate; this form is the evidence prompt.
+      options:
+        - label: Linked parity / cutover receipt path (or N/A for docs-only projection sync)
+        - label: projects.json and docs/FLEET-REGISTRY.md updated in the same change (or N/A)
+        - label: Commission ref or CEO chat citation recorded
+        - label: Rollback named (unset GATEWAY_POOL_USAGE and/or revert SHA for producer deletes)
+        - label: Repo-flip list reviewed if fleet P composition changes (window-class / Gateway activate)
