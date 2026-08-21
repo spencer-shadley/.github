@@ -1,5 +1,8 @@
-name: Defect / task
-description: File a concise defect, task, risk-reduction, or discovery item for triage.
+# Generated from contracts/governed-intake-body.v1.json. Do not hand-edit; run:
+#   node contracts/governed-intake-body.generate.mjs
+# Publish target: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
+name: Task / bug / feature
+description: Triage-ready issue — the autonomous pipeline authors a plan from this
 title: ""
 labels:
   - agent-review
@@ -8,35 +11,40 @@ body:
   - type: markdown
     attributes:
       value: |
-        File the smallest useful description. Your priority is an initial guess, not a self-assignment.
-        Triage scans this label at least every 30 minutes; confirmation follows the target for the selected band and is not an execution TTL or stale-date.
+        Generated projection of Code `contracts/governed-intake-body.v1.json`.
+        Copy this file to spencer-shadley/.github `.github/ISSUE_TEMPLATE/task.yml`.
+        Do not add task.yml under Code `.github/ISSUE_TEMPLATE/` (a local yaml/md pair suppresses org defaults).
+        Priority is an initial guess, not a self-assignment. Triage scans `priority:triage-tbd` at least every 30 minutes.
+        Defects must complete Prevention (never again, §14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.
+        Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`.
 
   - type: dropdown
     id: work-type
     attributes:
-      label: Work type
+      label: "Work type"
       options:
         - Defect
         - Task
         - Risk reduction
         - Discovery / experiment
+        - Feature
         - Mixed
     validations:
       required: true
 
   - type: textarea
-    id: summary
+    id: what-happened-or-what-is-needed
     attributes:
-      label: What happened or what is needed?
-      description: Briefly describe the symptom, task, risk reduction, or question to answer.
+      label: "What happened or what is needed?"
+      description: One paragraph. For bugs: symptom + repro. For features: the user-visible outcome.
     validations:
       required: true
 
   - type: dropdown
     id: initial-priority-guess
     attributes:
-      label: Initial priority guess
-      description: This starts triage only. P0 is a candidate, not a self-assigned emergency.
+      label: "Initial priority guess"
+      description: This starts triage only. P0 is a candidate, not a self-assigned emergency. Non-crashing defects, performance debt, and resource leaks are capped at <= P2.
       options:
         - P0 candidate
         - P1
@@ -48,10 +56,10 @@ body:
       required: true
 
   - type: input
-    id: priority-guess-reason
+    id: why-this-initial-priority
     attributes:
-      label: Why this initial priority?
-      description: Give one short reason (for example, current harm, urgency, expected value, or time saved).
+      label: "Why this initial priority?"
+      description: One short reason (current harm, urgency, expected value, or time saved).
       placeholder: One-line reason
     validations:
       required: true
@@ -59,8 +67,77 @@ body:
   - type: textarea
     id: relevant-details
     attributes:
-      label: Relevant details (optional)
+      label: "Relevant details"
       description: |
-        Add only what applies: for a defect, expected vs. actual behavior and a reproduction or error;
-        for risk reduction, the failure or harm to avoid; for discovery, the question or decision to unlock;
-        for engineering leverage, the workflow friction or time returned.
+        Evidence, links, impact. When filing via cli-wrappers, fill provenance exactly:
+        repository, commit (>=7-char SHA), path.
+    validations:
+      required: true
+
+  - type: textarea
+    id: root-cause-taxonomy-and-disposition
+    attributes:
+      label: "Root-cause taxonomy and disposition"
+      description: |
+        Climb all nine DOCTRINE §14 ranks. Causal columns: Rank, Finding, Disposition, Reified as.
+        Defects complete ladders A (Prevention — never again) and B (Detect/heal/recover — if it still happens).
+        Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`.
+      value: |
+        | Rank | Finding | Disposition | Reified as |
+        |---|---|---|---|
+        | Subspecies | <!-- this exact symptom --> | <!-- disposition --> | this issue |
+        | Species | <!-- same mode + proximate cause elsewhere --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Genus | <!-- shared mechanism --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Family | <!-- subsystem invariant --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Order | <!-- architectural pattern --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Class | <!-- standard/tool/prompt producing it --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Phylum | <!-- ownership/lifecycle structure --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Kingdom | <!-- incentive / reward shape --> | <!-- disposition --> | issue/plan or TBD — triage |
+        | Domain | <!-- optimization model --> | evidence-ceiling | CEO / terminal stop reason |
+        
+        ### A. Prevention — never again
+        
+        | Rank | Preventive control | Status |
+        |---|---|---|
+        | Subspecies | <!-- control so this occurrence cannot recur --> | TBD — triage |
+        | Species | <!-- class control across the same mode --> | TBD — triage |
+        | Genus | <!-- mechanism cannot produce this species --> | TBD — triage |
+        | Family | <!-- contract/boundary that forbids the mechanism --> | TBD — triage |
+        | Order | <!-- architecture that does not share the weakness --> | TBD — triage |
+        | Class | <!-- engineering-system change so tools cannot emit it --> | TBD — triage |
+        | Phylum | <!-- org/process that owns the class --> | TBD — triage |
+        | Kingdom | <!-- governance that does not reward this mode --> | TBD — triage |
+        | Domain | <!-- objective that does not select for this class --> | TBD — triage |
+        
+        ### B. Detect / self-heal / recover — if it still happens
+        
+        | Rank | Notice | Self-heal / contain | Restore | Escalate if no progress | Status |
+        |---|---|---|---|---|---|
+        | Subspecies | <!-- how this occurrence is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Species | <!-- how the class is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Genus | <!-- how the mechanism is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Family | <!-- how the invariant breach is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Order | <!-- how the pattern failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Class | <!-- how the producing standard is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Phylum | <!-- how ownership/lifecycle miss is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Kingdom | <!-- how the incentive failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+        | Domain | <!-- how objective-model failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+    validations:
+      required: true
+
+  - type: textarea
+    id: durable-fix-and-acceptance
+    attributes:
+      label: "Durable fix and acceptance"
+      description: Bullet list the loop's verify gate can check.
+    validations:
+      required: true
+
+  - type: textarea
+    id: human-decision-state
+    attributes:
+      label: "Human-decision state"
+      description: No human decision required, or Decision needed with the exact question for Spencer.
+      value: No human decision required
+    validations:
+      required: true
