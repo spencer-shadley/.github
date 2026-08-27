@@ -1,0 +1,15 @@
+{
+  "schema": "WorkProjectionV1",
+  "version": 1,
+  "generatedAt": "2026-08-13T19:00:22.004Z",
+  "sourceRefs": {
+    "repositories": [
+      {
+        "repositoryId": "unknown/.github",
+        "defaultBranchSha": "99427d68b1d56c982470fe1b2d2346f31cc0b4a1"
+      }
+    ]
+  },
+  "items": [],
+  "digest": "1457717aec2967521d32ed7122912118253c2bdd6a3529782d056823967c8110"
+}
