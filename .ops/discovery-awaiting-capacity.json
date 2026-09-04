@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "project": "github",
+  "updatedAt": "2026-09-04T01:01:07.791Z",
+  "admission": {
+    "closed": false,
+    "reason": null,
+    "pending": 0,
+    "supplyEligible": 0,
+    "pendingLimit": 50,
+    "remainingDaily": 1000,
+    "nextReconsider": null
+  },
+  "items": [],
+  "lastNotifyFingerprint": null
+}
