@@ -38,12 +38,15 @@ remain owned by the Code repository.
   approval adds additive `review-approved-<model>-<effort>` provenance to the PR and mirrors it to an
   unambiguous linked issue. Never replace prior provenance labels, including across close/reopen cycles,
   and never infer model/effort from free-form prose when authoritative execution/review receipts exist.
-- Preserve the account-wide agent-resource/cost projection contract in the PR template: one
-  `<!-- agent-cost-summary-v1 -->` issue comment is updated in place from authoritative execution,
-  usage, process, and accounting receipts. Where available it reports active wall-clock, summed agent
-  wall-clock, process-tree CPU time, token classes, billed USD, effective subscription-adjusted USD,
-  optional normalized/list-price-equivalent USD, and attributable session identities. Parallel agents
-  must not double-count active wall-clock; unknown metrics remain unknown. Lifetime totals never reset
-  across reopen/refix cycles, and derived money fields retain versioned accounting/pricing semantics.
+- Preserve the account-wide agent-resource/subscription-cost projection contract in the PR template:
+  one `<!-- agent-cost-summary-v1 -->` issue comment is updated in place from authoritative execution,
+  token, process, session, and subscription-usage receipts. Where available it reports active wall-
+  clock, summed agent wall-clock, process-tree CPU time, token classes, attributable session identities,
+  per-subscription billing-cycle identity and task consumption share, plus effective subscription cost.
+  The fleet is subscription-funded rather than API-credit-funded: per-request billed USD is not a
+  primary task metric, and optional API/list-price-equivalent values must never be described as actual
+  spend. Subscription consumption percentages remain scoped to their specific subscription/pool and
+  billing cycle; ambiguous/concurrent global-meter deltas remain provisional or unknown rather than
+  guessed. Lifetime totals never reset across reopen/refix cycles.
 - Do not add GitHub Actions without an explicit fleet policy decision and repository-local evidence.
 - Verify referenced paths exist before publishing documentation changes.
