@@ -33,5 +33,10 @@ remain owned by the Code repository.
 
 - Treat paths under `.github/` and the root community-health files as account-wide public defaults.
 - Keep `README.md` and `CONTRIBUTING.md` links synchronized with the live issue-form filenames.
+- Preserve the account-wide agent-provenance labeling contract in the PR template: material coding
+  adds additive `implementation-<model>-<effort>` provenance to the governed linked issue; exact-head
+  approval adds additive `review-approved-<model>-<effort>` provenance to the PR and mirrors it to an
+  unambiguous linked issue. Never replace prior provenance labels, and never infer model/effort from
+  free-form prose when authoritative execution/review receipts exist.
 - Do not add GitHub Actions without an explicit fleet policy decision and repository-local evidence.
 - Verify referenced paths exist before publishing documentation changes.
