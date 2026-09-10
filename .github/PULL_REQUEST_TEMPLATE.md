@@ -30,21 +30,29 @@ model/effort slug:
 ## Agent Cost Summary
 
 For the governed linked issue, maintain one machine-owned top-level comment identified by
-`<!-- agent-cost-summary-v1 -->`. Create it after the first attributable model-usage receipt and then
-update that same comment in place rather than appending one comment per attempt.
+`<!-- agent-cost-summary-v1 -->`. Create it after the first attributable execution/usage receipt and
+then update that same comment in place rather than appending one comment per attempt.
 
-- Count actual issue-attributable model usage, including failed, timed-out, abandoned, superseded,
-  implementation, repair, review, verification, and other model work when authoritative lineage ties
-  it to the issue. A pre-dispatch zero-usage refusal contributes zero.
-- Deduplicate by immutable usage/attempt receipt identity. GitHub is a projection; receipts remain the
-  accounting source of truth.
-- Show lifetime tokens/cost plus a current reopen-cycle subtotal. Lifetime totals and old provenance
-  never reset when an issue closes and is later reopened/refixed; each `closed -> open` transition
-  starts the next cycle subtotal.
-- Preserve provider/metered billed cost separately from normalized estimated USD. Mark subscription,
-  free, included, metered, or unknown billing basis honestly; never present an API-equivalent estimate
-  as literal cash charged.
-- If older receipts are unavailable, mark coverage partial with the earliest trustworthy timestamp.
+- Count actual issue-attributable model/agent usage, including failed, timed-out, abandoned,
+  superseded, implementation, repair, review, verification, and other work when authoritative lineage
+  ties it to the issue. A pre-dispatch zero-usage refusal contributes zero.
+- Deduplicate by immutable execution/usage/attempt receipt identity. GitHub is a projection; receipts
+  remain the accounting source of truth.
+- Expose when available: active wall-clock (union of overlapping session intervals), summed agent
+  wall-clock/seat time, process-tree CPU user+system time, input/output and other billing-relevant
+  token classes, billed USD, effective subscription-adjusted USD, optional normalized/list-price-
+  equivalent USD, and every attributable stable session ID (or approved non-secret projection).
+- Parallel sessions must not inflate active wall-clock: two fully overlapping 10-minute sessions are
+  10 minutes active wall-clock and 20 agent-minutes. CPU and agent-wall totals remain additive.
+- Preserve billed USD, effective USD, and normalized/list-price-equivalent USD as distinct concepts.
+  Effective USD allocates actual subscription/included-plan spend with a versioned accounting method;
+  incomplete billing periods are provisional and missing denominators are unknown. Never substitute
+  API/list-price equivalent for actual/effective spend.
+- Show lifetime resource/cost totals plus current reopen-cycle subtotals. Lifetime totals and old
+  provenance never reset when an issue closes and is later reopened/refixed; each `closed -> open`
+  transition starts the next cycle subtotal.
+- If older receipts or a metric source are unavailable, mark coverage partial/unknown rather than
+  inventing values. Token coverage may be complete while CPU coverage is unknown.
 - Cost-comment create/update and label mutations use the canonical durable GitHub-effect path so
   rate limits, retries, or concurrent workers cannot silently lose attribution or create duplicates.
 
