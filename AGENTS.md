@@ -33,11 +33,17 @@ remain owned by the Code repository.
 
 - Treat paths under `.github/` and the root community-health files as account-wide public defaults.
 - Keep `README.md` and `CONTRIBUTING.md` links synchronized with the live issue-form filenames.
-- Preserve the account-wide agent-provenance labeling contract in the PR template: material coding
-  adds additive `implementation-<model>-<effort>` provenance to the governed linked issue; exact-head
-  approval adds additive `review-approved-<model>-<effort>` provenance to the PR and mirrors it to an
-  unambiguous linked issue. Never replace prior provenance labels, including across close/reopen cycles,
-  and never infer model/effort from free-form prose when authoritative execution/review receipts exist.
+- Preserve the account-wide four-stage agent-provenance grammar and keep public templates/guidance
+  compatible with the Code-owned semantic contracts: confirmed model filing uses additive
+  `filed-by-<model>-<effort>` provenance; substantive completed triage uses additive
+  `triaged-by-<model>-<effort>` provenance; material coding adds additive
+  `implementation-<model>-<effort>` provenance to the governed linked issue; exact-head approval
+  adds additive `review-approved-<model>-<effort>` provenance to the PR and mirrors it to an
+  unambiguous linked issue. Re-triage, later repair rounds, and close/reopen cycles never replace or
+  delete historical participant labels. Re-applying the same model/effort is idempotent because
+  labels are participation indexes, not event counters. Derive every model/effort identity from
+  authoritative filing/triage/execution/review receipts, never free-form prose, bot usernames, or
+  self-identification. Failed/read-only/no-op stages do not receive completed-stage provenance.
 - Preserve the account-wide agent-resource/subscription-cost projection contract in the PR template:
   one `<!-- agent-cost-summary-v1 -->` issue comment is updated in place from authoritative execution,
   token, process, session, and subscription-usage receipts. Where available it reports active wall-
