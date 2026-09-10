@@ -36,7 +36,12 @@ remain owned by the Code repository.
 - Preserve the account-wide agent-provenance labeling contract in the PR template: material coding
   adds additive `implementation-<model>-<effort>` provenance to the governed linked issue; exact-head
   approval adds additive `review-approved-<model>-<effort>` provenance to the PR and mirrors it to an
-  unambiguous linked issue. Never replace prior provenance labels, and never infer model/effort from
-  free-form prose when authoritative execution/review receipts exist.
+  unambiguous linked issue. Never replace prior provenance labels, including across close/reopen cycles,
+  and never infer model/effort from free-form prose when authoritative execution/review receipts exist.
+- Preserve the account-wide agent-cost projection contract in the PR template: one
+  `<!-- agent-cost-summary-v1 -->` issue comment is updated in place from authoritative usage receipts,
+  reports lifetime plus current reopen-cycle cost/token totals, counts failed/token-consuming work,
+  distinguishes metered/provider-billed cost from normalized estimates, marks partial historical
+  coverage honestly, and never resets lifetime totals when an issue is reopened/refixed.
 - Do not add GitHub Actions without an explicit fleet policy decision and repository-local evidence.
 - Verify referenced paths exist before publishing documentation changes.
