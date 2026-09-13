@@ -33,26 +33,8 @@ remain owned by the Code repository.
 
 - Treat paths under `.github/` and the root community-health files as account-wide public defaults.
 - Keep `README.md` and `CONTRIBUTING.md` links synchronized with the live issue-form filenames.
-- Preserve the account-wide four-stage agent-provenance grammar and keep public templates/guidance
-  compatible with the Code-owned semantic contracts: confirmed model filing uses additive
-  `filed-by-<model>-<effort>` provenance; substantive completed triage uses additive
-  `triaged-by-<model>-<effort>` provenance; material coding adds additive
-  `implementation-<model>-<effort>` provenance to the governed linked issue; exact-head approval
-  adds additive `review-approved-<model>-<effort>` provenance to the PR and mirrors it to an
-  unambiguous linked issue. Re-triage, later repair rounds, and close/reopen cycles never replace or
-  delete historical participant labels. Re-applying the same model/effort is idempotent because
-  labels are participation indexes, not event counters. Derive every model/effort identity from
-  authoritative filing/triage/execution/review receipts, never free-form prose, bot usernames, or
-  self-identification. Failed/read-only/no-op stages do not receive completed-stage provenance.
-- Preserve the account-wide agent-resource/subscription-cost projection contract in the PR template:
-  one `<!-- agent-cost-summary-v1 -->` issue comment is updated in place from authoritative execution,
-  token, process, session, and subscription-usage receipts. Where available it reports active wall-
-  clock, summed agent wall-clock, process-tree CPU time, token classes, attributable session identities,
-  per-subscription billing-cycle identity and task consumption share, plus effective subscription cost.
-  The fleet is subscription-funded rather than API-credit-funded: per-request billed USD is not a
-  primary task metric, and optional API/list-price-equivalent values must never be described as actual
-  spend. Subscription consumption percentages remain scoped to their specific subscription/pool and
-  billing cycle; ambiguous/concurrent global-meter deltas remain provisional or unknown rather than
-  guessed. Lifetime totals never reset across reopen/refix cycles.
+- Preserve the canonical `Agent Provenance Labels` and `Agent Cost Summary` (`<!-- agent-cost-summary-v1 -->`)
+  contract in `.github/PULL_REQUEST_TEMPLATE.md`; do not redefine those field, metric, or accounting
+  semantics in `AGENTS.md`.
 - Do not add GitHub Actions without an explicit fleet policy decision and repository-local evidence.
 - Verify referenced paths exist before publishing documentation changes.
