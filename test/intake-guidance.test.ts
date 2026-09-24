@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const guide = "docs/governed-intake-ssot.md";
 const canonicalGuideUrl = `https://github.com/spencer-shadley/.github/blob/main/${guide}`;
-const entrypoints = ["AGENTS.md", "README.md", "CONTRIBUTING.md", "skills/full-validation/SKILL.md"];
+const entrypoints = ["AGENTS.md", "README.md", "CONTRIBUTING.md", "profile/README.md", "SUPPORT.md", "skills/full-validation/SKILL.md"];
 
 function linksToGuide(file: string, content: string): boolean {
   for (const match of content.matchAll(/\[[^\]]*\]\(([^\s)]+)\)/g)) {
@@ -26,6 +26,7 @@ function retiredInstructions(content: string): string[] {
     ["reversed ownership", /which is the source of truth for the file conventions this `\.github` repository mirrors at account scope/i],
     ["automatic workflow inheritance", /a workflow file living in `\.github` would apply account-wide by default/i],
     ["repository-wide writer serialization", /one writer per repository at a time/i],
+    ["non-GitHub human escalation", /human escalation for anything time-sensitive goes through the fleet's ntfy\.sh channel, not GitHub/i],
   ];
   return patterns.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
 }
@@ -55,5 +56,6 @@ test("retired-instruction regression checks catch wrapped original wording", () 
   assert.deepEqual(retiredInstructions("which is the source of truth for the file conventions this `.github` repository mirrors at\naccount scope"), ["reversed ownership"]);
   assert.deepEqual(retiredInstructions("a workflow file living in `.github` would apply account-wide by default"), ["automatic workflow inheritance"]);
   assert.deepEqual(retiredInstructions("One writer per repository\nat a time."), ["repository-wide writer serialization"]);
+  assert.deepEqual(retiredInstructions("Human escalation for anything time-sensitive goes through the fleet's ntfy.sh channel, not\nGitHub"), ["non-GitHub human escalation"]);
   assert.deepEqual(retiredInstructions("Repo Template owns bootstrap conformance; .github owns the account forms."), []);
 });
