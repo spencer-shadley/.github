@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 12). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 17). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Publish target: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -12,13 +12,13 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of Code `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 12).
+        Generated projection of Code `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 17).
         Copy this file to spencer-shadley/.github `.github/ISSUE_TEMPLATE/task.yml`.
         Do not add task.yml under Code `.github/ISSUE_TEMPLATE/` (a local yaml/md pair suppresses org defaults).
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
         Defects must complete Prevention (never again, §14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.
         Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.
-        Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`.
+        Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`. Every rank requires a real disposition; use `evidence-ceiling` only when evidence is genuinely unobtainable, never as a default terminator.
 
   - type: dropdown
     id: work-type
@@ -28,7 +28,8 @@ body:
         - Defect
         - Task
         - Risk reduction
-        - Discovery / experiment
+        - Exploration / design research
+        - Experiment / evidence test
         - Feature
         - Mixed
     validations:
@@ -82,7 +83,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=12 -->
+        <!-- governed-triage-checklist: revision=17 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -96,6 +97,8 @@ body:
         - [ ] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Missing or unclear effort is not low. Never self-admit P0.
         <!-- governed-triage-item: verify-human-required -->
         - [ ] **Verify + human-required fences**: `tier:auto` with `effort:low|medium` requires the current scoped named-file `## Verify` fence. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority.
+        <!-- governed-triage-item: cloud-runnable -->
+        - [ ] **Cloud vs local execution**: Assess the implementation stage using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Before triage can complete, apply exactly one execution-substrate label: `cloud-ready` when implementation can run in an authorized provider-hosted environment, or `local-required` when implementation needs a fleet/local machine. Never leave both or neither on a completed triage. Record `ready` or `not-ready`, a short reason, and any separately required local verification/rollout in the existing triage receipt; an unresolved or `unknown` assessment stays untriaged. If one exact host is required, also apply its machine label.
         <!-- governed-triage-item: disposition-effect-authority -->
         - [ ] **Disposition != effect authority**: Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Execute close, move, substantive rewrite, or another restricted GitHub effect only when the current role is authorized; otherwise hand the adjudicated effect to the authorized executor with a durable receipt. Do not keep zombie work alive merely because the current seat cannot execute the terminal effect.
         <!-- governed-triage-item: higher-intelligence-handoff -->
@@ -103,7 +106,7 @@ body:
         <!-- governed-triage-item: github-effects-quota -->
         - [ ] **GitHub effects + quota**: Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep.
         <!-- governed-triage-item: confirm-receipt -->
-        - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence.
+        - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence.
         <!-- governed-triage-item: taxonomy -->
         - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
         <!-- /governed-triage-checklist -->
@@ -138,7 +141,7 @@ body:
       description: |
         Climb all nine DOCTRINE §14 ranks. Causal columns: Rank, Finding, Disposition, Reified as.
         Defects complete ladders A (Prevention — never again) and B (Detect/heal/recover — if it still happens).
-        Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`.
+        Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`. Every rank requires a real disposition; use `evidence-ceiling` only when evidence is genuinely unobtainable, never as a default terminator.
       value: |
         | Rank | Finding | Disposition | Reified as |
         |---|---|---|---|
@@ -150,7 +153,7 @@ body:
         | Class | <!-- standard/tool/prompt producing it --> | <!-- disposition --> | issue/plan or TBD — triage |
         | Phylum | <!-- ownership/lifecycle structure --> | <!-- disposition --> | issue/plan or TBD — triage |
         | Kingdom | <!-- incentive / reward shape --> | <!-- disposition --> | issue/plan or TBD — triage |
-        | Domain | <!-- optimization model --> | evidence-ceiling | CEO / terminal stop reason |
+        | Domain | <!-- optimization model --> | <!-- disposition --> | CEO / terminal stop reason |
         
         ### A. Prevention — never again
         
