@@ -35,9 +35,10 @@ current governed-intake bundle is compatibility producer state, not the desired 
 
 ## Editing rules
 
+- Read the canonical [governed-intake guide](docs/governed-intake-ssot.md) for ownership, current compatibility state, machine versus web intake, revision handling, and cutover evidence. Link to it from active guidance rather than copying a second checklist.
 - Treat paths under `.github/` and the root community-health files as account-wide public defaults.
 - Treat `.github/ISSUE_TEMPLATE/task.yml` as the only live fleet task form. Do not create a repo-local copy as a compatibility mechanism.
-- Keep `README.md`, `CONTRIBUTING.md`, governed-intake docs, release metadata, and consumer guidance synchronized with the live issue-form filenames and ownership boundary.
+- Keep `README.md`, `CONTRIBUTING.md`, governed-intake docs, release metadata, and consumer guidance aligned with the live issue-form filenames and ownership boundary.
 - Preserve the canonical `Agent Provenance Labels` and `Agent Cost Summary` (`<!-- agent-cost-summary-v1 -->`)
   contract in `.github/PULL_REQUEST_TEMPLATE.md`; do not redefine those field, metric, or accounting
   semantics in `AGENTS.md`.
