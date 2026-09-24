@@ -23,14 +23,15 @@ from paths under `.github/` and from files at its own root — see
 
 No `.github/workflows/`. This account's merge-blocking gate is local CI
 (`local-ci.json` / the orchestrator's worktree verify run) in each repository, not GitHub Actions,
-and GitHub Actions spend is not funded here. `spencer-shadley/repo-template` ships an advisory
-`ci.yml` for repos that opt into it locally; that file is not carried into this repository because
-a workflow file living in `.github` would apply account-wide by default.
+and GitHub Actions spend is not funded here. This is an execution-policy choice, not an inheritance
+limitation: workflows do not inherit through GitHub's community-health defaults. A reusable workflow
+needs an explicit caller; storing a workflow here does not automatically run it across the account.
 
 ## Governed issue-intake SSOT
 
 [Issue #13](https://github.com/spencer-shadley/.github/issues/13) is the active cutover to one
-account-wide source of truth. The terminal shape is:
+account-wide source of truth. The live form is here; Code still supplies the compatibility semantic
+producer until source and consumer cutover are verified. The terminal shape is:
 
 ```text
 this repository
@@ -47,7 +48,8 @@ are mechanically replaceable; they are never editable authority. Any repository-
 `.github/ISSUE_TEMPLATE/**` or issue-template `config.yml` is an override and therefore requires
 an explicit durable exception.
 
-See [docs/governed-intake-ssot.md](docs/governed-intake-ssot.md) for the migration and invariants.
+See [docs/governed-intake-ssot.md](docs/governed-intake-ssot.md) for the migration, revision handling,
+web versus machine intake, external behavior references, and required completion evidence.
 
 `SECURITY.md` and the PR-template shape originate from Repo Template; account-specific
-community-health files are owned here.
+community-health files are owned here. Repo Template does not own or synchronize the issue forms.
