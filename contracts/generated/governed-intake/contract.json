@@ -1,6 +1,6 @@
 {
   "schema": "GovernedIntakeBodyV1",
-  "version": 19,
+  "version": 20,
   "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Bump version whenever this contract or its generated projections change.",
   "requiredHeadings": [
     "Work type",
@@ -116,61 +116,115 @@
         "id": "canonical-flow",
         "title": "Canonical flow",
         "text": "Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.",
-        "evidenceKeys": ["procedure"]
+        "evidenceKeys": [
+          "procedure"
+        ]
       },
       {
         "id": "value-direction",
         "title": "Value + direction evidence",
         "text": "Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator.",
-        "dependsOn": ["canonical-flow"],
-        "evidenceKeys": ["direction"]
+        "dependsOn": [
+          "canonical-flow"
+        ],
+        "evidenceKeys": [
+          "direction"
+        ]
       },
       {
         "id": "fix-owner-responsibility",
         "title": "Fix-owner + responsibility",
         "text": "Verify with `fleet-repo-responsibility-routing`, the target repo's current `AGENTS.md`, and `repos/infra/fleet-registry/dist/fleet-registry-release.json` (`FleetRegistryReleaseV1`). Never substitute retired registry markdown for that release.",
-        "dependsOn": ["canonical-flow"],
-        "evidenceKeys": ["owner"]
+        "dependsOn": [
+          "canonical-flow"
+        ],
+        "evidenceKeys": [
+          "owner"
+        ]
       },
       {
         "id": "dedup-queue-synergy",
         "title": "Dedup + queue synergy",
         "text": "Search related open/closed work and apply `docs/guides/queue-synergy.md`. Reuse or strengthen the canonical owner instead of creating a parallel implementation track.",
-        "dependsOn": ["canonical-flow", "value-direction", "fix-owner-responsibility"],
-        "evidenceKeys": ["dedup"],
-        "resultDependencies": ["value-direction", "fix-owner-responsibility"]
+        "dependsOn": [
+          "canonical-flow",
+          "value-direction",
+          "fix-owner-responsibility"
+        ],
+        "evidenceKeys": [
+          "dedup"
+        ],
+        "resultDependencies": [
+          "value-direction",
+          "fix-owner-responsibility"
+        ]
       },
       {
         "id": "scope-decomposition",
         "title": "Scope + decomposition",
-        "text": "Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp-not-needed`, low/medium), qualified atomic-high leaf (`decomp-atomic` + `effort:high` with independent confirmation), or tracking parent (`decomp` + `epic` with a validated child graph). Unresolved, unknown, or unqualified evidence stays pending. Child triage does not wait for a parent completion stamp. Do not require `decomp-in-progress`. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity.",
-        "dependsOn": ["canonical-flow", "value-direction", "fix-owner-responsibility", "dedup-queue-synergy"],
-        "evidenceKeys": ["scope"],
-        "resultDependencies": ["value-direction", "dedup-queue-synergy"],
+        "text": "Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp-not-needed`, low/medium), qualified atomic-high leaf (`decomp-atomic` + `effort:high` with independent confirmation), or tracking parent (`decomp` + `epic` with a validated child graph). Unresolved, unknown, or unqualified evidence stays pending. Child triage does not wait for a parent completion stamp. Do not require `decomp-in-progress`. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity. Bind the assessment to the actual server-fetched issue identity and normalized scope using the producer-owned identity API; matching caller-supplied identities or structural checkbox checks alone never establish semantic completion.",
+        "dependsOn": [
+          "canonical-flow",
+          "value-direction",
+          "fix-owner-responsibility",
+          "dedup-queue-synergy"
+        ],
+        "evidenceKeys": [
+          "scope"
+        ],
+        "resultDependencies": [
+          "value-direction",
+          "dedup-queue-synergy"
+        ],
         "semantics": {
           "workflowStage": "scope-decomposition",
-          "dispositions": ["ordinary", "atomic-high", "parent"],
+          "dispositions": [
+            "ordinary",
+            "atomic-high",
+            "parent"
+          ],
           "childTriageRequiresParentStamp": false,
-          "legacyProgressLabelRequired": false
+          "legacyProgressLabelRequired": false,
+          "subjectBinding": "server-fetched-issue-v1",
+          "identityBinding": "producer-canonical-json-v1",
+          "completionAuthority": "composed-semantic-evaluation-v1"
         }
       },
       {
         "id": "priority-work-dimensions",
         "title": "Priority + work dimensions",
         "text": "Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Effort definitions and examples come from the canonical governed-intake triage policy, not private calibration caps. Missing or unclear effort is unknown, not low. Certified atomic-high remains high. Never self-admit P0.",
-        "dependsOn": ["scope-decomposition"],
-        "evidenceKeys": ["scope", "rubric-meaning"],
-        "resultDependencies": ["scope-decomposition"]
+        "dependsOn": [
+          "scope-decomposition"
+        ],
+        "evidenceKeys": [
+          "scope",
+          "rubric-meaning"
+        ],
+        "resultDependencies": [
+          "scope-decomposition"
+        ]
       },
       {
         "id": "verify-human-required",
         "title": "Verify + human-required fences",
         "text": "`tier:auto` executable leaves require the current scoped named-file `## Verify` fence, including ordinary `effort:low|medium` leaves and qualified `effort:high` atomic leaves. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority.",
-        "dependsOn": ["scope-decomposition", "priority-work-dimensions"],
-        "evidenceKeys": ["scope"],
-        "resultDependencies": ["scope-decomposition", "priority-work-dimensions"],
+        "dependsOn": [
+          "scope-decomposition",
+          "priority-work-dimensions"
+        ],
+        "evidenceKeys": [
+          "scope"
+        ],
+        "resultDependencies": [
+          "scope-decomposition",
+          "priority-work-dimensions"
+        ],
         "semantics": {
-          "verifyFenceRequiredFor": ["ordinary-auto", "atomic-high-auto"],
+          "verifyFenceRequiredFor": [
+            "ordinary-auto",
+            "atomic-high-auto"
+          ],
           "trackingParentInheritsChildVerify": false
         }
       },
@@ -178,32 +232,57 @@
         "id": "cloud-runnable",
         "title": "Cloud vs local execution",
         "text": "Assess the implementation stage using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Before triage can complete, apply exactly one execution-substrate label: `cloud-ready` when implementation can run in an authorized provider-hosted environment, or `local-required` when implementation needs a fleet/local machine. Never leave both or neither on a completed triage. Record `ready` or `not-ready`, a short reason, and any separately required local verification/rollout in the existing triage receipt; an unresolved or `unknown` assessment stays untriaged. If one exact host is required, also apply its machine label. Tracking parents do not inherit every child host or substrate requirement.",
-        "dependsOn": ["scope-decomposition"],
-        "evidenceKeys": ["scope", "execution-substrate"],
-        "resultDependencies": ["scope-decomposition"]
+        "dependsOn": [
+          "scope-decomposition"
+        ],
+        "evidenceKeys": [
+          "scope",
+          "execution-substrate"
+        ],
+        "resultDependencies": [
+          "scope-decomposition"
+        ]
       },
       {
         "id": "disposition-effect-authority",
         "title": "Disposition != effect authority",
         "text": "Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Execute close, move, substantive rewrite, or another restricted GitHub effect only when the current role is authorized; otherwise hand the adjudicated effect to the authorized executor with a durable receipt. Do not keep zombie work alive merely because the current seat cannot execute the terminal effect.",
-        "dependsOn": ["scope-decomposition"],
-        "evidenceKeys": ["disposition"],
-        "resultDependencies": ["scope-decomposition"]
+        "dependsOn": [
+          "scope-decomposition"
+        ],
+        "evidenceKeys": [
+          "disposition"
+        ],
+        "resultDependencies": [
+          "scope-decomposition"
+        ]
       },
       {
         "id": "higher-intelligence-handoff",
         "title": "Higher-intelligence handoff",
         "text": "`effort:high`, unclear effort, `human-required`, material remaining uncertainty, or programme-shaped work uses qualified higher-intelligence assessment inside triage. Scope and decomposition are the earlier `scope-decomposition` obligation. Confirmed tracking parents stay tracking-only. Unresolved delegation is not completed triage. The triage role does not mint implementation plans or commission implementation writers.",
-        "dependsOn": ["scope-decomposition", "priority-work-dimensions"],
-        "evidenceKeys": ["scope"],
-        "resultDependencies": ["scope-decomposition", "priority-work-dimensions"]
+        "dependsOn": [
+          "scope-decomposition",
+          "priority-work-dimensions"
+        ],
+        "evidenceKeys": [
+          "scope"
+        ],
+        "resultDependencies": [
+          "scope-decomposition",
+          "priority-work-dimensions"
+        ]
       },
       {
         "id": "github-effects-quota",
         "title": "GitHub effects + quota",
         "text": "Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep.",
-        "dependsOn": ["canonical-flow"],
-        "evidenceKeys": ["transport"]
+        "dependsOn": [
+          "canonical-flow"
+        ],
+        "evidenceKeys": [
+          "transport"
+        ]
       },
       {
         "id": "confirm-receipt",
@@ -223,7 +302,9 @@
           "github-effects-quota",
           "taxonomy"
         ],
-        "evidenceKeys": ["completion"],
+        "evidenceKeys": [
+          "completion"
+        ],
         "resultDependencies": [
           "value-direction",
           "scope-decomposition",
@@ -237,9 +318,15 @@
         "id": "taxonomy",
         "title": "Taxonomy",
         "text": "Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.",
-        "dependsOn": ["scope-decomposition"],
-        "evidenceKeys": ["taxonomy"],
-        "resultDependencies": ["scope-decomposition"]
+        "dependsOn": [
+          "scope-decomposition"
+        ],
+        "evidenceKeys": [
+          "taxonomy"
+        ],
+        "resultDependencies": [
+          "scope-decomposition"
+        ]
       }
     ],
     "executionSubstrateLabels": [
