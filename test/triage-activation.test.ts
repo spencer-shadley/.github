@@ -417,3 +417,19 @@ test("public checklist API cannot hide missing atomic confirmation behind checke
   assert.equal(result.needs_triage, true);
   assert.equal(result.scope_resolved, false);
 });
+
+
+test("extra prose hidden inside checklist delimiters changes actual scope", () => {
+  const body = validBody() + "\n" + renderTriageChecklistBlock({ checked: false });
+  const before = fingerprintIssueScope({ ...actualIssue, body });
+  const changed = body.replace("<!-- /governed-triage-checklist -->", "Extra implementation requirement: delete the verification gate.\n<!-- /governed-triage-checklist -->");
+  assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: changed }), before);
+});
+test("revision-less and unknown checklist-shaped regions never hide scope", () => {
+  const body = validBody();
+  const before = fingerprintIssueScope({ ...actualIssue, body });
+  for (const marker of ["", "revision=999999"]) {
+    const changed = body + "\n<!-- governed-triage-checklist: " + marker + " -->\nNew actual work\n<!-- /governed-triage-checklist -->";
+    assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: changed }), before);
+  }
+});
