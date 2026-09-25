@@ -1,0 +1,11 @@
+{
+  "name": "account-governed-intake",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:triage-policy": "node --experimental-strip-types --test test/triage-policy.test.ts test/triage-migration.test.ts test/triage-source.test.ts",
+    "triage-policy:generate": "node --experimental-strip-types contracts/governed-intake-triage-policy.generate.ts",
+    "triage-policy:check": "node --experimental-strip-types contracts/governed-intake-triage-policy.generate.ts --check",
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  }
+}
