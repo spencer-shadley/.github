@@ -1,0 +1,94 @@
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 19). Do not hand-edit; run:
+#   node --experimental-strip-types contracts/governed-intake-body.generate.ts
+# Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/feature.yml
+name: Feature / engineering leverage
+description: File a concise feature, leverage, risk-reduction, or discovery item for triage.
+title: ""
+labels:
+  - agent-review
+  - priority:triage-tbd
+  - work:untriaged
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 19).
+        File the smallest useful description. Priority is an initial guess, not a self-assignment.
+        Machine and triage intake use the governed task body and checklist from this producer.
+        This feature chooser is not a second checklist, runtime cadence, or registry/shed form.
+        Normal consumer repositories must not carry local issue-template or chooser overrides.
+        Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.
+
+  - type: dropdown
+    id: work-type
+    attributes:
+      label: "Work type"
+      options:
+        - Defect
+        - Task
+        - Risk reduction
+        - Exploration / design research
+        - Experiment / evidence test
+        - Feature
+        - Mixed
+    validations:
+      required: true
+
+  - type: textarea
+    id: governed-work-unit-key
+    attributes:
+      label: "Governed work-unit key"
+      description: |
+        Derive SHA-256 from the normalized tuple `fixOwnerGitHubSlug + workType + canonicalWorkUnitIdentity`. Apply ECMAScript String.prototype.trim(), then String.prototype.normalize('NFC'), then the field-specific case rule. Apply locale-independent String.prototype.toLowerCase() to the normalized owner/repository GitHub slug. Apply locale-independent String.prototype.toLowerCase() to the normalized work type. Preserve the normalized UTF-8 bytes exactly after trim and NFC; do not lowercase, collapse internal whitespace, or rewrite punctuation. In identityTuple order, frame each normalized value as its UTF-8 byte length in unpadded ASCII decimal, then ASCII ':' (0x3a), then its exact UTF-8 bytes. Join the three framed values with ASCII LF (0x0a), with no trailing LF. SHA-256 hashes these serialized bytes; render the digest as 64 lowercase hexadecimal characters. Choose the smallest durable mechanism or outcome seam that names the work unit. Keep it unchanged when evidence, priority, wording, or comments change. The same key means the same work unit. If distinct semantics would map to one key, resolve the canonical identities before create; never add randomness, a UUID, or mutable evidence to escape the collision.
+      placeholder: "<!-- governed-work-unit-key: sha256:<64 lowercase hex> -->"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened-or-what-is-needed
+    attributes:
+      label: "What happened or what is needed?"
+      description: "The user-visible outcome, engineering time returned, harm reduced, or decision to unlock."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: initial-priority-guess
+    attributes:
+      label: "Initial priority guess"
+      description: This starts triage only. P0 is a candidate, not a self-assigned emergency.
+      options:
+        - P0 candidate
+        - P1
+        - P2
+        - P3
+        - P4
+        - P5
+    validations:
+      required: true
+
+  - type: input
+    id: why-this-initial-priority
+    attributes:
+      label: "Why this initial priority?"
+      description: One short reason (current harm, urgency, expected value, or time saved).
+      placeholder: One-line reason
+    validations:
+      required: true
+
+  - type: textarea
+    id: relevant-details
+    attributes:
+      label: "Relevant details"
+      description: Optional evidence, links, or impact. Do not attach a private shed, cadence, or fleet-registry checklist here.
+    validations:
+      required: false
+
+  - type: textarea
+    id: human-decision-state
+    attributes:
+      label: "Human-decision state"
+      description: No human decision required, or Decision needed with the exact question for Spencer.
+      value: No human decision required
+    validations:
+      required: true
