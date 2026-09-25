@@ -1,0 +1,270 @@
+{
+  "schema": "GovernedIntakeBodyV1",
+  "version": 18,
+  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. The live Issue Form and portable Markdown body are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Bump version whenever this contract or its generated projections change. The separate triage-policy core is activated through its own integration, not implicitly by this ownership move.",
+  "requiredHeadings": [
+    "Work type",
+    "What happened or what is needed?",
+    "Initial priority guess",
+    "Why this initial priority?",
+    "Relevant details",
+    "Exact leases",
+    "Root-cause taxonomy and disposition",
+    "Durable fix and acceptance",
+    "Human-decision state"
+  ],
+  "workTypes": [
+    {
+      "id": "defect",
+      "label": "Defect",
+      "description": "Unintended behavior, regression, bug, or contract breach.",
+      "authority": "Direct fix within authorized repository lease; defects require DOCTRINE §14 prevention and §18 detect/heal/recover ladders."
+    },
+    {
+      "id": "task",
+      "label": "Task",
+      "description": "Concrete bounded operational or maintenance work without novel architecture.",
+      "authority": "Direct execution within authorized lease."
+    },
+    {
+      "id": "risk-reduction",
+      "label": "Risk reduction",
+      "description": "Proactive hardening, debt reduction, safety guardrails, or vulnerability mitigation.",
+      "authority": "Direct implementation of preventive controls within authorized lease."
+    },
+    {
+      "id": "exploration",
+      "label": "Exploration / design research",
+      "recordKind": "governance/exploration",
+      "description": "Read-only investigation whose immediate terminal outcome is a proposal/recommendation for an explicit design decision.",
+      "authority": "Read-only investigation and proposal only. Completion never confers implementation authority; separate commissioning required."
+    },
+    {
+      "id": "experiment",
+      "label": "Experiment / evidence test",
+      "recordKind": "evidence/experiment",
+      "description": "Bounded reversible empirical test with declared hypothesis, metrics, exposure/effect/budget/privacy authority, TTL, abort/cleanup and result routing.",
+      "authority": "Bounded empirical test execution strictly within already-authorized boundaries. Classification itself confers no effect or exposure authority."
+    },
+    {
+      "id": "feature",
+      "label": "Feature",
+      "description": "New capability, user-visible outcome, or functional expansion.",
+      "authority": "Implementation authorized only within explicit scoped specification and lease."
+    },
+    {
+      "id": "mixed",
+      "label": "Mixed",
+      "description": "Multiple work classes combined in one request; triage decomposes or sequences.",
+      "authority": "Requires triage decomposition into discrete bounded work units before execution."
+    }
+  ],
+  "legacyWorkTypes": [
+    "Discovery / experiment",
+    "Discovery/experiment"
+  ],
+  "workUnitKey": {
+    "heading": "Governed work-unit key",
+    "markerName": "governed-work-unit-key",
+    "algorithm": "sha256",
+    "markerTemplate": "<!-- governed-work-unit-key: sha256:<64 lowercase hex> -->",
+    "markerRegex": "^<!-- governed-work-unit-key: sha256:([0-9a-f]{64}) -->$",
+    "requiredMarkerCount": 1,
+    "identityTuple": [
+      "fixOwnerGitHubSlug",
+      "workType",
+      "canonicalWorkUnitIdentity"
+    ],
+    "normalization": {
+      "sequence": "Apply ECMAScript String.prototype.trim(), then String.prototype.normalize('NFC'), then the field-specific case rule.",
+      "fixOwnerGitHubSlug": "Apply locale-independent String.prototype.toLowerCase() to the normalized owner/repository GitHub slug.",
+      "workType": "Apply locale-independent String.prototype.toLowerCase() to the normalized work type.",
+      "canonicalWorkUnitIdentity": "Preserve the normalized UTF-8 bytes exactly after trim and NFC; do not lowercase, collapse internal whitespace, or rewrite punctuation."
+    },
+    "serialization": "In identityTuple order, frame each normalized value as its UTF-8 byte length in unpadded ASCII decimal, then ASCII ':' (0x3a), then its exact UTF-8 bytes. Join the three framed values with ASCII LF (0x0a), with no trailing LF. SHA-256 hashes these serialized bytes; render the digest as 64 lowercase hexadecimal characters.",
+    "canonicalIdentity": "Choose the smallest durable mechanism or outcome seam that names the work unit. Keep it unchanged when evidence, priority, wording, or comments change.",
+    "collisionHandling": "The same key means the same work unit. If distinct semantics would map to one key, resolve the canonical identities before create; never add randomness, a UUID, or mutable evidence to escape the collision."
+  },
+  "triageChecklist": {
+    "heading": "Triage checklist",
+    "revisionSource": "version",
+    "sectionMarkerName": "governed-triage-checklist",
+    "itemMarkerName": "governed-triage-item",
+    "completionMarkerName": "governed-triage-completion",
+    "fingerprintAlgorithm": "sha256",
+    "fingerprintScope": "Normalize LF, remove governed-triage-completion markers, trim trailing horizontal whitespace per line, trim the whole body, then append sorted unique triage-owned labels other than triaged:v* and SHA-256 the UTF-8 bytes.",
+    "pendingLabels": [
+      "priority:triage-tbd",
+      "work:untriaged"
+    ],
+    "triagedLabelPrefix": "triaged:v",
+    "triageOwnedLabelPatterns": [
+      "^priority:(?:repo|fleet):p\\d+$",
+      "^priority:rubric-v1$",
+      "^priority:triage-tbd$",
+      "^priority:p0-candidate$",
+      "^work:untriaged$",
+      "^effort:",
+      "^tier:",
+      "^human-required$",
+      "^wait-slo-breached$",
+      "^cloud-ready$",
+      "^local-required$"
+    ],
+    "items": [
+      {
+        "id": "canonical-flow",
+        "title": "Canonical flow",
+        "text": "Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose."
+      },
+      {
+        "id": "value-direction",
+        "title": "Value + direction evidence",
+        "text": "Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator."
+      },
+      {
+        "id": "fix-owner-responsibility",
+        "title": "Fix-owner + responsibility",
+        "text": "Verify with `fleet-repo-responsibility-routing`, the target repo's current `AGENTS.md`, and `repos/infra/fleet-registry/dist/fleet-registry-release.json` (`FleetRegistryReleaseV1`). Never substitute retired registry markdown for that release."
+      },
+      {
+        "id": "dedup-queue-synergy",
+        "title": "Dedup + queue synergy",
+        "text": "Search related open/closed work and apply `docs/guides/queue-synergy.md`. Reuse or strengthen the canonical owner instead of creating a parallel implementation track."
+      },
+      {
+        "id": "priority-work-dimensions",
+        "title": "Priority + work dimensions",
+        "text": "Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Missing or unclear effort is not low. Never self-admit P0."
+      },
+      {
+        "id": "verify-human-required",
+        "title": "Verify + human-required fences",
+        "text": "`tier:auto` with `effort:low|medium` requires the current scoped named-file `## Verify` fence. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority."
+      },
+      {
+        "id": "cloud-runnable",
+        "title": "Cloud vs local execution",
+        "text": "Assess the implementation stage using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Before triage can complete, apply exactly one execution-substrate label: `cloud-ready` when implementation can run in an authorized provider-hosted environment, or `local-required` when implementation needs a fleet/local machine. Never leave both or neither on a completed triage. Record `ready` or `not-ready`, a short reason, and any separately required local verification/rollout in the existing triage receipt; an unresolved or `unknown` assessment stays untriaged. If one exact host is required, also apply its machine label."
+      },
+      {
+        "id": "disposition-effect-authority",
+        "title": "Disposition != effect authority",
+        "text": "Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Execute close, move, substantive rewrite, or another restricted GitHub effect only when the current role is authorized; otherwise hand the adjudicated effect to the authorized executor with a durable receipt. Do not keep zombie work alive merely because the current seat cannot execute the terminal effect."
+      },
+      {
+        "id": "higher-intelligence-handoff",
+        "title": "Higher-intelligence handoff",
+        "text": "`effort:high`, unclear effort, `human-required`, material scope change, or programme/epic-shaped work uses the current higher-intelligence triage escalation. Confirmed high-effort work is handed durably to the architect/decomposition owner, which decomposes into executable leaves where appropriate. The triage role does not plan, decompose, mint, or commission implementation writers."
+      },
+      {
+        "id": "github-effects-quota",
+        "title": "GitHub effects + quota",
+        "text": "Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep."
+      },
+      {
+        "id": "confirm-receipt",
+        "title": "Confirm + receipt",
+        "text": "Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence."
+      },
+      {
+        "id": "taxonomy",
+        "title": "Taxonomy",
+        "text": "Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work."
+      }
+    ],
+    "executionSubstrateLabels": [
+      "cloud-ready",
+      "local-required"
+    ]
+  },
+  "taxonomyRanks": [
+    "Subspecies",
+    "Species",
+    "Genus",
+    "Family",
+    "Order",
+    "Class",
+    "Phylum",
+    "Kingdom",
+    "Domain"
+  ],
+  "causalClimbColumns": [
+    "Rank",
+    "Finding",
+    "Disposition",
+    "Reified as"
+  ],
+  "defectLadders": {
+    "prevention": {
+      "id": "A",
+      "name": "Prevention",
+      "heading": "Prevention — never again",
+      "doctrine": "§14",
+      "purpose": "Never again at each subspecies→domain rank. Distinct from detect/heal/recover.",
+      "columns": [
+        "Rank",
+        "Preventive control",
+        "Status"
+      ]
+    },
+    "detectHealRecover": {
+      "id": "B",
+      "name": "Detect / self-heal / recover",
+      "heading": "Detect / self-heal / recover — if it still happens",
+      "doctrine": "§18",
+      "purpose": "If it happens: notice, heal, restore, escalate. Distinct from prevention. Do not collapse into a single Fix or next action column.",
+      "columns": [
+        "Rank",
+        "Notice",
+        "Self-heal / contain",
+        "Restore",
+        "Escalate if no progress",
+        "Status"
+      ]
+    }
+  },
+  "statusTokens": [
+    "landed",
+    "assigned-issue",
+    "already-owned",
+    "inherited",
+    "N/A",
+    "evidence-ceiling",
+    "TBD — triage"
+  ],
+  "taxonomyDisposition": {
+    "requiredAtEveryRank": true,
+    "evidenceCeiling": {
+      "allowedOnlyWhen": "evidence is genuinely unobtainable",
+      "defaultTerminator": false
+    }
+  },
+  "effortCalibration": {
+    "description": "Rules to prevent effort over-inflation during issue intake and triage sweeps.",
+    "tipRedDefectDefault": "effort:medium",
+    "compilerErrorDefault": "effort:medium",
+    "preventionRcaDefault": {
+      "effort": "effort:medium",
+      "requiredLabels": [
+        "decomp-not-needed"
+      ]
+    },
+    "decompNotNeededConstraint": "Any issue marked decomp-not-needed (without decomp/epic) must not retain effort:high; when decomp/epic is present, remove decomp-not-needed instead of down-calibrating effort (code#6006)",
+    "provenanceEffortCoherence": "triaged-by-<model>-<effort> effort slug is the triage seat's execution effort from the route receipt (docs/contracts/issue-triage-provenance.md §4), not a requirement that work-effort labels match (e.g. triaged-by-claude-opus-5-high on effort:medium is lawful; code#6006)"
+  },
+  "idempotency": {
+    "key": "workUnitKey",
+    "description": "Governed intake defines a stable work-unit idempotency key and requires it on new bodies to prevent duplicate issue creation.",
+    "createPathPolicy": "Create path searches the target repo for that key before POST. On match of an existing issue, return that URL and do not mint a twin. Search/create failure must not silently mint a second copy of a key that already exists (fail closed or return existing; do not fall through to create on a known key).",
+    "regressionContract": "Two sequential creates with the same key produce exactly one issue, with the second call returning the first issue URL.",
+    "duplicateHeal": "Triage-time close-as-dup remains the heal for pre-key twins; it is not the prevention."
+  },
+  "projections": {
+    "markdown": "contracts/generated/governed-intake/task.md",
+    "yaml": ".github/ISSUE_TEMPLATE/task.yml",
+    "yamlPublishTarget": "spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml",
+    "forbiddenLocalYaml": ".github/ISSUE_TEMPLATE/task.yml"
+  },
+  "owner": "spencer-shadley/.github"
+}
