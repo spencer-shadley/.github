@@ -134,11 +134,23 @@ test("manifest rejects foreign producer, traversal, aliases, null and absent pay
   writeFileSync(path.join(s.out, "manifest.json"), JSON.stringify(changed));
   assert.equal(verifyGovernedIntakeRelease(s.out).ok, false, "even internally rehashed metadata cannot hide alias mismatch");
 });
-test("missing payload and symlink payload fail closed", (t) => {
+test("missing payload fails closed", (t) => {
   const s = scratch(t);
   unlinkSync(path.join(s.out, "task.md"));
   assert.equal(verifyGovernedIntakeRelease(s.out).ok, false);
-  symlinkSync(path.join(s.source, "contracts/generated/governed-intake/task.md"), path.join(s.out, "task.md"));
+});
+test("symlink payload fails closed when the platform permits symlink creation", (t) => {
+  const s = scratch(t);
+  unlinkSync(path.join(s.out, "task.md"));
+  try {
+    symlinkSync(path.join(s.source, "contracts/generated/governed-intake/task.md"), path.join(s.out, "task.md"));
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && (error.code === "EPERM" || error.code === "EACCES")) {
+      t.skip("platform does not permit file symlink creation in this process");
+      return;
+    }
+    throw error;
+  }
   const result = verifyGovernedIntakeRelease(s.out);
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.code, "corrupt_file");
