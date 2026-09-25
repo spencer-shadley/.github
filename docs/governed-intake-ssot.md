@@ -5,14 +5,30 @@ Owner: `spencer-shadley/.github` · migration: [#13](https://github.com/spencer-
 ## Current state and completion evidence
 
 The live account-wide task form is `.github/ISSUE_TEMPLATE/task.yml` in this repository.
-The semantic source, generator, evaluators, and release builder are still Code compatibility
-producer state while #13 remains in progress. The ownership decision is approved; the source and
-consumer cutover is not proved by changing this document or deleting local templates.
+The live form's complete semantic source, generator, evaluator and release builder still use Code
+compatibility producer state while #13 remains in progress. New triage-policy constituents now live
+in this repository, as described below; they are not yet the admitted live form release. The ownership
+decision is approved; consumer cutover is not proved by source files or deleting local templates.
 
 Read current default-branch source and producer manifests before acting. Do not relabel a Code
 payload as produced by `.github`, fabricate a producer commit/digest, or delete the compatibility
 producer before its consumers have a verified replacement. Completion requires the implementation
 and consumer evidence in #13, not merely closure of a documentation PR.
+
+## Adopted triage-policy source
+
+The approved scope/decomposition policy and effort rubric are authored once in
+[`contracts/governed-intake-triage-policy.v1.json`](../contracts/governed-intake-triage-policy.v1.json).
+Read its [generated guide](triage-policy.md) for the policy, examples and trust boundary; do not
+copy definitions into this guide or provider skills. The pure policy evaluator and delta planner
+beside that source are tested producer constituents, not a second workflow service or a new release
+builder. This source revision is distinct from the live issue-form checklist revision.
+
+The complete release builder must incorporate these constituents, and consumers must bind their
+verified Router/Gateway/graph evidence and existing checklist validation before activation.
+[code#6458](https://github.com/spencer-shadley/code/issues/6458) remains the end-to-end adoption owner.
+The live form is deliberately unchanged until that integration is verified. Source tests do not
+prove deployed model eligibility, generic custody recovery, label cleanup or form inheritance.
 
 ## End state
 

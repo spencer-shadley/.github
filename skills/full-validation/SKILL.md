@@ -26,14 +26,24 @@ Node test, not an affected-files subset:
 node --experimental-strip-types --test test/*.test.ts
 ```
 
-The suite includes template-link checks, PR-contract checks, and intake-guidance regression checks.
+The suite includes template-link, PR-contract and intake-guidance checks, plus the governed triage
+policy evaluator, delta migration planner and deterministic policy-guide generation checks. The
+generation test includes a negative drift control and does not alter the checkout. Also run:
+
+```text
+node --experimental-strip-types contracts/governed-intake-triage-policy.generate.ts --check
+```
+
+Read the [generated triage guide](../../docs/triage-policy.md) for the source/activation boundary.
+The policy tests use normalized trusted evidence fixtures; adapters still must verify actual
+Router/Gateway/graph receipts. These tests do not prove live serving, generic custody or deployment.
 The guidance checks enforce canonical links and known retired instructions; they are not a semantic
 review of every sentence and do not prove that the producer or worker cutover has completed.
 
 If executable tests/checks are added elsewhere, update this skill in the same change so full
 validation continues to mean all repository-owned executable checks. In particular, the producer
-cutover must add deterministic generation/release/evaluator checks; do not report those checks as
-present until their executable implementations are checked in.
+cutover must also cover the complete live-form generation and release/admission integration; the
+new policy-guide generation and pure evaluator checks do not prove that larger cutover is complete.
 
 ## Result
 
