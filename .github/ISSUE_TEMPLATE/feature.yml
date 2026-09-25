@@ -1,41 +1,61 @@
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 19). Do not hand-edit; run:
+#   node --experimental-strip-types contracts/governed-intake-body.generate.ts
+# Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/feature.yml
 name: Feature / engineering leverage
 description: File a concise feature, leverage, risk-reduction, or discovery item for triage.
 title: ""
 labels:
   - agent-review
   - priority:triage-tbd
+  - work:untriaged
 body:
   - type: markdown
     attributes:
       value: |
-        File the smallest useful description. Your priority is an initial guess, not a self-assignment.
-        Triage scans this label at least every 30 minutes; confirmation follows the target for the selected band and is not an execution TTL or stale-date.
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 19).
+        File the smallest useful description. Priority is an initial guess, not a self-assignment.
+        Machine and triage intake use the governed task body and checklist from this producer.
+        This feature chooser is not a second checklist, runtime cadence, or registry/shed form.
+        Normal consumer repositories must not carry local issue-template or chooser overrides.
+        Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.
 
   - type: dropdown
     id: work-type
     attributes:
-      label: Work type
+      label: "Work type"
       options:
-        - Feature
-        - Engineering leverage
+        - Defect
+        - Task
         - Risk reduction
-        - Discovery / experiment
+        - Exploration / design research
+        - Experiment / evidence test
+        - Feature
         - Mixed
     validations:
       required: true
 
   - type: textarea
-    id: outcome
+    id: governed-work-unit-key
     attributes:
-      label: What outcome or question matters?
-      description: Briefly describe the capability, engineering time returned, harm reduced, or decision to unlock.
+      label: "Governed work-unit key"
+      description: |
+        Derive SHA-256 from the normalized tuple `fixOwnerGitHubSlug + workType + canonicalWorkUnitIdentity`. Apply ECMAScript String.prototype.trim(), then String.prototype.normalize('NFC'), then the field-specific case rule. Apply locale-independent String.prototype.toLowerCase() to the normalized owner/repository GitHub slug. Apply locale-independent String.prototype.toLowerCase() to the normalized work type. Preserve the normalized UTF-8 bytes exactly after trim and NFC; do not lowercase, collapse internal whitespace, or rewrite punctuation. In identityTuple order, frame each normalized value as its UTF-8 byte length in unpadded ASCII decimal, then ASCII ':' (0x3a), then its exact UTF-8 bytes. Join the three framed values with ASCII LF (0x0a), with no trailing LF. SHA-256 hashes these serialized bytes; render the digest as 64 lowercase hexadecimal characters. Choose the smallest durable mechanism or outcome seam that names the work unit. Keep it unchanged when evidence, priority, wording, or comments change. The same key means the same work unit. If distinct semantics would map to one key, resolve the canonical identities before create; never add randomness, a UUID, or mutable evidence to escape the collision.
+      placeholder: "<!-- governed-work-unit-key: sha256:<64 lowercase hex> -->"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened-or-what-is-needed
+    attributes:
+      label: "What happened or what is needed?"
+      description: "The user-visible outcome, engineering time returned, harm reduced, or decision to unlock."
     validations:
       required: true
 
   - type: dropdown
     id: initial-priority-guess
     attributes:
-      label: Initial priority guess
+      label: "Initial priority guess"
       description: This starts triage only. P0 is a candidate, not a self-assigned emergency.
       options:
         - P0 candidate
@@ -48,10 +68,10 @@ body:
       required: true
 
   - type: input
-    id: priority-guess-reason
+    id: why-this-initial-priority
     attributes:
-      label: Why this initial priority?
-      description: Give one short reason (for example, current harm, urgency, expected value, or time saved).
+      label: "Why this initial priority?"
+      description: One short reason (current harm, urgency, expected value, or time saved).
       placeholder: One-line reason
     validations:
       required: true
@@ -59,21 +79,16 @@ body:
   - type: textarea
     id: relevant-details
     attributes:
-      label: Relevant details (optional)
-      description: |
-        Add only what applies: expected user or system value, evidence, engineering workflow friction or time saved,
-        failure or harm reduced, or the hypothesis and decision a discovery item will inform.
+      label: "Relevant details"
+      description: Optional evidence, links, or impact. Do not attach a private shed, cadence, or fleet-registry checklist here.
+    validations:
+      required: false
 
-        If this changes fleet lifecycle projection or projects.json shedAbovePct, also complete the shed checklist below.
-
-  - type: checkboxes
-    id: shed-lifecycle-checklist
+  - type: textarea
+    id: human-decision-state
     attributes:
-      label: Shed / lifecycle change checklist (when applicable)
-      description: Required evidence when changing lifecycle or shedAbovePct. Enforcement is the AO projects.json shed gate; this form is the evidence prompt.
-      options:
-        - label: Linked parity / cutover receipt path (or N/A for docs-only projection sync)
-        - label: projects.json and docs/FLEET-REGISTRY.md updated in the same change (or N/A)
-        - label: Commission ref or CEO chat citation recorded
-        - label: Rollback named (unset GATEWAY_POOL_USAGE and/or revert SHA for producer deletes)
-        - label: Repo-flip list reviewed if fleet P composition changes (window-class / Gateway activate)
+      label: "Human-decision state"
+      description: No human decision required, or Decision needed with the exact question for Spencer.
+      value: No human decision required
+    validations:
+      required: true

@@ -21,11 +21,23 @@ export const RELEASE_SOURCE_FILES = {
   "contract.json": "contracts/governed-intake-body.v1.json",
   "governed-intake-body.v1.json": "contracts/governed-intake-body.v1.json",
   "evaluator.ts": "contracts/governed-intake-body.evaluate.ts",
+  "governed-intake-body.evaluate.ts": "contracts/governed-intake-body.evaluate.ts",
   "triage-evaluator.ts": "contracts/governed-intake-triage-state.evaluate.ts",
+  "governed-intake-triage-state.evaluate.ts": "contracts/governed-intake-triage-state.evaluate.ts",
   "generator.ts": "contracts/governed-intake-body.generate.ts",
   "verify.ts": "contracts/governed-intake-release.verify.ts",
   "task.md": "contracts/generated/governed-intake/task.md",
   "task.yml": ".github/ISSUE_TEMPLATE/task.yml",
+  "feature.md": "contracts/generated/governed-intake/feature.md",
+  "feature.yml": ".github/ISSUE_TEMPLATE/feature.yml",
+  "governed-intake-triage-policy.v1.json": "contracts/governed-intake-triage-policy.v1.json",
+  "policy.json": "contracts/governed-intake-triage-policy.v1.json",
+  "governed-intake-triage-policy.evaluate.ts": "contracts/governed-intake-triage-policy.evaluate.ts",
+  "policy-evaluator.ts": "contracts/governed-intake-triage-policy.evaluate.ts",
+  "governed-intake-triage-state.migrate.ts": "contracts/governed-intake-triage-state.migrate.ts",
+  "delta-planner.ts": "contracts/governed-intake-triage-state.migrate.ts",
+  "governed-intake-triage.compose.ts": "contracts/governed-intake-triage.compose.ts",
+  "compose.ts": "contracts/governed-intake-triage.compose.ts",
 } as const;
 export type BuildReleaseOptions = { repoRoot?: string; outputDir?: string; commit: string };
 export function buildGovernedIntakeRelease(options: BuildReleaseOptions) {
@@ -47,9 +59,14 @@ export function buildGovernedIntakeRelease(options: BuildReleaseOptions) {
   for (const source of ["contracts/governed-intake-body.release.ts", "contracts/governed-intake-body.generate.ts"]) {
     assert.ok(readFileSync(path.join(root, source)).equals(execFileSync("git", ["show", `${commit}:${source}`], { cwd: root, windowsHide: true })), `uncommitted producer: ${source}`);
   }
-  for (const payload of ["evaluator.ts", "triage-evaluator.ts", "generator.ts", "verify.ts"]) {
+  const executableJavaScript = (typescript: string): Buffer => {
+    const stripped = stripTypeScriptTypes(typescript, { mode: "strip" });
+    // Portable JS consumers import sibling .js payloads; leave JSON specifiers unchanged.
+    return Buffer.from(stripped.replaceAll(/(["'])(\.\.?\/[^"']+)\.ts\1/g, "$1$2.js$1"), "utf8");
+  };
+  for (const payload of Object.keys(files).filter((name) => name.endsWith(".ts"))) {
     // Ship/hash the actual JavaScript that compiled consumers execute, not only TypeScript.
-    files[payload.replace(/\.ts$/, ".js")] = Buffer.from(stripTypeScriptTypes(files[payload].toString("utf8"), { mode: "strip" }), "utf8");
+    files[payload.replace(/\.ts$/, ".js")] = executableJavaScript(files[payload].toString("utf8"));
   }
   const contract = JSON.parse(files["contract.json"].toString("utf8"));
   assert.equal(contract.schema, RELEASE_SCHEMA_FAMILY);

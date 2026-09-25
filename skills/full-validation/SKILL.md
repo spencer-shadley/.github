@@ -27,8 +27,9 @@ node --experimental-strip-types --test test/*.test.ts
 ```
 
 The suite includes template-link, PR-contract and intake-guidance checks, plus the governed triage
-policy evaluator, delta migration planner and deterministic policy-guide generation checks. The
-generation test includes a negative drift control and does not alter the checkout. Also run:
+policy evaluator, composed body/checklist/policy API, delta migration planner, portable release
+payloads, and deterministic policy-guide generation checks. The generation test includes a negative
+drift control and does not alter the checkout. Also run:
 
 ```text
 node --experimental-strip-types contracts/governed-intake-triage-policy.generate.ts --check

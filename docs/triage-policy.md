@@ -4,9 +4,10 @@
 Source: [governed-intake-triage-policy.v1.json](../contracts/governed-intake-triage-policy.v1.json), policy version 1, rubric version 1.
 Source bytes: `sha256:a6c2124222b4c5babc98e05f140788f7926e9ba2b54ad7200dfdd9f1715c9394`. This is a source digest, not a deployment receipt.
 
-**Activation boundary:** this is a governed-intake source constituent. The live form and
-existing compatibility release are not advanced by this generator. Producer release integration
-and consumer validation remain required under [.github#13](https://github.com/spencer-shadley/.github/issues/13)
+**Activation boundary:** this is a governed-intake source constituent. The producer release
+packages this policy with `evaluateGovernedIntakeTriage`, but checked boxes are not completed
+triage and this generator does not prove Code/CLI consumer cutover.
+Producer release integration and consumer validation remain required under [.github#13](https://github.com/spencer-shadley/.github/issues/13)
 and [code#6458](https://github.com/spencer-shadley/code/issues/6458). Do not claim live adoption from source tests.
 
 ## Workflow

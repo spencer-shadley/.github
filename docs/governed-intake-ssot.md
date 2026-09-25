@@ -5,10 +5,14 @@ Owner: `spencer-shadley/.github` · migration: [#13](https://github.com/spencer-
 ## Current state and completion evidence
 
 The live account-wide task form is `.github/ISSUE_TEMPLATE/task.yml` in this repository.
-The live form's complete semantic source, generator, evaluator and release builder still use Code
-compatibility producer state while #13 remains in progress. New triage-policy constituents now live
-in this repository, as described below; they are not yet the admitted live form release. The ownership
-decision is approved; consumer cutover is not proved by source files or deleting local templates.
+This producer now composes the merged triage-policy evaluator, delta planner, and body/checklist
+fingerprint checks into the verified portable release, including an early `scope-decomposition`
+checklist item. That is source activation of the producer API. It is not proof that Code, CLI, or
+worker consumers have bound adapter-verified Router/Gateway/graph receipts, and it does not close
+[#13](https://github.com/spencer-shadley/.github/issues/13) or
+[code#6458](https://github.com/spencer-shadley/code/issues/6458). Consumer cutover remains a separate
+readback. Do not relabel a Code payload as produced by `.github`, fabricate a producer commit/digest,
+or delete the compatibility producer before its consumers have a verified replacement.
 
 Read current default-branch source and producer manifests before acting. Do not relabel a Code
 payload as produced by `.github`, fabricate a producer commit/digest, or delete the compatibility
@@ -24,11 +28,12 @@ copy definitions into this guide or provider skills. The pure policy evaluator a
 beside that source are tested producer constituents, not a second workflow service or a new release
 builder. This source revision is distinct from the live issue-form checklist revision.
 
-The complete release builder must incorporate these constituents, and consumers must bind their
-verified Router/Gateway/graph evidence and existing checklist validation before activation.
+The portable release now includes the policy JSON, pure policy evaluator, delta planner, composition
+API, and their executable JavaScript. Consumers must still bind adapter-verified Router/Gateway/graph
+evidence; a legacy caller with only checked boxes cannot report completed triage.
 [code#6458](https://github.com/spencer-shadley/code/issues/6458) remains the end-to-end adoption owner.
-The live form is deliberately unchanged until that integration is verified. Source tests do not
-prove deployed model eligibility, generic custody recovery, label cleanup or form inheritance.
+Source tests do not prove deployed model eligibility, generic custody recovery, label cleanup, or
+live form inheritance on public and private repositories.
 
 ## End state
 

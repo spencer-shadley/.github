@@ -14,6 +14,8 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
+import { validateChecklistRelease, type ChecklistItem } from "./governed-intake-triage-state.migrate.ts";
+import policy from "./governed-intake-triage-policy.v1.json" with { type: "json" };
 
 const THIS_FILE = fileURLToPath(import.meta.url);
 const CONTRACTS_DIR = path.dirname(THIS_FILE);
@@ -117,13 +119,35 @@ function assertTriageChecklistContract(raw: ReturnType<typeof JSON.parse>) {
   assert.deepEqual(checklist.executionSubstrateLabels, ["cloud-ready", "local-required"]);
   for (const label of checklist.executionSubstrateLabels) assert.ok(checklist.triageOwnedLabelPatterns.includes(`^${label}$`));
   assert.ok(Array.isArray(checklist.items) && checklist.items.length > 0);
-  const ids = checklist.items.map((item) => item.id);
+  const ids: string[] = checklist.items.map((item: ChecklistItem) => item.id);
   assert.equal(new Set(ids).size, ids.length, "triage checklist item ids must be unique");
   for (const item of checklist.items) {
     assert.match(item.id, /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     assert.ok(typeof item.title === "string" && item.title.length > 0);
     assert.ok(typeof item.text === "string" && item.text.length > 0);
   }
+  const order = validateChecklistRelease({ revision: raw.version, items: checklist.items });
+  const scopeId = policy.workflow.scopeItemId;
+  assert.ok(ids.includes(scopeId), "canonical scope-decomposition item is required");
+  const preflight = ["canonical-flow", "value-direction", "fix-owner-responsibility", "dedup-queue-synergy"];
+  const finals = ["priority-work-dimensions", "verify-human-required", "cloud-runnable"];
+  for (const id of preflight) assert.ok(ids.indexOf(id) < ids.indexOf(scopeId), `${id} must precede ${scopeId}`);
+  for (const id of finals) assert.ok(ids.indexOf(scopeId) < ids.indexOf(id), `${scopeId} must precede ${id}`);
+  assert.ok(order.indexOf(scopeId) < order.indexOf("priority-work-dimensions"), "execution order must resolve scope before final attributes");
+  const semantics = (item: ChecklistItem | undefined): Record<string, unknown> =>
+    item?.semantics && typeof item.semantics === "object" && !Array.isArray(item.semantics)
+      ? item.semantics as Record<string, unknown>
+      : {};
+  const scope = checklist.items.find((item: ChecklistItem) => item.id === scopeId);
+  assert.equal(semantics(scope).childTriageRequiresParentStamp, false);
+  assert.equal(semantics(scope).legacyProgressLabelRequired, false);
+  const verify = checklist.items.find((item: ChecklistItem) => item.id === "verify-human-required");
+  assert.deepEqual(semantics(verify).verifyFenceRequiredFor, ["ordinary-auto", "atomic-high-auto"]);
+  assert.equal(semantics(verify).trackingParentInheritsChildVerify, false);
+  assert.equal(raw.effortCalibration?.source, "contracts/governed-intake-triage-policy.v1.json");
+  assert.equal(raw.effortCalibration?.preventionRcaDefault, undefined);
+  assert.equal(raw.effortCalibration?.tipRedDefectDefault, undefined);
+  assert.match(raw.effortCalibration?.description ?? "", /unknown, not low/);
 }
 
 export function loadContract(root = REPO_ROOT) {
@@ -160,6 +184,8 @@ export function loadContract(root = REPO_ROOT) {
     false,
   );
   assertTriageChecklistContract(raw);
+  assert.equal(raw.projections?.featureMarkdown, "contracts/generated/governed-intake/feature.md");
+  assert.equal(raw.projections?.featureYaml, ".github/ISSUE_TEMPLATE/feature.yml");
   assert.ok(Array.isArray(raw.taxonomyRanks) && raw.taxonomyRanks.length === 9);
   assert.deepEqual(raw.taxonomyRanks, [
     "Subspecies",
@@ -538,11 +564,151 @@ export function generateTaskYaml(contract) {
   ].join("\n");
 }
 
+export function generateFeatureMarkdown(contract) {
+  const workUnitKey = contract.workUnitKey;
+  return [
+    "---",
+    "name: Feature / engineering leverage",
+    "about: Concise feature, leverage, risk-reduction, or discovery item for triage",
+    "labels: agent-review, priority:triage-tbd, work:untriaged",
+    "---",
+    "",
+    generatedBanner(contract),
+    "",
+    "Machine and triage intake use the governed task body and checklist from this producer.",
+    "This feature chooser is not a second checklist, cadence schedule, or registry/shed form.",
+    "",
+    "## Work type",
+    `<!-- ${contract.workTypes.map((wt: { label: string }) => wt.label).join(" | ")} -->`,
+    "",
+    `## ${workUnitKey.heading}`,
+    `<!-- ${workUnitKeyGuidance(workUnitKey)} Before governed create, replace the placeholder digest below and leave exactly one marker in the body. -->`,
+    workUnitKey.markerTemplate,
+    "",
+    "## What happened or what is needed?",
+    "<!-- The user-visible outcome, engineering time returned, harm reduced, or decision to unlock. -->",
+    "",
+    "## Initial priority guess",
+    "<!-- P0 candidate | P1 | P2 | P3 | P4 | P5. Priority is an initial guess, not a self-assignment. -->",
+    "",
+    "## Why this initial priority?",
+    "<!-- One short reason: current harm, urgency, expected value, or time saved. -->",
+    "",
+    "## Relevant details",
+    "<!-- Optional evidence, links, impact. Do not attach a private shed, cadence, or fleet-registry checklist here. -->",
+    "",
+    "## Human-decision state",
+    "<!-- No human decision required | Decision needed: <exact question for Spencer> -->",
+    "No human decision required",
+    "",
+  ].join("\n");
+}
+
+export function generateFeatureYaml(contract) {
+  const workUnitKey = contract.workUnitKey;
+  const intro = [
+    `Generated projection of spencer-shadley/.github \`contracts/governed-intake-body.v1.json\` (GovernedIntakeBodyV1 version ${contract.version}).`,
+    "File the smallest useful description. Priority is an initial guess, not a self-assignment.",
+    "Machine and triage intake use the governed task body and checklist from this producer.",
+    "This feature chooser is not a second checklist, runtime cadence, or registry/shed form.",
+    "Normal consumer repositories must not carry local issue-template or chooser overrides.",
+    "Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.",
+  ].join("\n");
+  return [
+    `# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version ${contract.version}). Do not hand-edit; run:`,
+    "#   node --experimental-strip-types contracts/governed-intake-body.generate.ts",
+    "# Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/feature.yml",
+    "name: Feature / engineering leverage",
+    "description: File a concise feature, leverage, risk-reduction, or discovery item for triage.",
+    "title: \"\"",
+    "labels:",
+    "  - agent-review",
+    "  - priority:triage-tbd",
+    "  - work:untriaged",
+    "body:",
+    "  - type: markdown",
+    "    attributes:",
+    "      value: |",
+    yamlMultiline(intro, 8),
+    "",
+    "  - type: dropdown",
+    `    id: ${slug("Work type")}`,
+    "    attributes:",
+    `      label: ${yamlQuote("Work type")}`,
+    "      options:",
+    ...contract.workTypes.map((wt: { label: string }) => `        - ${wt.label}`),
+    "    validations:",
+    "      required: true",
+    "",
+    "  - type: textarea",
+    `    id: ${slug(workUnitKey.heading)}`,
+    "    attributes:",
+    `      label: ${yamlQuote(workUnitKey.heading)}`,
+    "      description: |",
+    yamlMultiline(workUnitKeyGuidance(workUnitKey), 8),
+    `      placeholder: ${yamlQuote(workUnitKey.markerTemplate)}`,
+    "    validations:",
+    "      required: true",
+    "",
+    "  - type: textarea",
+    `    id: ${slug("What happened or what is needed?")}`,
+    "    attributes:",
+    `      label: ${yamlQuote("What happened or what is needed?")}`,
+    `      description: ${yamlQuote("The user-visible outcome, engineering time returned, harm reduced, or decision to unlock.")}`,
+    "    validations:",
+    "      required: true",
+    "",
+    "  - type: dropdown",
+    `    id: ${slug("Initial priority guess")}`,
+    "    attributes:",
+    `      label: ${yamlQuote("Initial priority guess")}`,
+    "      description: This starts triage only. P0 is a candidate, not a self-assigned emergency.",
+    "      options:",
+    "        - P0 candidate",
+    "        - P1",
+    "        - P2",
+    "        - P3",
+    "        - P4",
+    "        - P5",
+    "    validations:",
+    "      required: true",
+    "",
+    "  - type: input",
+    `    id: ${slug("Why this initial priority?")}`,
+    "    attributes:",
+    `      label: ${yamlQuote("Why this initial priority?")}`,
+    "      description: One short reason (current harm, urgency, expected value, or time saved).",
+    "      placeholder: One-line reason",
+    "    validations:",
+    "      required: true",
+    "",
+    "  - type: textarea",
+    `    id: ${slug("Relevant details")}`,
+    "    attributes:",
+    `      label: ${yamlQuote("Relevant details")}`,
+    "      description: Optional evidence, links, or impact. Do not attach a private shed, cadence, or fleet-registry checklist here.",
+    "    validations:",
+    "      required: false",
+    "",
+    "  - type: textarea",
+    `    id: ${slug("Human-decision state")}`,
+    "    attributes:",
+    `      label: ${yamlQuote("Human-decision state")}`,
+    "      description: No human decision required, or Decision needed with the exact question for Spencer.",
+    "      value: No human decision required",
+    "    validations:",
+    "      required: true",
+    "",
+  ].join("\n");
+}
+
 export function projectionPaths(root = REPO_ROOT) {
   const contract = loadContract(root);
   return {
     markdown: path.join(root, contract.projections.markdown),
     yaml: path.join(root, contract.projections.yaml),
+    featureMarkdown: path.join(root, contract.projections.featureMarkdown),
+    featureYaml: path.join(root, contract.projections.featureYaml),
     forbiddenLocalYaml: path.join(root, contract.projections.forbiddenLocalYaml),
   };
 }
@@ -561,6 +727,8 @@ export function checkProjections(root = REPO_ROOT) {
   const paths = projectionPaths(root);
   assert.equal(readFileSync(paths.markdown, "utf8"), generateTaskMarkdown(contract), "Markdown projection drift");
   assert.equal(readFileSync(paths.yaml, "utf8"), generateTaskYaml(contract), "live Issue Form projection drift");
+  assert.equal(readFileSync(paths.featureMarkdown, "utf8"), generateFeatureMarkdown(contract), "feature Markdown projection drift");
+  assert.equal(readFileSync(paths.featureYaml, "utf8"), generateFeatureYaml(contract), "feature Issue Form projection drift");
   return runSelfcheck(root);
 }
 
@@ -569,12 +737,18 @@ export function writeProjections(root = REPO_ROOT) {
   const contract = loadContract(root);
   const markdown = generateTaskMarkdown(contract);
   const yaml = generateTaskYaml(contract);
+  const featureMarkdown = generateFeatureMarkdown(contract);
+  const featureYaml = generateFeatureYaml(contract);
   const paths = projectionPaths(root);
   mkdirSync(path.dirname(paths.markdown), { recursive: true });
   mkdirSync(path.dirname(paths.yaml), { recursive: true });
+  mkdirSync(path.dirname(paths.featureMarkdown), { recursive: true });
+  mkdirSync(path.dirname(paths.featureYaml), { recursive: true });
   writeFileSync(paths.markdown, markdown, "utf8");
   writeFileSync(paths.yaml, yaml, "utf8");
-  return { markdown, yaml, paths };
+  writeFileSync(paths.featureMarkdown, featureMarkdown, "utf8");
+  writeFileSync(paths.featureYaml, featureYaml, "utf8");
+  return { markdown, yaml, featureMarkdown, featureYaml, paths };
 }
 
 function assertIncludes(haystack, needle, label) {
@@ -662,6 +836,28 @@ export function runSelfcheck(root = REPO_ROOT) {
   }
   assert.equal(markdown.includes("Discovery / experiment"), false, "md must not contain legacy combined option");
   assert.equal(yaml.includes("Discovery / experiment"), false, "yaml must not contain legacy combined option");
+  const itemIds: string[] = checklist.items.map((item: { id: string }) => item.id);
+  assert.ok(itemIds.indexOf("scope-decomposition") > itemIds.indexOf("dedup-queue-synergy"), "scope item follows value/dedup");
+  assert.ok(itemIds.indexOf("scope-decomposition") < itemIds.indexOf("priority-work-dimensions"), "scope item precedes final attributes");
+  assert.match(markdown, /Child triage does not wait for a parent completion stamp/);
+  assert.match(yaml, /qualified `effort:high` atomic leaves/);
+  assert.equal(markdown.includes("The triage role does not plan, decompose, mint, or commission implementation writers."), false);
+  assert.equal(JSON.stringify(contract.effortCalibration).includes("preventionRcaDefault"), false);
+  assert.equal(JSON.stringify(contract.effortCalibration).includes("tipRedDefectDefault"), false);
+
+  const featureMarkdown = generateFeatureMarkdown(contract);
+  const featureYaml = generateFeatureYaml(contract);
+  assertIncludes(featureMarkdown, versionStamp, "feature md contract version stamp");
+  assertIncludes(featureYaml, versionStamp, "feature yaml contract version stamp");
+  for (const wt of contract.workTypes) {
+    assertIncludes(featureMarkdown, wt.label, `feature md work type ${wt.label}`);
+    assertIncludes(featureYaml, `- ${wt.label}`, `feature yaml work type ${wt.label}`);
+  }
+  assert.equal(featureYaml.includes("Discovery / experiment"), false, "feature yaml must not contain legacy combined option");
+  assert.equal(featureYaml.includes("at least every 30 minutes"), false, "feature form must not own runtime cadence");
+  assert.equal(featureYaml.includes("FLEET-REGISTRY.md"), false, "feature form must not own private registry checklist");
+  assert.equal(featureYaml.includes("shedAbovePct"), false, "feature form must not own shed checklist");
+  assert.equal(featureMarkdown.includes("at least every 30 minutes"), false, "feature md must not own runtime cadence");
 
   const withoutDomain = markdown.replaceAll("| Domain |", "| Domaine |");
   const missingRanks = contract.taxonomyRanks.filter(
@@ -688,5 +884,7 @@ if (invokedDirectly) {
     const { paths } = writeProjections();
     console.log(`governed-intake-body.generate: wrote ${paths.markdown}`);
     console.log(`governed-intake-body.generate: wrote ${paths.yaml}`);
+    console.log(`governed-intake-body.generate: wrote ${paths.featureMarkdown}`);
+    console.log(`governed-intake-body.generate: wrote ${paths.featureYaml}`);
   }
 }
