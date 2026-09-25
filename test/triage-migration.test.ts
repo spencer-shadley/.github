@@ -33,7 +33,8 @@ test('expired direction + changed cloud semantics is exactly the two-item delta'
 for (const field of ['title', 'text', 'semantics'] as const) {
   test(`stable ID with changed ${field} is not silently reused`, () => {
     const before = priorRelease(); const after = structuredClone(before); after.revision++;
-    after.items[2][field] = field === 'semantics' ? { required: 'new-evidence' } : 'Changed requirement';
+    if (field === 'semantics') after.items[2].semantics = { required: 'new-evidence' };
+    else after.items[2][field] = 'Changed requirement';
     assert.deepEqual(pending(planChecklistDelta(before, after, evidence())), ['effort']);
   });
 }
