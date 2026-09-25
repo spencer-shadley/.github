@@ -6,7 +6,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import governedContractJson from "./governed-intake-body.v1.json" with { type: "json" };
 
 export type IntakeLadder = {
   id?: string;
@@ -190,8 +190,8 @@ export function loadGovernedIntakeContract(contractSource?: string | URL | Intak
   if (contractSource && typeof contractSource === "object" && !(contractSource instanceof URL)) {
     return contractSource as IntakeContract;
   }
-  const source = contractSource ?? new URL("./governed-intake-body.v1.json", import.meta.url);
-  const raw: unknown = JSON.parse(readFileSync(source, "utf8"));
+  if (contractSource !== undefined) throw new TypeError("portable contract evaluator accepts a verified contract object, not a filesystem path");
+  const raw: unknown = governedContractJson;
   if (!raw || typeof raw !== "object") {
     throw new TypeError("governed-intake-body: contract is not an object");
   }

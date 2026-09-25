@@ -17,7 +17,7 @@ import {
   renderTriageChecklistBlock,
   renderTriageCompletionMarker,
   computeTriageStateFingerprint,
-  evaluateTriageChecklistState,
+  evaluateTriageChecklistStructure as evaluateTriageChecklistState,
   CURRENT_TRIAGED_LABEL,
 } from "../contracts/governed-intake-triage-state.evaluate.ts";
 import {
@@ -30,7 +30,8 @@ import { planChecklistDelta, validateChecklistRelease } from "../contracts/gover
 import {
   boundTriagePolicyFromProducer,
   currentChecklistRelease,
-  evaluateGovernedIntakeTriage,
+  evaluateGovernedIntakeTriage as evaluateProducerTriage,
+  fingerprintIssueScope, bindTriagePolicy,
   type SemanticEvidenceInput,
 } from "../contracts/governed-intake-triage.compose.ts";
 
@@ -38,9 +39,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = loadContract(root);
 const bound = boundTriagePolicyFromProducer();
 const identity = { fixOwnerGitHubSlug: "Spencer-Shadley/.github", workType: "Task", canonicalWorkUnitIdentity: "policy activation" };
+const actualIssue = { repository: "spencer-shadley/.github", issueNumber: 19, title: "Activate policy" };
+const evaluateGovernedIntakeTriage = (input: Parameters<typeof evaluateProducerTriage>[0]) => evaluateProducerTriage({ subject: actualIssue, ...input });
 const subject = {
-  workUnitKey: computeGovernedWorkUnitKey(identity),
-  scopeFingerprint: "sha256:scope",
+  workUnitKey: `sha256:${computeGovernedWorkUnitKey(identity)}`,
+  scopeFingerprint: fingerprintIssueScope({ ...actualIssue, body: validBody() }),
   policyIdentity: bound.policyIdentity,
   rubricIdentity: bound.rubricIdentity,
 };
@@ -331,4 +334,83 @@ test("compose source API has no decomp-in-progress requirement", () => {
   assert.equal(/decomp-in-progress/.test(source), false);
   assert.match(source, /adapter-verified/);
   assert.equal(/eligible\s*:\s*true/.test(source), false);
+});
+
+
+test("identical claimed subject pairs cannot attest a different real issue", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = await verifiedEvidence("ordinary");
+  const result = await evaluateGovernedIntakeTriage({ subject: { ...actualIssue, issueNumber: 20 }, body, labels, evidence });
+  assert.equal(result.status, "pending");
+  assert.equal(result.scopeResolved, false);
+  assert.ok(result.reasons.includes("scope_evidence_subject_mismatch"));
+});
+test("matching forged work-unit pair cannot replace the actual body marker", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = await verifiedEvidence("ordinary");
+  evidence.workUnitKey = "sha256:" + "b".repeat(64);
+  evidence.assessment!.workUnitKey = evidence.workUnitKey;
+  evidence.assessment!.assessmentFingerprint = await fingerprintAssessment(evidence.assessment!, null);
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+  assert.equal(result.status, "pending");
+  assert.ok(result.reasons.includes("work_unit_evidence_subject_mismatch"));
+});
+test("omitting server-fetched subject metadata is never semantic completion", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const result = await evaluateProducerTriage({ body, labels, evidence: await verifiedEvidence("ordinary") });
+  assert.equal(result.status, "pending");
+  assert.ok(result.reasons.includes("missing_or_invalid_subject_identity"));
+});
+test("title and actual scope changes invalidate evidence but checkbox changes do not", async () => {
+  const original = validBody();
+  const checked = original + "\n" + renderTriageChecklistBlock({ checked: true });
+  const unchecked = original + "\n" + renderTriageChecklistBlock({ checked: false });
+  const fingerprint = fingerprintIssueScope({ ...actualIssue, body: original });
+  assert.equal(fingerprintIssueScope({ ...actualIssue, body: checked }), fingerprint);
+  assert.equal(fingerprintIssueScope({ ...actualIssue, body: unchecked }), fingerprint);
+  assert.notEqual(fingerprintIssueScope({ ...actualIssue, title: "Different outcome", body: original }), fingerprint);
+  assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: original.replace("Activate early decomposition", "Remove verification entirely") }), fingerprint);
+});
+test("all consumers share canonical semantic policy and rubric identities", () => {
+  const reordered = Object.fromEntries(Object.entries(bound.policy).reverse());
+  const rebound = bindTriagePolicy(JSON.parse(JSON.stringify(reordered)));
+  assert.equal(rebound.policyIdentity, bound.policyIdentity);
+  assert.equal(rebound.rubricIdentity, bound.rubricIdentity);
+  const changed = structuredClone(bound.policy);
+  changed.effortRubric.version++;
+  const revised = bindTriagePolicy(changed);
+  assert.notEqual(revised.policyIdentity, bound.policyIdentity);
+  assert.notEqual(revised.rubricIdentity, bound.rubricIdentity);
+});
+test("portable evaluator and composition import no filesystem or process modules", () => {
+  for (const name of ["governed-intake-body.evaluate.ts", "governed-intake-policy-binding.ts", "governed-intake-triage.compose.ts"]) {
+    const source = readFileSync(path.join(root, "contracts", name), "utf8");
+    assert.doesNotMatch(source, /from\s+["']node:(?:fs|child_process|process)["']/);
+  }
+});
+
+
+test("legacy public two-argument checklist API cannot restamp unresolved work", async () => {
+  const { evaluateTriageChecklistState: publicState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const result = await publicState(body, labels);
+  assert.equal(result.needs_triage, true);
+  assert.ok(result.reasons.includes("semantic_evidence_required"));
+  assert.ok(result.unchecked_item_ids.includes("scope-decomposition"));
+});
+test("public checklist API composes verified ordinary evidence rather than blocking every issue", async () => {
+  const { evaluateTriageChecklistState: publicState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const result = await publicState(body, labels, { subject: actualIssue, evidence: await verifiedEvidence("ordinary") });
+  assert.equal(result.needs_triage, false, JSON.stringify(result.semantic_reasons));
+  assert.equal(result.scope_resolved, true);
+});
+test("public checklist API cannot hide missing atomic confirmation behind checked boxes", async () => {
+  const { evaluateTriageChecklistState: publicState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("atomic-high"));
+  const evidence = await verifiedEvidence("atomic-high");
+  evidence.trusted.admissions = evidence.trusted.admissions.filter(row => row.role !== "atomic-confirmation");
+  const result = await publicState(body, labels, { subject: actualIssue, evidence });
+  assert.equal(result.needs_triage, true);
+  assert.equal(result.scope_resolved, false);
 });

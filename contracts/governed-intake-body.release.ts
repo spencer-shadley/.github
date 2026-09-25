@@ -38,6 +38,8 @@ export const RELEASE_SOURCE_FILES = {
   "delta-planner.ts": "contracts/governed-intake-triage-state.migrate.ts",
   "governed-intake-triage.compose.ts": "contracts/governed-intake-triage.compose.ts",
   "compose.ts": "contracts/governed-intake-triage.compose.ts",
+  "governed-intake-policy-binding.ts": "contracts/governed-intake-policy-binding.ts",
+  "policy-binding.ts": "contracts/governed-intake-policy-binding.ts",
 } as const;
 export type BuildReleaseOptions = { repoRoot?: string; outputDir?: string; commit: string };
 export function buildGovernedIntakeRelease(options: BuildReleaseOptions) {

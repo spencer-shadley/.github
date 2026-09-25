@@ -9,7 +9,7 @@ import { loadContract, generateTaskMarkdown, generateTaskYaml, checkProjections,
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
 import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
-import { renderTriageChecklistBlock, renderTriageCompletionMarker, computeTriageStateFingerprint, evaluateTriageChecklistState, CURRENT_TRIAGED_LABEL } from "../contracts/governed-intake-triage-state.evaluate.ts";
+import { renderTriageChecklistBlock, renderTriageCompletionMarker, computeTriageStateFingerprint, evaluateTriageChecklistStructure as evaluateTriageChecklistState, CURRENT_TRIAGED_LABEL } from "../contracts/governed-intake-triage-state.evaluate.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const c = loadContract(root);

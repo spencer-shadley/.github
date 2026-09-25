@@ -22,6 +22,8 @@ export const REQUIRED_RELEASE_PAYLOADS = [
   "delta-planner.ts", "delta-planner.js",
   "governed-intake-triage.compose.ts", "governed-intake-triage.compose.js",
   "compose.ts", "compose.js",
+  "governed-intake-policy-binding.ts", "governed-intake-policy-binding.js",
+  "policy-binding.ts", "policy-binding.js",
 ] as const;
 export type GovernedIntakeReleaseFileEntry = { path: string; sha256: string; byteLength: number };
 export type GovernedIntakeReleaseManifest = {

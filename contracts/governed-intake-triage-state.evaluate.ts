@@ -54,7 +54,9 @@ export type TriageChecklistReason =
   | "duplicate_triaged_stamp"
   | "pending_marker_present"
   | "missing_execution_substrate_label"
-  | "conflicting_execution_substrate_labels";
+  | "conflicting_execution_substrate_labels"
+  | "semantic_evidence_required"
+  | "semantic_evaluation_pending";
 
 export interface TriageChecklistState {
   needs_triage: boolean;
@@ -256,7 +258,7 @@ function checklistItems(section: string): {
   return { observed, unchecked, malformed };
 }
 
-export async function evaluateTriageChecklistState(
+export async function evaluateTriageChecklistStructure(
   body: string | null | undefined,
   labels: readonly string[],
 ): Promise<TriageChecklistState> {
@@ -349,4 +351,24 @@ export async function evaluateTriageChecklistState(
 
 export function triageProjectionErrorMessage(state: TriageChecklistState): string {
   return `Refused triage completion projection: ${state.current_triaged_label} requires one current complete checklist and matching ${GOVERNED_TRIAGE_CHECKLIST.completionMarkerName} fingerprint; reasons=${state.reasons.join(",") || "unknown"}.`;
+}
+
+
+/** Public completion API: structural checks alone are not semantic triage completion. */
+export async function evaluateTriageChecklistState(
+  body: string,
+  labels: readonly string[] = [],
+  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId">,
+): Promise<TriageChecklistState & { semantic_reasons?: string[]; scope_resolved?: boolean }> {
+  const structure = await evaluateTriageChecklistStructure(body, labels);
+  if (!semanticInput) return { ...structure, needs_triage: true,
+    unchecked_item_ids: [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
+    reasons: [...new Set([...structure.reasons, "semantic_evidence_required" as const])],
+    semantic_reasons: ["missing_semantic_evidence"], scope_resolved: false };
+  const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.ts");
+  const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
+  return { ...structure, needs_triage: result.needsTriage,
+    unchecked_item_ids: result.scopeResolved ? structure.unchecked_item_ids : [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
+    reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending" as const])] : structure.reasons,
+    semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };
 }

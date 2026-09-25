@@ -11,11 +11,11 @@
  * Consumer cutover is out of band: this producer exposes the typed API and portable
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
-import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { validateGovernedIntakeBody, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
+import { boundTriagePolicyFromProducer, fingerprintIssueScope, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
+export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.ts";
+import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
 import {
-  evaluateTriageChecklistState,
+  evaluateTriageChecklistStructure,
   CURRENT_TRIAGE_REVISION,
   type TriageChecklistState,
 } from "./governed-intake-triage-state.evaluate.ts";
@@ -40,22 +40,12 @@ import {
 } from "./governed-intake-triage-state.migrate.ts";
 import bodyContract from "./governed-intake-body.v1.json" with { type: "json" };
 
-const POLICY_URL = new URL("./governed-intake-triage-policy.v1.json", import.meta.url);
-const POLICY_BYTES = readFileSync(POLICY_URL);
 
 export const POLICY_PAYLOAD_NAME = "governed-intake-triage-policy.v1.json";
 export const COMPOSE_CONSUMER_CUTOVER = false as const;
 
 const unique = (values: readonly string[]): string[] => [...new Set(values)];
 const nonempty = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
-
-export function boundTriagePolicyFromProducer(): BoundTriagePolicy {
-  const policy = JSON.parse(POLICY_BYTES.toString("utf8")) as TriagePolicy;
-  assertTriagePolicy(policy);
-  const policyIdentity = `sha256:${createHash("sha256").update(POLICY_BYTES).digest("hex")}`;
-  const rubricIdentity = `${policyIdentity}#effortRubric:${policy.effortRubric.version}`;
-  return { policy, policyIdentity, rubricIdentity };
-}
 
 export function currentChecklistRelease(): ChecklistRelease {
   const items = (bodyContract as { triageChecklist: { items: ChecklistItem[] } }).triageChecklist.items;
@@ -85,6 +75,8 @@ export type SemanticEvidenceInput =
     };
 
 export interface ComposedTriageInput {
+  /** Actual server-fetched GitHub subject; never derived from the evidence being checked. */
+  subject?: Omit<IssueScopeSource, "body">;
   body: string;
   labels: readonly string[];
   evidence: SemanticEvidenceInput;
@@ -124,7 +116,7 @@ function asStatus(reasons: readonly string[], policy: PolicyEvaluation | null): 
 export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): Promise<ComposedTriageResult> {
   const bound = boundTriagePolicyFromProducer();
   const body = validateGovernedIntakeBody(input.body);
-  const checklist = await evaluateTriageChecklistState(input.body, input.labels);
+  const checklist = await evaluateTriageChecklistStructure(input.body, input.labels);
   const reasons: string[] = [];
   if (!body.ok) reasons.push("body_invalid");
   if (checklist.needs_triage) reasons.push("checklist_incomplete");
@@ -204,9 +196,18 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
     };
   }
 
+  const actualKey = validateGovernedWorkUnitKey(input.body);
+  let actualScope = "invalid:missing_subject_identity";
+  try {
+    if (!input.subject) throw new TypeError("missing actual GitHub subject");
+    actualScope = fingerprintIssueScope({ ...input.subject, body: input.body });
+  } catch { reasons.push("missing_or_invalid_subject_identity"); }
+  if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
+  if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
+
   const snapshot: PolicySnapshot = {
-    workUnitKey: evidence.workUnitKey,
-    scopeFingerprint: evidence.scopeFingerprint,
+    workUnitKey: actualKey.key ?? "invalid:work_unit_key",
+    scopeFingerprint: actualScope,
     policyIdentity: bound.policyIdentity,
     rubricIdentity: bound.rubricIdentity,
     state: evidence.state,
