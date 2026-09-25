@@ -1,6 +1,6 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 17). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 18). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
-# Publish target: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
+# Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
 description: Triage-ready issue — the autonomous pipeline authors a plan from this
 title: ""
@@ -12,9 +12,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of Code `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 17).
-        Copy this file to spencer-shadley/.github `.github/ISSUE_TEMPLATE/task.yml`.
-        Do not add task.yml under Code `.github/ISSUE_TEMPLATE/` (a local yaml/md pair suppresses org defaults).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 18).
+        This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
+        Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
         Defects must complete Prevention (never again, §14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.
         Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.
@@ -49,7 +49,7 @@ body:
     id: what-happened-or-what-is-needed
     attributes:
       label: "What happened or what is needed?"
-      description: One paragraph. For bugs: symptom + repro. For features: the user-visible outcome.
+      description: "One paragraph. For bugs: symptom + repro. For features: the user-visible outcome."
     validations:
       required: true
 
@@ -83,7 +83,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=17 -->
+        <!-- governed-triage-checklist: revision=18 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -154,9 +154,9 @@ body:
         | Phylum | <!-- ownership/lifecycle structure --> | <!-- disposition --> | issue/plan or TBD — triage |
         | Kingdom | <!-- incentive / reward shape --> | <!-- disposition --> | issue/plan or TBD — triage |
         | Domain | <!-- optimization model --> | <!-- disposition --> | CEO / terminal stop reason |
-        
+
         ### A. Prevention — never again
-        
+
         | Rank | Preventive control | Status |
         |---|---|---|
         | Subspecies | <!-- control so this occurrence cannot recur --> | TBD — triage |
@@ -168,9 +168,9 @@ body:
         | Phylum | <!-- org/process that owns the class --> | TBD — triage |
         | Kingdom | <!-- governance that does not reward this mode --> | TBD — triage |
         | Domain | <!-- objective that does not select for this class --> | TBD — triage |
-        
+
         ### B. Detect / self-heal / recover — if it still happens
-        
+
         | Rank | Notice | Self-heal / contain | Restore | Escalate if no progress | Status |
         |---|---|---|---|---|---|
         | Subspecies | <!-- how this occurrence is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
