@@ -446,7 +446,7 @@ export function generateTaskYaml(contract) {
     `    id: ${slug("What happened or what is needed?")}`,
     "    attributes:",
     `      label: ${yamlQuote("What happened or what is needed?")}`,
-    "      description: One paragraph. For bugs: symptom + repro. For features: the user-visible outcome.",
+    `      description: ${yamlQuote("One paragraph. For bugs: symptom + repro. For features: the user-visible outcome.")}`,
     "    validations:",
     "      required: true",
     "",
