@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import policyJson from "./governed-intake-triage-policy.v1.json" with { type: "json" };
 import contractJson from "./governed-intake-body.v1.json" with { type: "json" };
 import { assertTriagePolicy,                                           } from "./governed-intake-triage-policy.evaluate.js";
+import { renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.js";
 import { normalizeLf, validateGovernedWorkUnitKey } from "./governed-intake-body.evaluate.js";
 
 /** Canonical JSON ignores object-key order, not array order or substantive values. */
@@ -39,8 +40,14 @@ export function normalizeIssueScopeBody(body        )         {
   const checklist = contractJson.triageChecklist;
   const escape = (text        )         => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   let text = normalizeLf(body);
-  const block = new RegExp(`<!--\\s*${escape(checklist.sectionMarkerName)}:[\\s\\S]*?<!--\\s*\\/${escape(checklist.sectionMarkerName)}\\s*-->`, "g");
-  text = text.replace(block, "");
+  const block = new RegExp(`<!--\\s*${escape(checklist.sectionMarkerName)}: revision=([0-9]+)\\s*-->[\\s\\S]*?<!--\\s*\\/${escape(checklist.sectionMarkerName)}\\s*-->`, "g");
+  const canonical = renderTriageChecklistBlock({ includeHeading: false, checked: false });
+  text = text.replace(block, matched => {
+    const normalized = matched.replace(/^([ \t]*[-*][ \t]+)\[[xX ]\]/gm, "$1[ ]");
+    // Only the exact producer-authored block is metadata. Foreign prose and malformed
+    // markers remain substantive scope, even if placed inside a checklist-shaped region.
+    return normalized === canonical ? "" : matched;
+  });
   text = text.replace(new RegExp(`<!--\\s*${escape(checklist.completionMarkerName)}:[\\s\\S]*?-->`, "g"), "");
   text = text.replace(/^<!--\s*(?:Generated (?:against|from)|Intake form observed:)[^\n]*-->\s*$/gm, "");
   // Remove only an empty canonical checklist heading left by the delimited block.
