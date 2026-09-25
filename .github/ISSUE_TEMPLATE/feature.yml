@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 19). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 20). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/feature.yml
 name: Feature / engineering leverage
@@ -12,7 +12,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 19).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 20).
         File the smallest useful description. Priority is an initial guess, not a self-assignment.
         Machine and triage intake use the governed task body and checklist from this producer.
         This feature chooser is not a second checklist, runtime cadence, or registry/shed form.

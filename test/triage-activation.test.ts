@@ -151,8 +151,11 @@ function dispositionLabels(disposition: Assessment["disposition"]): string[] {
   return [...bound.policy.dispositions[disposition].labels, bound.policy.effortRubric.labels[effort], "cloud-ready", "tier:auto"];
 }
 
-test("revision 19 inserts scope-decomposition after value/dedup and before final attributes", () => {
-  assert.equal(contract.version, 19);
+test("current semantic revision binds scope before final attributes", () => {
+  assert.ok(contract.version >= 20, "subject-bound completion requires the post-19 semantic revision");
+  const scope = contract.triageChecklist.items.find((item: { id: string }) => item.id === "scope-decomposition");
+  assert.equal(scope.semantics.subjectBinding, "server-fetched-issue-v1");
+  assert.equal(scope.semantics.completionAuthority, "composed-semantic-evaluation-v1");
   const ids: string[] = contract.triageChecklist.items.map((item: { id: string }) => item.id);
   assert.ok(ids.indexOf("canonical-flow") < ids.indexOf("scope-decomposition"));
   assert.ok(ids.indexOf("value-direction") < ids.indexOf("scope-decomposition"));
