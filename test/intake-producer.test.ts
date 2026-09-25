@@ -39,7 +39,7 @@ function scratch(t: { after: (fn: () => void) => void }) {
   mkdirSync(source);
   cpSync(path.join(root, "contracts"), path.join(source, "contracts"), { recursive: true });
   mkdirSync(path.join(source, ".github", "ISSUE_TEMPLATE"), { recursive: true });
-  cpSync(path.join(root, ".github/ISSUE_TEMPLATE/task.yml"), path.join(source, ".github/ISSUE_TEMPLATE/task.yml"));
+  cpSync(path.join(root, ".github/ISSUE_TEMPLATE"), path.join(source, ".github/ISSUE_TEMPLATE"), { recursive: true });
   const git = (...args: string[]) => execFileSync("git", args, { cwd: source, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
   git("init", "-b", "main"); git("remote", "add", "origin", "https://github.com/spencer-shadley/.github.git");
   git("-c", "user.name=Test", "-c", "user.email=test@example.invalid", "add", ".");
@@ -110,6 +110,26 @@ test("published JavaScript actually executes the same body and checklist evaluat
   assert.equal(triage.CURRENT_TRIAGED_LABEL, CURRENT_TRIAGED_LABEL);
   assert.equal(evaluator.computeGovernedWorkUnitKey(identity), computeGovernedWorkUnitKey(identity));
 });
+test("portable release ships policy, delta planner and compose as executable JS with matching aliases", async (t) => {
+  const s = scratch(t);
+  assert.equal(admitGovernedIntakeRelease(s.out, s.pin).ok, true);
+  assert.equal(readFileSync(path.join(s.out, "policy.json")).equals(readFileSync(path.join(s.out, "governed-intake-triage-policy.v1.json"))), true);
+  assert.equal(readFileSync(path.join(s.out, "compose.js")).equals(readFileSync(path.join(s.out, "governed-intake-triage.compose.js"))), true);
+  const compose = await import(pathToFileURL(path.join(s.out, "compose.js")).href);
+  const planner = await import(pathToFileURL(path.join(s.out, "delta-planner.js")).href);
+  const policyEval = await import(pathToFileURL(path.join(s.out, "policy-evaluator.js")).href);
+  const isolated = await compose.evaluateGovernedIntakeTriage({
+    body: validBody(),
+    labels: [CURRENT_TRIAGED_LABEL],
+    evidence: { kind: "missing" },
+  });
+  assert.equal(isolated.status, "pending");
+  assert.ok(isolated.reasons.includes("missing_semantic_evidence"));
+  assert.equal(isolated.consumerCutover, false);
+  assert.equal(typeof planner.planChecklistDelta, "function");
+  assert.equal(typeof policyEval.evaluateTriagePolicy, "function");
+  assert.match(readFileSync(path.join(s.out, "compose.js"), "utf8"), /from "\.\/governed-intake-triage-policy\.evaluate\.js"/);
+});
 test("corrupt runtime JavaScript is rejected, not hidden by intact TypeScript", (t) => {
   const s = scratch(t);
   writeFileSync(path.join(s.out, "evaluator.js"), "throw new Error('untrusted');\n");
@@ -139,19 +159,28 @@ test("missing payload fails closed", (t) => {
   unlinkSync(path.join(s.out, "task.md"));
   assert.equal(verifyGovernedIntakeRelease(s.out).ok, false);
 });
-test("symlink payload fails closed when the platform permits symlink creation", (t) => {
+test("symlink payload fails closed", (t) => {
   const s = scratch(t);
-  unlinkSync(path.join(s.out, "task.md"));
+  const payload = path.join(s.out, "task.md");
+  unlinkSync(payload);
   try {
-    symlinkSync(path.join(s.source, "contracts/generated/governed-intake/task.md"), path.join(s.out, "task.md"));
+    symlinkSync(path.join(s.source, "contracts/generated/governed-intake/task.md"), payload);
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && (error.code === "EPERM" || error.code === "EACCES")) {
-      t.skip("platform does not permit file symlink creation in this process");
-      return;
-    }
-    throw error;
+    // Non-elevated Windows cannot create file symlinks; a directory junction is still not a regular file.
+    const code = error && typeof error === "object" && "code" in error ? String((error as NodeJS.ErrnoException).code) : "";
+    if (code !== "EPERM" && code !== "EACCES") throw error;
+    execFileSync("cmd.exe", ["/c", "mklink", "/J", payload, path.join(s.source, "contracts", "generated", "governed-intake")], {
+      windowsHide: true,
+    });
   }
   const result = verifyGovernedIntakeRelease(s.out);
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.code, "corrupt_file");
+});
+test("missing policy payload fails closed without requiring a symlink", (t) => {
+  const s = scratch(t);
+  unlinkSync(path.join(s.out, "governed-intake-triage-policy.v1.json"));
+  const result = verifyGovernedIntakeRelease(s.out);
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.code, "missing_file");
 });

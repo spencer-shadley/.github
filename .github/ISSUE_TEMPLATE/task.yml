@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 18). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 19). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -12,7 +12,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 18).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 19).
         This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
         Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
@@ -83,7 +83,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=18 -->
+        <!-- governed-triage-checklist: revision=19 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -93,20 +93,22 @@ body:
         - [ ] **Fix-owner + responsibility**: Verify with `fleet-repo-responsibility-routing`, the target repo's current `AGENTS.md`, and `repos/infra/fleet-registry/dist/fleet-registry-release.json` (`FleetRegistryReleaseV1`). Never substitute retired registry markdown for that release.
         <!-- governed-triage-item: dedup-queue-synergy -->
         - [ ] **Dedup + queue synergy**: Search related open/closed work and apply `docs/guides/queue-synergy.md`. Reuse or strengthen the canonical owner instead of creating a parallel implementation track.
+        <!-- governed-triage-item: scope-decomposition -->
+        - [ ] **Scope + decomposition**: Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp-not-needed`, low/medium), qualified atomic-high leaf (`decomp-atomic` + `effort:high` with independent confirmation), or tracking parent (`decomp` + `epic` with a validated child graph). Unresolved, unknown, or unqualified evidence stays pending. Child triage does not wait for a parent completion stamp. Do not require `decomp-in-progress`. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity.
         <!-- governed-triage-item: priority-work-dimensions -->
-        - [ ] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Missing or unclear effort is not low. Never self-admit P0.
+        - [ ] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Effort definitions and examples come from the canonical governed-intake triage policy, not private calibration caps. Missing or unclear effort is unknown, not low. Certified atomic-high remains high. Never self-admit P0.
         <!-- governed-triage-item: verify-human-required -->
-        - [ ] **Verify + human-required fences**: `tier:auto` with `effort:low|medium` requires the current scoped named-file `## Verify` fence. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority.
+        - [ ] **Verify + human-required fences**: `tier:auto` executable leaves require the current scoped named-file `## Verify` fence, including ordinary `effort:low|medium` leaves and qualified `effort:high` atomic leaves. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority.
         <!-- governed-triage-item: cloud-runnable -->
-        - [ ] **Cloud vs local execution**: Assess the implementation stage using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Before triage can complete, apply exactly one execution-substrate label: `cloud-ready` when implementation can run in an authorized provider-hosted environment, or `local-required` when implementation needs a fleet/local machine. Never leave both or neither on a completed triage. Record `ready` or `not-ready`, a short reason, and any separately required local verification/rollout in the existing triage receipt; an unresolved or `unknown` assessment stays untriaged. If one exact host is required, also apply its machine label.
+        - [ ] **Cloud vs local execution**: Assess the implementation stage using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Before triage can complete, apply exactly one execution-substrate label: `cloud-ready` when implementation can run in an authorized provider-hosted environment, or `local-required` when implementation needs a fleet/local machine. Never leave both or neither on a completed triage. Record `ready` or `not-ready`, a short reason, and any separately required local verification/rollout in the existing triage receipt; an unresolved or `unknown` assessment stays untriaged. If one exact host is required, also apply its machine label. Tracking parents do not inherit every child host or substrate requirement.
         <!-- governed-triage-item: disposition-effect-authority -->
         - [ ] **Disposition != effect authority**: Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Execute close, move, substantive rewrite, or another restricted GitHub effect only when the current role is authorized; otherwise hand the adjudicated effect to the authorized executor with a durable receipt. Do not keep zombie work alive merely because the current seat cannot execute the terminal effect.
         <!-- governed-triage-item: higher-intelligence-handoff -->
-        - [ ] **Higher-intelligence handoff**: `effort:high`, unclear effort, `human-required`, material scope change, or programme/epic-shaped work uses the current higher-intelligence triage escalation. Confirmed high-effort work is handed durably to the architect/decomposition owner, which decomposes into executable leaves where appropriate. The triage role does not plan, decompose, mint, or commission implementation writers.
+        - [ ] **Higher-intelligence handoff**: `effort:high`, unclear effort, `human-required`, material remaining uncertainty, or programme-shaped work uses qualified higher-intelligence assessment inside triage. Scope and decomposition are the earlier `scope-decomposition` obligation. Confirmed tracking parents stay tracking-only. Unresolved delegation is not completed triage. The triage role does not mint implementation plans or commission implementation writers.
         <!-- governed-triage-item: github-effects-quota -->
         - [ ] **GitHub effects + quota**: Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep.
         <!-- governed-triage-item: confirm-receipt -->
-        - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence.
+        - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
         <!-- governed-triage-item: taxonomy -->
         - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
         <!-- /governed-triage-checklist -->

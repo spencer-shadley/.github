@@ -10,8 +10,18 @@ export const RELEASE_SCHEMA_FAMILY = "GovernedIntakeBodyV1";
 export const RELEASE_PRODUCER = "spencer-shadley/.github";
 export const REQUIRED_RELEASE_PAYLOADS = [
   "contract.json", "governed-intake-body.v1.json", "evaluator.ts", "evaluator.js",
-  "triage-evaluator.ts", "triage-evaluator.js", "task.md", "task.yml",
+  "governed-intake-body.evaluate.ts", "governed-intake-body.evaluate.js",
+  "triage-evaluator.ts", "triage-evaluator.js",
+  "governed-intake-triage-state.evaluate.ts", "governed-intake-triage-state.evaluate.js",
+  "task.md", "task.yml", "feature.md", "feature.yml",
   "generator.ts", "generator.js", "verify.ts", "verify.js",
+  "governed-intake-triage-policy.v1.json", "policy.json",
+  "governed-intake-triage-policy.evaluate.ts", "governed-intake-triage-policy.evaluate.js",
+  "policy-evaluator.ts", "policy-evaluator.js",
+  "governed-intake-triage-state.migrate.ts", "governed-intake-triage-state.migrate.js",
+  "delta-planner.ts", "delta-planner.js",
+  "governed-intake-triage.compose.ts", "governed-intake-triage.compose.js",
+  "compose.ts", "compose.js",
 ] as const;
 export type GovernedIntakeReleaseFileEntry = { path: string; sha256: string; byteLength: number };
 export type GovernedIntakeReleaseManifest = {
@@ -108,9 +118,16 @@ export function verifyGovernedIntakeRelease(
       const alias = readFileSync(path.join(dir, "contract.json"));
       const canonical = readFileSync(path.join(dir, "governed-intake-body.v1.json"));
       if (!alias.equals(canonical)) return fail("corrupt_file", "contract aliases contain different bytes");
+      const policyAlias = readFileSync(path.join(dir, "policy.json"));
+      const policyCanonical = readFileSync(path.join(dir, "governed-intake-triage-policy.v1.json"));
+      if (!policyAlias.equals(policyCanonical)) return fail("corrupt_file", "policy aliases contain different bytes");
       const contract: unknown = JSON.parse(canonical.toString("utf8"));
       if (!object(contract) || contract.schema !== RELEASE_SCHEMA_FAMILY || contract.version !== manifest.revision || contract.owner !== RELEASE_PRODUCER) {
         return fail("corrupt_file", "contract schema, revision or owner differs from release identity");
+      }
+      const policy: unknown = JSON.parse(policyCanonical.toString("utf8"));
+      if (!object(policy) || policy.schema !== "GovernedTriagePolicyV1" || policy.owner !== RELEASE_PRODUCER) {
+        return fail("corrupt_file", "policy schema or owner differs from producer identity");
       }
     } catch (error) {
       return fail((error as NodeJS.ErrnoException).code === "ENOENT" ? "missing_file" : "corrupt_file", String(error));

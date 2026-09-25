@@ -19,9 +19,10 @@ from paths under `.github/` and from files at its own root — see
 | `CONTRIBUTING.md` | Issue/PR conventions, account default |
 | `CODE_OF_CONDUCT.md` | Short honest default for a single-operator account |
 
-The adopted triage policy has one [source and generated guide](docs/triage-policy.md), with pure
-evaluation and delta-migration tests. The guide distinguishes landed source from live activation.
-Run `npm test` and `npm run triage-policy:check`; no network or provider call is required.
+The adopted triage policy has one [source and generated guide](docs/triage-policy.md). The portable
+producer release composes that policy with body/checklist evaluation; source tests still distinguish
+landed producer APIs from deployed consumer cutover. Run `npm test` and `npm run triage-policy:check`;
+no network or provider call is required.
 
 ## What is deliberately absent
 
