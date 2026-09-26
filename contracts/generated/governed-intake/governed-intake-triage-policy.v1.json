@@ -1,0 +1,265 @@
+{
+  "schema": "GovernedTriagePolicyV1",
+  "version": 1,
+  "owner": "spencer-shadley/.github",
+  "purpose": "Early evidence-backed decomposition and calibrated issue effort; a constituent of the governed-intake producer, not another issue tracker or model catalog.",
+  "workflow": {
+    "order": [
+      "preflight",
+      "current-value-and-dedup",
+      "scope-decomposition",
+      "final-attributes",
+      "completion",
+      "separate-execution-admission"
+    ],
+    "scopeItemId": "scope-decomposition",
+    "implementationEffectsDuringTriage": false,
+    "childTriageRequiresParentStamp": false
+  },
+  "dispositions": {
+    "ordinary": {
+      "labels": [
+        "decomp-not-needed"
+      ],
+      "efforts": [
+        "low",
+        "medium"
+      ],
+      "trackingOnly": false,
+      "qualifiedAssessment": false,
+      "independentConfirmation": false
+    },
+    "atomic-high": {
+      "labels": [
+        "decomp-atomic"
+      ],
+      "efforts": [
+        "high"
+      ],
+      "trackingOnly": false,
+      "qualifiedAssessment": true,
+      "independentConfirmation": true
+    },
+    "parent": {
+      "labels": [
+        "decomp",
+        "epic"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "trackingOnly": true,
+      "qualifiedAssessment": true,
+      "independentConfirmation": false
+    }
+  },
+  "pendingLabel": "decomp-needed",
+  "retiredProgressLabels": [
+    "decomp-in-progress"
+  ],
+  "unsupportedTerminalAliases": [
+    "decomp-not-possible",
+    "cannot-decomp",
+    "decomp-complete"
+  ],
+  "evidence": {
+    "requiredAssessmentFields": [
+      "rationale",
+      "verification",
+      "resumability"
+    ],
+    "atomicFields": [
+      "invariant",
+      "difficultyRationale",
+      "alternativesConsidered"
+    ],
+    "qualifiedRoles": [
+      "scope-assessment",
+      "atomic-confirmation",
+      "implementation"
+    ],
+    "independence": "distinct model family AND distinct provider; exact router and serving receipts required",
+    "graphAuthority": "Code shared decomposition core; consume its validated current graph receipt, do not reimplement graph adjudication"
+  },
+  "effortRubric": {
+    "version": 1,
+    "labels": {
+      "low": "effort:low",
+      "medium": "effort:medium",
+      "high": "effort:high"
+    },
+    "subject": "Remaining implementation/investigation AND necessary verification relative to a competent, appropriately equipped agent; record aggregate parent work separately.",
+    "dimensions": [
+      "approach clarity",
+      "material unknowns",
+      "coupling and correctness invariants",
+      "verification burden",
+      "meaningful workload"
+    ],
+    "definitions": {
+      "low": "A known bounded mechanical or local correction with little design judgment or unresolved diagnosis and direct scoped verification. Each condition needs evidence.",
+      "medium": "Cohesive bounded implementation, refactor or investigation within an established architecture; meaningful coding and testing or limited diagnosis, without demonstrated deep design or coupled-correctness difficulty.",
+      "high": "Demonstrated substantial design or causal reasoning, novel algorithmic work, difficult coupled invariants or complex verification. A genuinely large multi-stage programme may have high aggregate effort, not inherited by its leaves."
+    },
+    "rules": [
+      "Decompose to meaningful executable work units, not until every issue appears easy.",
+      "Difficulty and decomposability are independent; certified high-effort atomic leaves remain high.",
+      "Size the remaining scope, not completed work or a historical filing.",
+      "Missing evidence is unknown, not low and not an invented high conclusion. Escalate material uncertainty and keep unresolved obligations pending.",
+      "Distinguish unknowns that prevent assessing scope from implementation unknowns inside an already-classified high-effort task; triage must not require solving the implementation to certify its scope.",
+      "A different model, thinking setting, host, quota, waiting time, token count, number of diagnostics, file count or line count alone cannot change effort.",
+      "One repository, one PR, shared context or sequential dependencies alone proves neither atomicity nor low effort.",
+      "Prevention RCA is not an unconditional medium-effort or indivisibility classification. Conditional examples are not keyword classifiers.",
+      "Aggregate parent effort is not an ordinal sum and never sets every child capability floor.",
+      "Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause; lowering a high classification requires qualified adjudication.",
+      "An atomic issue may contain a plan, checkpoints, multiple commits and multiple sessions."
+    ],
+    "receiptFields": [
+      "residual",
+      "rubricIdentity",
+      "decisiveDimensions",
+      "exampleIds",
+      "rationale",
+      "confidence",
+      "correctionEvidence",
+      "blockingAssessmentUnknowns",
+      "implementationUnknowns"
+    ]
+  },
+  "capabilityPolicy": {
+    "owner": "spencer-shadley/model-router",
+    "servingIdentityOwner": "spencer-shadley/model-gateway",
+    "rule": "Task-relevant hard floors precede cost, latency, quota and placement. Consumers never infer eligibility from a name, alias, thinking setting or provenance suffix.",
+    "noEligibleCapacity": "Durable pending/retry using the existing scheduler; never weaker substitution or a forced effort downgrade.",
+    "mechanicalAssistance": "Below-floor helpers may collect facts or apply deterministic authorized projections of current qualified evidence; they cannot replace judgment or high-effort execution.",
+    "modelNamesInThisContract": false
+  },
+  "concurrency": {
+    "owner": "existing shared issue/work-unit custody and mutation-admission authority",
+    "rule": "Discovery follows unresolved evidence independently of labels and hosts. Write admission still requires current generic custody. Do not implement a decomp-specific lease, TTL, cleaner or service.",
+    "legacyCleanup": "Remove only the retired cosmetic projection; preserve scope, children, effort and historical evidence. Cleanup failure never suppresses discovery.",
+    "staleWriters": "The generic mutation authority must reject effects after custody loss; label absence or an unchanged GitHub snapshot is not write authorization."
+  },
+  "migration": {
+    "owner": "governed-intake producer; code#6449 integration",
+    "rule": "Compare stable item IDs and semantic content; reuse unchanged valid evidence. Reevaluate changed results only at their actual dependents, not a speculative whole-checklist reset.",
+    "reasons": [
+      "new-item",
+      "semantic-change",
+      "evidence-stale",
+      "dependency-invalidated"
+    ],
+    "cosmeticCleanupInvalidatesReasoning": false
+  },
+  "examples": [
+    {
+      "id": "E-LOW-CLI",
+      "effort": "low",
+      "scope": "Forward a known missing CLI option using an existing test pattern.",
+      "assumptions": [
+        "Cause and expected behavior are established",
+        "No new protocol or architecture"
+      ]
+    },
+    {
+      "id": "E-LOW-IMPORT",
+      "effort": "low",
+      "scope": "One verified import typo generates hundreds of diagnostics.",
+      "assumptions": [
+        "All relevant errors follow from that cause",
+        "Scoped regression verification exists"
+      ]
+    },
+    {
+      "id": "E-LOW-RENAME",
+      "effort": "low",
+      "scope": "A bounded deterministic rename with no behavior redesign.",
+      "assumptions": [
+        "Transformation is unambiguous",
+        "Relevant callers and checks are known"
+      ]
+    },
+    {
+      "id": "E-MEDIUM-EXTENSION",
+      "effort": "medium",
+      "scope": "Add a feature using an established extension point.",
+      "assumptions": [
+        "Architecture is settled",
+        "Implementation and edge-case tests require meaningful work"
+      ]
+    },
+    {
+      "id": "E-MEDIUM-LIFECYCLE",
+      "effort": "medium",
+      "scope": "Repair an understood lifecycle transition with integration tests.",
+      "assumptions": [
+        "State invariant and mechanism are known",
+        "No novel distributed coordination design"
+      ]
+    },
+    {
+      "id": "E-MEDIUM-PREVENTION",
+      "effort": "medium",
+      "scope": "Add a preventive check for a known failure class.",
+      "assumptions": [
+        "Failure mechanism is established",
+        "Control fits existing verification architecture"
+      ]
+    },
+    {
+      "id": "E-HIGH-RACE",
+      "effort": "high",
+      "scope": "Diagnose and repair a subtle concurrency race preserving one inseparable invariant.",
+      "assumptions": [
+        "Concrete coupled-correctness difficulty is evidenced",
+        "Atomic outcome still needs qualified independent confirmation"
+      ]
+    },
+    {
+      "id": "E-HIGH-ALGORITHM",
+      "effort": "high",
+      "scope": "Redesign a complex algorithm with correctness and performance obligations.",
+      "assumptions": [
+        "Substantive new reasoning is needed",
+        "Useful decomposition must still be assessed"
+      ]
+    },
+    {
+      "id": "E-HIGH-PROGRAMME",
+      "effort": "high",
+      "scope": "A large cross-owner architectural migration.",
+      "assumptions": [
+        "High refers to aggregate parent work",
+        "Canonical executable leaves are independently sized"
+      ]
+    },
+    {
+      "id": "E-COUNTER-WAIT",
+      "effort": "unchanged",
+      "scope": "Same issue waits longer for CI, credentials or host access.",
+      "assumptions": [
+        "Residual scope and evidence did not change"
+      ]
+    },
+    {
+      "id": "E-COUNTER-MODEL",
+      "effort": "unchanged",
+      "scope": "Another triager dislikes the existing label.",
+      "assumptions": [
+        "Same accepted rubric and evidence",
+        "No demonstrated rubric violation"
+      ]
+    },
+    {
+      "id": "E-COUNTER-UNKNOWN",
+      "effort": "pending",
+      "scope": "Material evidence is inaccessible and sizing cannot be justified.",
+      "assumptions": [
+        "Unknown is preserved explicitly",
+        "Qualified resolution is required"
+      ]
+    }
+  ]
+}

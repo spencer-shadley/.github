@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, work:untriaged
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 19). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 20). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=19 -->
+<!-- governed-triage-checklist: revision=20 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -37,7 +37,7 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 <!-- governed-triage-item: dedup-queue-synergy -->
 - [ ] **Dedup + queue synergy**: Search related open/closed work and apply `docs/guides/queue-synergy.md`. Reuse or strengthen the canonical owner instead of creating a parallel implementation track.
 <!-- governed-triage-item: scope-decomposition -->
-- [ ] **Scope + decomposition**: Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp-not-needed`, low/medium), qualified atomic-high leaf (`decomp-atomic` + `effort:high` with independent confirmation), or tracking parent (`decomp` + `epic` with a validated child graph). Unresolved, unknown, or unqualified evidence stays pending. Child triage does not wait for a parent completion stamp. Do not require `decomp-in-progress`. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity.
+- [ ] **Scope + decomposition**: Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp-not-needed`, low/medium), qualified atomic-high leaf (`decomp-atomic` + `effort:high` with independent confirmation), or tracking parent (`decomp` + `epic` with a validated child graph). Unresolved, unknown, or unqualified evidence stays pending. Child triage does not wait for a parent completion stamp. Do not require `decomp-in-progress`. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity. Bind the assessment to the actual server-fetched issue identity and normalized scope using the producer-owned identity API; matching caller-supplied identities or structural checkbox checks alone never establish semantic completion.
 <!-- governed-triage-item: priority-work-dimensions -->
 - [ ] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Effort definitions and examples come from the canonical governed-intake triage policy, not private calibration caps. Missing or unclear effort is unknown, not low. Certified atomic-high remains high. Never self-admit P0.
 <!-- governed-triage-item: verify-human-required -->

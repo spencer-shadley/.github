@@ -8,79 +8,79 @@
 import { createHash } from "node:crypto";
 import governedContractJson from "./governed-intake-body.v1.json" with { type: "json" };
 
-export type IntakeLadder = {
-  id?: string;
-  name?: string;
-  heading: string;
-  doctrine?: string;
-  purpose?: string;
-  columns: string[];
-};
+                            
+              
+                
+                  
+                    
+                   
+                    
+  
 
-export type WorkUnitKeyContract = {
-  heading: string;
-  markerName: string;
-  algorithm: string;
-  markerTemplate: string;
-  markerRegex: string;
-  requiredMarkerCount: number;
-  identityTuple: string[];
-  normalization: {
-    sequence: string;
-    fixOwnerGitHubSlug: string;
-    workType: string;
-    canonicalWorkUnitIdentity: string;
-  };
-  serialization: string;
-  canonicalIdentity: string;
-  collisionHandling: string;
-};
+                                   
+                  
+                     
+                    
+                         
+                      
+                              
+                          
+                  
+                     
+                               
+                     
+                                      
+    
+                        
+                            
+                            
+  
 
-export type TaxonomyDispositionContract = {
-  requiredAtEveryRank: boolean;
-  evidenceCeiling: {
-    allowedOnlyWhen: string;
-    defaultTerminator: boolean;
-  };
-};
+                                           
+                               
+                    
+                            
+                               
+    
+  
 
-export type IntakeWorkType = {
-  id: string;
-  label: string;
-  recordKind?: string;
-  description: string;
-  authority: string;
-};
+                              
+             
+                
+                      
+                      
+                    
+  
 
-export type IntakeContract = {
-  schema: string;
-  version: number;
-  description?: string;
-  requiredHeadings: string[];
-  workUnitKey: WorkUnitKeyContract;
-  taxonomyRanks: string[];
-  causalClimbColumns: string[];
-  defectLadders: {
-    prevention: IntakeLadder;
-    detectHealRecover: IntakeLadder;
-  };
-  statusTokens: string[];
-  workTypes: IntakeWorkType[];
-  legacyWorkTypes?: string[];
-  taxonomyDisposition?: TaxonomyDispositionContract;
-  projections?: {
-    markdown: string;
-    yaml: string;
-    yamlPublishTarget?: string;
-    forbiddenLocalYaml: string;
-  };
-};
+                              
+                 
+                  
+                       
+                             
+                                   
+                          
+                               
+                  
+                             
+                                    
+    
+                         
+                              
+                             
+                                                    
+                 
+                     
+                 
+                               
+                               
+    
+  
 
-function strings(value: unknown, label: string): string[] {
+function strings(value         , label        )           {
   if (!Array.isArray(value)) {
     throw new TypeError(`governed-intake-body: contract ${label} must be string[]`);
   }
-  const out: string[] = [];
+  const out           = [];
   for (const item of value) {
     if (typeof item !== "string") {
       throw new TypeError(`governed-intake-body: contract ${label} must be string[]`);
@@ -90,11 +90,11 @@ function strings(value: unknown, label: string): string[] {
   return out;
 }
 
-function ladder(value: unknown, label: string): IntakeLadder {
+function ladder(value         , label        )               {
   if (!value || typeof value !== "object") {
     throw new TypeError(`governed-intake-body: contract ${label} missing`);
   }
-  const row: Record<string, unknown> = { ...value };
+  const row                          = { ...value };
   if (typeof row.heading !== "string") {
     throw new TypeError(`governed-intake-body: contract ${label}.heading must be string`);
   }
@@ -108,7 +108,7 @@ function ladder(value: unknown, label: string): IntakeLadder {
   };
 }
 
-function requiredString(row: Record<string, unknown>, field: string, label: string): string {
+function requiredString(row                         , field        , label        )         {
   const value = row[field];
   if (typeof value !== "string" || value.length === 0) {
     throw new TypeError(`governed-intake-body: contract ${label}.${field} must be a string`);
@@ -116,20 +116,20 @@ function requiredString(row: Record<string, unknown>, field: string, label: stri
   return value;
 }
 
-function parseWorkUnitKeyContract(value: unknown): WorkUnitKeyContract {
+function parseWorkUnitKeyContract(value         )                      {
   if (!value || typeof value !== "object") {
     throw new TypeError("governed-intake-body: contract workUnitKey missing");
   }
-  const row: Record<string, unknown> = { ...value };
+  const row                          = { ...value };
   const normalizationValue = row.normalization;
   if (!normalizationValue || typeof normalizationValue !== "object") {
     throw new TypeError("governed-intake-body: contract workUnitKey.normalization missing");
   }
-  const normalization: Record<string, unknown> = { ...normalizationValue };
+  const normalization                          = { ...normalizationValue };
   if (row.requiredMarkerCount !== 1) {
     throw new TypeError("governed-intake-body: contract workUnitKey.requiredMarkerCount must be 1");
   }
-  const contract: WorkUnitKeyContract = {
+  const contract                      = {
     heading: requiredString(row, "heading", "workUnitKey"),
     markerName: requiredString(row, "markerName", "workUnitKey"),
     algorithm: requiredString(row, "algorithm", "workUnitKey"),
@@ -167,7 +167,7 @@ function parseWorkUnitKeyContract(value: unknown): WorkUnitKeyContract {
   return contract;
 }
 
-function parseWorkTypes(value: unknown): IntakeWorkType[] {
+function parseWorkTypes(value         )                   {
   if (!Array.isArray(value) || value.length === 0) {
     throw new TypeError("governed-intake-body: contract workTypes missing or empty");
   }
@@ -175,7 +175,7 @@ function parseWorkTypes(value: unknown): IntakeWorkType[] {
     if (!item || typeof item !== "object") {
       throw new TypeError(`governed-intake-body: contract workTypes[${i}] must be an object`);
     }
-    const row = item as Record<string, unknown>;
+    const row = item                           ;
     return {
       id: requiredString(row, "id", `workTypes[${i}]`),
       label: requiredString(row, "label", `workTypes[${i}]`),
@@ -186,25 +186,25 @@ function parseWorkTypes(value: unknown): IntakeWorkType[] {
   });
 }
 
-export function loadGovernedIntakeContract(contractSource?: string | URL | IntakeContract): IntakeContract {
+export function loadGovernedIntakeContract(contractSource                                )                 {
   if (contractSource && typeof contractSource === "object" && !(contractSource instanceof URL)) {
-    return contractSource as IntakeContract;
+    return contractSource                  ;
   }
   if (contractSource !== undefined) throw new TypeError("portable contract evaluator accepts a verified contract object, not a filesystem path");
-  const raw: unknown = governedContractJson;
+  const raw          = governedContractJson;
   if (!raw || typeof raw !== "object") {
     throw new TypeError("governed-intake-body: contract is not an object");
   }
-  const body: Record<string, unknown> = { ...raw };
+  const body                          = { ...raw };
   const laddersRaw = body.defectLadders;
   if (!laddersRaw || typeof laddersRaw !== "object") {
     throw new TypeError("governed-intake-body: contract defectLadders missing");
   }
-  const ladders: Record<string, unknown> = { ...laddersRaw };
+  const ladders                          = { ...laddersRaw };
   const projectionsRaw = body.projections;
-  let projections: IntakeContract["projections"] | undefined;
+  let projections                                           ;
   if (projectionsRaw && typeof projectionsRaw === "object") {
-    const p: Record<string, unknown> = { ...projectionsRaw };
+    const p                          = { ...projectionsRaw };
     if (typeof p.markdown === "string" && typeof p.yaml === "string" && typeof p.forbiddenLocalYaml === "string") {
       projections = {
         markdown: p.markdown,
@@ -215,11 +215,11 @@ export function loadGovernedIntakeContract(contractSource?: string | URL | Intak
     }
   }
 
-  let taxonomyDisposition: TaxonomyDispositionContract | undefined;
+  let taxonomyDisposition                                         ;
   if (body.taxonomyDisposition && typeof body.taxonomyDisposition === "object") {
-    const td: Record<string, unknown> = { ...(body.taxonomyDisposition as Record<string, unknown>) };
+    const td                          = { ...(body.taxonomyDisposition                           ) };
     const ec = td.evidenceCeiling && typeof td.evidenceCeiling === "object"
-      ? (td.evidenceCeiling as Record<string, unknown>)
+      ? (td.evidenceCeiling                           )
       : {};
     taxonomyDisposition = {
       requiredAtEveryRank: Boolean(td.requiredAtEveryRank),
@@ -250,27 +250,27 @@ export function loadGovernedIntakeContract(contractSource?: string | URL | Intak
   };
 }
 
-export const DEFAULT_CONTRACT: IntakeContract = loadGovernedIntakeContract();
+export const DEFAULT_CONTRACT                 = loadGovernedIntakeContract();
 export const SCHEMA_VERSION = "governed-intake-body-v1";
-export const REQUIRED_HEADINGS: readonly string[] = DEFAULT_CONTRACT.requiredHeadings;
-export const TAXONOMY_RANKS: readonly string[] = DEFAULT_CONTRACT.taxonomyRanks;
-export const CAUSAL_CLIMB_COLUMNS: readonly string[] = DEFAULT_CONTRACT.causalClimbColumns;
-export const STATUS_TOKENS: readonly string[] = DEFAULT_CONTRACT.statusTokens;
+export const REQUIRED_HEADINGS                    = DEFAULT_CONTRACT.requiredHeadings;
+export const TAXONOMY_RANKS                    = DEFAULT_CONTRACT.taxonomyRanks;
+export const CAUSAL_CLIMB_COLUMNS                    = DEFAULT_CONTRACT.causalClimbColumns;
+export const STATUS_TOKENS                    = DEFAULT_CONTRACT.statusTokens;
 export const DEFECT_LADDERS = DEFAULT_CONTRACT.defectLadders;
 export const WORK_UNIT_KEY_CONTRACT = DEFAULT_CONTRACT.workUnitKey;
-export const GOVERNED_WORK_TYPES: readonly IntakeWorkType[] = DEFAULT_CONTRACT.workTypes;
-export const GOVERNED_WORK_TYPE_LABELS: readonly string[] = DEFAULT_CONTRACT.workTypes.map((wt) => wt.label);
-export const GOVERNED_LEGACY_WORK_TYPES: readonly string[] = DEFAULT_CONTRACT.legacyWorkTypes ?? [];
+export const GOVERNED_WORK_TYPES                            = DEFAULT_CONTRACT.workTypes;
+export const GOVERNED_WORK_TYPE_LABELS                    = DEFAULT_CONTRACT.workTypes.map((wt) => wt.label);
+export const GOVERNED_LEGACY_WORK_TYPES                    = DEFAULT_CONTRACT.legacyWorkTypes ?? [];
 
-export function escapeRegExp(s: string): string {
+export function escapeRegExp(s        )         {
   return s.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
 }
 
-export function normalizeLf(text: string): string {
+export function normalizeLf(text        )         {
   return (text || "").replaceAll("\r\n", "\n");
 }
 
-export function stripFrontmatter(markdown: string): string {
+export function stripFrontmatter(markdown        )         {
   const text = normalizeLf(markdown).replace(/^\u{FEFF}/u, "");
   if (!text.startsWith("---\n")) return text;
   const end = text.indexOf("\n---\n", 4);
@@ -278,16 +278,16 @@ export function stripFrontmatter(markdown: string): string {
   return text.slice(end + "\n---\n".length);
 }
 
-export type GovernedWorkUnitIdentity = {
-  /** GitHub `owner/name` slug of the fix-owner repository. */
-  fixOwnerGitHubSlug: string;
-  /** The body's `## Work type` value (e.g. "Risk reduction", "Defect"). */
-  workType: string;
-  /** Smallest durable mechanism/outcome seam that names the work unit; stable across reruns. */
-  canonicalWorkUnitIdentity: string;
-};
+                                        
+                                                              
+                             
+                                                                           
+                   
+                                                                                                
+                                    
+  
 
-function frameUtf8(value: string): string {
+function frameUtf8(value        )         {
   return `${String(Buffer.byteLength(value, "utf8"))}:${value}`;
 }
 
@@ -296,8 +296,8 @@ function frameUtf8(value: string): string {
  * `workUnitKey` contract: normalize each tuple field (trim, NFC, then field-specific case rule),
  * frame each as `<utf8-byte-length>:<bytes>`, join with LF, SHA-256 the result.
  */
-export function computeGovernedWorkUnitKey(identity: GovernedWorkUnitIdentity): string {
-  const normalize = (value: string): string => value.trim().normalize("NFC");
+export function computeGovernedWorkUnitKey(identity                          )         {
+  const normalize = (value        )         => value.trim().normalize("NFC");
   const owner = normalize(identity.fixOwnerGitHubSlug).toLowerCase();
   const workType = normalize(identity.workType).toLowerCase();
   const canonical = normalize(identity.canonicalWorkUnitIdentity);
@@ -306,28 +306,28 @@ export function computeGovernedWorkUnitKey(identity: GovernedWorkUnitIdentity): 
 }
 
 /** Renders the single `<!-- governed-work-unit-key: sha256:<hex> -->` marker for a body. */
-export function renderGovernedWorkUnitKeyMarker(identity: GovernedWorkUnitIdentity): string {
+export function renderGovernedWorkUnitKeyMarker(identity                          )         {
   return `<!-- governed-work-unit-key: sha256:${computeGovernedWorkUnitKey(identity)} -->`;
 }
 
-export type ValidateGovernedWorkUnitKeyResult = {
-  ok: boolean;
-  key: string | null;
-  digest: string | null;
-  reason: "missing" | "malformed" | "multiple" | "placeholder" | null;
-  markerCount: number;
-  isPlaceholder?: boolean;
-};
+                                                 
+              
+                     
+                        
+                                                                      
+                      
+                          
+  
 
-export type ValidateWorkUnitKeyOptions = {
-  allowPlaceholder?: boolean;
-  contract?: IntakeContract;
-};
+                                          
+                             
+                            
+  
 
 export function validateGovernedWorkUnitKey(
-  bodyMarkdown: string,
-  options?: ValidateWorkUnitKeyOptions,
-): ValidateGovernedWorkUnitKeyResult {
+  bodyMarkdown        ,
+  options                             ,
+)                                    {
   const contract = options?.contract ?? DEFAULT_CONTRACT;
   const allowPlaceholder = options?.allowPlaceholder ?? false;
   const text = normalizeLf(bodyMarkdown || "");
@@ -413,24 +413,24 @@ export function validateGovernedWorkUnitKey(
   };
 }
 
-export type IntakeValidationMode = "template" | "body";
+                                                       
 
-export type IntakeValidationOptions = {
-  mode?: IntakeValidationMode;
-  contract?: IntakeContract;
-};
+                                       
+                              
+                            
+  
 
-export type IntakeValidationResult =
-  | { ok: true; schemaVersion: string }
-  | { ok: false; missing: string[]; schemaVersion: string };
+                                    
+                                       
+                                                            
 
-export function sectionContent(text: string, heading: string): string {
+export function sectionContent(text        , heading        )         {
   const lines = text.split("\n");
   const start = lines.findIndex((line) =>
     new RegExp(String.raw`^##\s+${escapeRegExp(heading)}\s*$`, "i").test(line)
   );
   if (start === -1) return "";
-  const out: string[] = [];
+  const out           = [];
   for (let i = start + 1; i < lines.length; i += 1) {
     if (/^##\s+/.test(lines[i] ?? "")) break;
     out.push(lines[i] ?? "");
@@ -438,11 +438,11 @@ export function sectionContent(text: string, heading: string): string {
   return out.join("\n").replaceAll(/<!--[\s\S]*?-->/g, "").trim();
 }
 
-export function taxonomySection(text: string): string {
+export function taxonomySection(text        )         {
   const lines = text.split("\n");
   const start = lines.findIndex((l) => /^##\s+Root-cause taxonomy and disposition\s*$/i.test(l));
   if (start === -1) return "";
-  const out: string[] = [];
+  const out           = [];
   for (let i = start + 1; i < lines.length; i += 1) {
     if (/^##\s+/.test(lines[i] ?? "")) break;
     out.push(lines[i] ?? "");
@@ -450,10 +450,10 @@ export function taxonomySection(text: string): string {
   return out.join("\n");
 }
 
-function extractCausalClimbSection(text: string, preventionHeading: string): string {
+function extractCausalClimbSection(text        , preventionHeading        )         {
   const lines = text.split("\n");
   const endRe = new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(preventionHeading)}\s*$`, "i");
-  const out: string[] = [];
+  const out           = [];
   for (const line of lines) {
     if (endRe.test(line.trim())) break;
     out.push(line);
@@ -461,7 +461,7 @@ function extractCausalClimbSection(text: string, preventionHeading: string): str
   return out.join("\n");
 }
 
-function extractLadderSection(text: string, startHeading: string, endHeading?: string): string {
+function extractLadderSection(text        , startHeading        , endHeading         )         {
   const lines = text.split("\n");
   const startRe = new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(startHeading)}\s*$`, "i");
   const start = lines.findIndex((l) => startRe.test(l.trim()));
@@ -469,7 +469,7 @@ function extractLadderSection(text: string, startHeading: string, endHeading?: s
   const endRe = endHeading
     ? new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(endHeading)}\s*$`, "i")
     : null;
-  const out: string[] = [];
+  const out           = [];
   for (let i = start + 1; i < lines.length; i += 1) {
     const line = lines[i] ?? "";
     if (endRe && endRe.test(line.trim())) break;
@@ -479,16 +479,16 @@ function extractLadderSection(text: string, startHeading: string, endHeading?: s
   return out.join("\n");
 }
 
-export type CausalRow = {
-  rank: string;
-  finding: string;
-  disposition: string;
-  reifiedAs: string;
-  raw: string;
-};
+                         
+               
+                  
+                      
+                    
+              
+  
 
-export function parseCausalRows(sectionText: string): CausalRow[] {
-  const rows: CausalRow[] = [];
+export function parseCausalRows(sectionText        )              {
+  const rows              = [];
   for (const line of sectionText.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("|") || trimmed.includes("---")) continue;
@@ -507,8 +507,8 @@ export function parseCausalRows(sectionText: string): CausalRow[] {
   return rows;
 }
 
-function parseTableRows(sectionText: string): Array<{ rank: string; status: string; raw: string }> {
-  const rows: Array<{ rank: string; status: string; raw: string }> = [];
+function parseTableRows(sectionText        )                                                       {
+  const rows                                                       = [];
   for (const line of sectionText.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("|") || trimmed.includes("---")) continue;
@@ -538,18 +538,18 @@ const DECISION_CLAIM_TRIGGER_RES = [
   /\bplease\s+(?:advise|decide|authorize|authorise|approve|confirm)\b/i,
 ];
 
-export function claimsOperatorDecision(section: string): boolean {
+export function claimsOperatorDecision(section        )          {
   return DECISION_CLAIM_TRIGGER_RES.some((re) => re.test(section));
 }
 
 const OPTION_LINE_RE = /^(?:[-*]|\d+[.)])\s+(\S.*)$/;
 const OPTION_DOWNSIDE_RE = /\b(downside|cost|risk|trade-?off|harm|loses?|sacrific\w*|danger|hazard)\b/i;
 
-function hasTwoOptionsWithDownsides(section: string): boolean {
+function hasTwoOptionsWithDownsides(section        )          {
   const items = section
     .split("\n")
     .map((line) => OPTION_LINE_RE.exec(line.trim())?.[1])
-    .filter((item): item is string => typeof item === "string");
+    .filter((item)                 => typeof item === "string");
   return items.filter((item) => OPTION_DOWNSIDE_RE.test(item)).length >= 2;
 }
 
@@ -561,8 +561,8 @@ const FALLBACK_DEADLINE_RE =
 const FALLBACK_ACTION_RE =
   /\bif\s+no\s+(?:answer|response)\b|\bno\s+response\b|\botherwise\b|\bdefault(?:s|ing)?\s+to\b|\bwill\s+proceed\s+with\b/i;
 
-export function humanDecisionClaimGaps(section: string): string[] {
-  const missing: string[] = [];
+export function humanDecisionClaimGaps(section        )           {
+  const missing           = [];
   if (!hasTwoOptionsWithDownsides(section)) {
     missing.push(
       "Human-decision state: at least two competing options, each naming its actual downside",
@@ -588,13 +588,13 @@ export function humanDecisionClaimGaps(section: string): string[] {
  *   - "body": validates completed issue body evidence; rejects all placeholders.
  */
 export function validateGovernedIntakeMarkdown(
-  markdown: string,
-  options?: IntakeValidationOptions,
-): IntakeValidationResult {
+  markdown        ,
+  options                          ,
+)                         {
   const mode = options?.mode ?? "template";
   const contract = options?.contract ?? DEFAULT_CONTRACT;
   const text = stripFrontmatter(markdown);
-  const missing: string[] = [];
+  const missing           = [];
 
   for (const h of contract.requiredHeadings) {
     if (!new RegExp(String.raw`^##\s+` + escapeRegExp(h) + String.raw`\s*$`, "im").test(text)) {
@@ -643,9 +643,9 @@ export function validateGovernedIntakeMarkdown(
       }
     }
   } else {
-    let repoVal: string | null = null;
-    let commitVal: string | null = null;
-    let pathVal: string | null = null;
+    let repoVal                = null;
+    let commitVal                = null;
+    let pathVal                = null;
 
     for (const rawLine of lines) {
       const line = rawLine.trim().replace(/^[-*]\s*/, "");
@@ -657,7 +657,7 @@ export function validateGovernedIntakeMarkdown(
       if (p) pathVal = p[1].trim();
     }
 
-    const clean = (s: string | null) => (s || "").replaceAll(/<!--[\s\S]*?-->/g, "").trim();
+    const clean = (s               ) => (s || "").replaceAll(/<!--[\s\S]*?-->/g, "").trim();
     const repoClean = clean(repoVal);
     const commitClean = clean(commitVal);
     const pathClean = clean(pathVal);
@@ -715,7 +715,7 @@ export function validateGovernedIntakeMarkdown(
           const whatNeeded = sectionContent(text, "What happened or what is needed?").trim();
           const details = sectionContent(text, "Relevant details").trim();
           const combined = `${whatNeeded}\n${details}`;
-          const requirements: Array<[string, RegExp]> = [
+          const requirements                          = [
             ["falsifiable hypothesis", /\bfalsifiable\s+hypothesis\b/i],
             ["metrics", /\bmetrics?\b/i],
             ["reversible test", /\breversib\w*\b/i],
@@ -917,7 +917,7 @@ export function validateGovernedIntakeMarkdown(
     const startIdx = rawDecisionSection.findIndex((l) => /^##\s+Human-decision state\s*$/i.test(l));
     let rawContent = "";
     if (startIdx !== -1) {
-      const parts: string[] = [];
+      const parts           = [];
       for (let i = startIdx + 1; i < rawDecisionSection.length; i += 1) {
         if (/^##\s+/.test(rawDecisionSection[i] ?? "")) break;
         parts.push(rawDecisionSection[i] ?? "");
@@ -938,28 +938,28 @@ export function validateGovernedIntakeMarkdown(
 }
 
 export function validateIssueTemplate(
-  templateMarkdown: string,
-  options?: Omit<IntakeValidationOptions, "mode">,
-): IntakeValidationResult {
+  templateMarkdown        ,
+  options                                        ,
+)                         {
   return validateGovernedIntakeMarkdown(templateMarkdown, { ...options, mode: "template" });
 }
 
 export function validateGovernedIntakeBody(
-  bodyMarkdown: string,
-  options?: Omit<IntakeValidationOptions, "mode">,
-): IntakeValidationResult {
+  bodyMarkdown        ,
+  options                                        ,
+)                         {
   return validateGovernedIntakeMarkdown(bodyMarkdown, { ...options, mode: "body" });
 }
 
 
-export type ClassifiedWorkTypeResult =
-  | { kind: "resolved"; workType: IntakeWorkType }
-  | { kind: "unresolved"; reason: string; candidateTypes?: string[] };
+                                      
+                                                  
+                                                                      
 
 export function classifyWorkTypeFromIntent(
-  intentText: string,
-  contract: IntakeContract = DEFAULT_CONTRACT,
-): ClassifiedWorkTypeResult {
+  intentText        ,
+  contract                 = DEFAULT_CONTRACT,
+)                           {
   const text = intentText.trim();
   const lower = text.toLowerCase();
 

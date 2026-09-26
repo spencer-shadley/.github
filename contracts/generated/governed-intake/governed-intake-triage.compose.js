@@ -11,100 +11,100 @@
  * Consumer cutover is out of band: this producer exposes the typed API and portable
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
-import { boundTriagePolicyFromProducer, fingerprintIssueScope, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
-export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.ts";
-import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
+import { boundTriagePolicyFromProducer, fingerprintIssueScope,                       } from "./governed-intake-policy-binding.js";
+export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.js";
+import { validateGovernedIntakeBody, validateGovernedWorkUnitKey,                             } from "./governed-intake-body.evaluate.js";
 import {
   evaluateTriageChecklistStructure,
   CURRENT_TRIAGE_REVISION,
-  type TriageChecklistState,
-} from "./governed-intake-triage-state.evaluate.ts";
+                            
+} from "./governed-intake-triage-state.evaluate.js";
 import {
   assertTriagePolicy,
   evaluateTriagePolicy,
   evaluateImplementationCandidate,
   planRetiredProgressLabelCleanup,
-  type Assessment,
-  type BoundTriagePolicy,
-  type PolicyEvaluation,
-  type PolicySnapshot,
-  type TriagePolicy,
-} from "./governed-intake-triage-policy.evaluate.ts";
+                  
+                         
+                        
+                      
+                    
+} from "./governed-intake-triage-policy.evaluate.js";
 import {
   planChecklistDelta,
   validateChecklistRelease,
-  type ChecklistDelta,
-  type ChecklistItem,
-  type ChecklistRelease,
-  type PriorChecklistEvidence,
-} from "./governed-intake-triage-state.migrate.ts";
+                      
+                     
+                        
+                              
+} from "./governed-intake-triage-state.migrate.js";
 import bodyContract from "./governed-intake-body.v1.json" with { type: "json" };
 
 
 export const POLICY_PAYLOAD_NAME = "governed-intake-triage-policy.v1.json";
-export const COMPOSE_CONSUMER_CUTOVER = false as const;
+export const COMPOSE_CONSUMER_CUTOVER = false         ;
 
-const unique = (values: readonly string[]): string[] => [...new Set(values)];
-const nonempty = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
+const unique = (values                   )           => [...new Set(values)];
+const nonempty = (value         )                  => typeof value === "string" && value.trim().length > 0;
 
-export function currentChecklistRelease(): ChecklistRelease {
-  const items = (bodyContract as { triageChecklist: { items: ChecklistItem[] } }).triageChecklist.items;
-  const release: ChecklistRelease = { revision: CURRENT_TRIAGE_REVISION, items };
+export function currentChecklistRelease()                   {
+  const items = (bodyContract                                                   ).triageChecklist.items;
+  const release                   = { revision: CURRENT_TRIAGE_REVISION, items };
   validateChecklistRelease(release);
   return release;
 }
 
 /** Adapter-verified semantic input. There is no `eligible` or `servingVerified` shortcut. */
-export type SemanticEvidenceInput =
-  | { kind: "missing" }
-  | { kind: "unsupported"; consumer: string; reason: string }
-  | {
-      kind: "adapter-verified";
-      workUnitKey: string;
-      scopeFingerprint: string;
-      state: PolicySnapshot["state"];
-      repositoryActive: boolean;
-      priorHighEffort: boolean;
-      requiresQualifiedAssessment: boolean;
-      assessment: Assessment | null;
-      currentGraphFingerprint: string | null;
-      hasExecutableChildGraph: boolean;
-      finalAttributesScopeFingerprint: string | null;
-      directionEvidenceFresh: boolean;
-      trusted: PolicySnapshot["trusted"];
-    };
+                                   
+                       
+                                                             
+     
+                               
+                          
+                               
+                                     
+                                
+                               
+                                           
+                                    
+                                             
+                                       
+                                                     
+                                      
+                                         
+      
 
-export interface ComposedTriageInput {
-  /** Actual server-fetched GitHub subject; never derived from the evidence being checked. */
-  subject?: Omit<IssueScopeSource, "body">;
-  body: string;
-  labels: readonly string[];
-  evidence: SemanticEvidenceInput;
-  priorChecklist?: { previous: ChecklistRelease | null; evidence: PriorChecklistEvidence };
-  implementationReceiptId?: string;
-}
+                                      
+                                                                                             
+                                           
+               
+                            
+                                  
+                                                                                           
+                                   
+ 
 
-export type ComposedTriageStatus = "complete" | "pending" | "unsupported" | "out_of_scope";
+                                                                                           
 
-export interface ComposedTriageResult {
-  status: ComposedTriageStatus;
-  needsTriage: boolean;
-  implementationCandidate: boolean;
-  implementationEligible: boolean;
-  scopeResolved: boolean;
-  disposition: string | null;
-  reasons: string[];
-  legacyLabelsToRemove: string[];
-  body: IntakeValidationResult;
-  checklist: TriageChecklistState;
-  policy: PolicyEvaluation | null;
-  policyIdentity: string;
-  rubricIdentity: string;
-  checklistDelta: ChecklistDelta | null;
-  consumerCutover: typeof COMPOSE_CONSUMER_CUTOVER;
-}
+                                       
+                               
+                       
+                                   
+                                  
+                         
+                             
+                    
+                                 
+                               
+                                  
+                                  
+                         
+                         
+                                        
+                                                   
+ 
 
-function asStatus(reasons: readonly string[], policy: PolicyEvaluation | null): ComposedTriageStatus {
+function asStatus(reasons                   , policy                         )                       {
   if (reasons.includes("unsupported_consumer") || reasons.includes("unsupported_policy_or_rubric_identity")) {
     return "unsupported";
   }
@@ -113,15 +113,15 @@ function asStatus(reasons: readonly string[], policy: PolicyEvaluation | null): 
   return "pending";
 }
 
-export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): Promise<ComposedTriageResult> {
+export async function evaluateGovernedIntakeTriage(input                     )                                {
   const bound = boundTriagePolicyFromProducer();
   const body = validateGovernedIntakeBody(input.body);
   const checklist = await evaluateTriageChecklistStructure(input.body, input.labels);
-  const reasons: string[] = [];
+  const reasons           = [];
   if (!body.ok) reasons.push("body_invalid");
   if (checklist.needs_triage) reasons.push("checklist_incomplete");
 
-  let checklistDelta: ChecklistDelta | null = null;
+  let checklistDelta                        = null;
   if (input.priorChecklist) {
     checklistDelta = planChecklistDelta(
       input.priorChecklist.previous,
@@ -205,7 +205,7 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
   if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
 
-  const snapshot: PolicySnapshot = {
+  const snapshot                 = {
     workUnitKey: actualKey.key ?? "invalid:work_unit_key",
     scopeFingerprint: actualScope,
     policyIdentity: bound.policyIdentity,

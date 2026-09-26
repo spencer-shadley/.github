@@ -5,82 +5,82 @@
  */
 import governedIntakeContractJson from "./governed-intake-body.v1.json" with { type: "json" };
 
-type TriageChecklistItem = {
-  id: string;
-  title: string;
-  text: string;
-};
+                            
+             
+                
+               
+  
 
-type TriageChecklistContract = {
-  heading: string;
-  revisionSource: "version";
-  sectionMarkerName: string;
-  itemMarkerName: string;
-  completionMarkerName: string;
-  fingerprintAlgorithm: "sha256";
-  fingerprintScope: string;
-  pendingLabels: string[];
-  triagedLabelPrefix: string;
-  triageOwnedLabelPatterns: string[];
-  executionSubstrateLabels: string[];
-  items: TriageChecklistItem[];
-};
+                                
+                  
+                            
+                            
+                         
+                               
+                                 
+                           
+                          
+                             
+                                     
+                                     
+                               
+  
 
-type GovernedIntakeContract = {
-  schema: string;
-  version: number;
-  requiredHeadings: string[];
-  taxonomyRanks: string[];
-  causalClimbColumns: string[];
-  workUnitKey: { heading: string; markerTemplate: string };
-  triageChecklist: TriageChecklistContract;
-  workTypes?: Array<{ id: string; label: string; recordKind?: string; description?: string; authority?: string }>;
-  legacyWorkTypes?: string[];
-};
+                               
+                 
+                  
+                             
+                          
+                               
+                                                           
+                                           
+                                                                                                                  
+                             
+  
 
-export type TriageChecklistReason =
-  | "missing_checklist"
-  | "duplicate_checklist"
-  | "malformed_checklist"
-  | "checklist_revision_mismatch"
-  | "checklist_item_set_mismatch"
-  | "unchecked_checklist_item"
-  | "missing_completion_marker"
-  | "duplicate_completion_marker"
-  | "completion_revision_mismatch"
-  | "fingerprint_mismatch"
-  | "missing_triaged_stamp"
-  | "stale_triaged_stamp"
-  | "duplicate_triaged_stamp"
-  | "pending_marker_present"
-  | "missing_execution_substrate_label"
-  | "conflicting_execution_substrate_labels"
-  | "semantic_evidence_required"
-  | "semantic_evaluation_pending";
+                                   
+                       
+                         
+                         
+                                 
+                                 
+                              
+                               
+                                 
+                                  
+                          
+                           
+                         
+                             
+                            
+                                       
+                                            
+                                
+                                  
 
-export interface TriageChecklistState {
-  needs_triage: boolean;
-  current_revision: number;
-  current_triaged_label: string;
-  checklist_revision: number | null;
-  checklist_count: number;
-  expected_item_ids: string[];
-  observed_item_ids: string[];
-  unchecked_item_ids: string[];
-  malformed_item_ids: string[];
-  completion_count: number;
-  completion_revision: number | null;
-  completion_fingerprint: string | null;
-  expected_fingerprint: string | null;
-  triaged_labels: string[];
-  pending_labels: string[];
-  execution_substrate_labels: string[];
-  reasons: TriageChecklistReason[];
-}
+                                       
+                        
+                           
+                                
+                                    
+                          
+                              
+                              
+                               
+                               
+                           
+                                     
+                                        
+                                      
+                           
+                           
+                                       
+                                   
+ 
 
-const CONTRACT = governedIntakeContractJson as GovernedIntakeContract;
+const CONTRACT = governedIntakeContractJson                          ;
 
-function assertContract(): TriageChecklistContract {
+function assertContract()                          {
   if (CONTRACT.schema !== "GovernedIntakeBodyV1") {
     throw new Error(`unsupported governed intake schema: ${String(CONTRACT.schema)}`);
   }
@@ -110,52 +110,52 @@ function assertContract(): TriageChecklistContract {
 export const GOVERNED_TRIAGE_CHECKLIST = assertContract();
 export const CURRENT_TRIAGE_REVISION = CONTRACT.version;
 export const CURRENT_TRIAGED_LABEL = `${GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix}${String(CURRENT_TRIAGE_REVISION)}`;
-export const GOVERNED_INTAKE_REQUIRED_HEADINGS: readonly string[] = CONTRACT.requiredHeadings;
-export const GOVERNED_TAXONOMY_RANKS: readonly string[] = CONTRACT.taxonomyRanks;
-export const GOVERNED_CAUSAL_COLUMNS: readonly string[] = CONTRACT.causalClimbColumns;
+export const GOVERNED_INTAKE_REQUIRED_HEADINGS                    = CONTRACT.requiredHeadings;
+export const GOVERNED_TAXONOMY_RANKS                    = CONTRACT.taxonomyRanks;
+export const GOVERNED_CAUSAL_COLUMNS                    = CONTRACT.causalClimbColumns;
 export const GOVERNED_WORK_UNIT_HEADING = CONTRACT.workUnitKey.heading;
 export const GOVERNED_WORK_UNIT_MARKER_TEMPLATE = CONTRACT.workUnitKey.markerTemplate;
-export const GOVERNED_WORK_TYPES = (CONTRACT.workTypes ?? []) as readonly { id: string; label: string; recordKind?: string; description?: string; authority?: string }[];
-export const GOVERNED_WORK_TYPE_LABELS: readonly string[] = GOVERNED_WORK_TYPES.map((wt) => wt.label);
-export const GOVERNED_LEGACY_WORK_TYPES: readonly string[] = (CONTRACT.legacyWorkTypes ?? []) as readonly string[];
+export const GOVERNED_WORK_TYPES = (CONTRACT.workTypes ?? [])                                                                                                           ;
+export const GOVERNED_WORK_TYPE_LABELS                    = GOVERNED_WORK_TYPES.map((wt) => wt.label);
+export const GOVERNED_LEGACY_WORK_TYPES                    = (CONTRACT.legacyWorkTypes ?? [])                     ;
 
-function escapeRegExp(value: string): string {
+function escapeRegExp(value        )         {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function normalizeLf(value: string): string {
+function normalizeLf(value        )         {
   return value.replaceAll("\r\n", "\n").replace(/^\uFEFF/, "");
 }
 
-function sectionStartRegex(flags = "g"): RegExp {
+function sectionStartRegex(flags = "g")         {
   return new RegExp(
     `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName)}:\\s*revision=(\\d+)\\s*-->`,
     flags,
   );
 }
 
-function sectionEndRegex(flags = "g"): RegExp {
+function sectionEndRegex(flags = "g")         {
   return new RegExp(
     `<!--\\s*\\/${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName)}\\s*-->`,
     flags,
   );
 }
 
-function itemMarkerRegex(flags = "g"): RegExp {
+function itemMarkerRegex(flags = "g")         {
   return new RegExp(
     `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.itemMarkerName)}:\\s*([a-z0-9]+(?:-[a-z0-9]+)*)\\s*-->`,
     flags,
   );
 }
 
-function completionRegex(flags = "g"): RegExp {
+function completionRegex(flags = "g")         {
   return new RegExp(
     `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.completionMarkerName)}:\\s*revision=(\\d+)\\s+fingerprint=(sha256:[0-9a-f]{64})\\s*-->`,
     flags,
   );
 }
 
-function triagedLabelRegex(): RegExp {
+function triagedLabelRegex()         {
   return new RegExp(`^${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}(\\d+)$`, "i");
 }
 
@@ -163,15 +163,15 @@ const TRIAGE_OWNED_LABEL_REGEXES = GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPat
   (pattern) => new RegExp(pattern, "i"),
 );
 
-export function isTriagedChecklistLabel(label: string): boolean {
+export function isTriagedChecklistLabel(label        )          {
   return triagedLabelRegex().test(label);
 }
 
-export function isTriageOwnedChecklistLabel(label: string): boolean {
+export function isTriageOwnedChecklistLabel(label        )          {
   return isTriagedChecklistLabel(label) || TRIAGE_OWNED_LABEL_REGEXES.some((pattern) => pattern.test(label));
 }
 
-export function renderTriageChecklistBlock(options: { includeHeading?: boolean; checked?: boolean } = {}): string {
+export function renderTriageChecklistBlock(options                                                  = {})         {
   const includeHeading = options.includeHeading !== false;
   const checkbox = options.checked === true ? "x" : " ";
   const lines = [
@@ -187,20 +187,20 @@ export function renderTriageChecklistBlock(options: { includeHeading?: boolean; 
   return lines.join("\n");
 }
 
-export function renderTriageCompletionMarker(fingerprint: string): string {
+export function renderTriageCompletionMarker(fingerprint        )         {
   if (!/^sha256:[0-9a-f]{64}$/.test(fingerprint)) {
     throw new Error(`invalid triage completion fingerprint: ${fingerprint}`);
   }
   return `<!-- ${GOVERNED_TRIAGE_CHECKLIST.completionMarkerName}: revision=${String(CURRENT_TRIAGE_REVISION)} fingerprint=${fingerprint} -->`;
 }
 
-function triageOwnedLabels(labels: readonly string[]): string[] {
+function triageOwnedLabels(labels                   )           {
   return [...new Set(labels.filter(
     (label) => !isTriagedChecklistLabel(label) && TRIAGE_OWNED_LABEL_REGEXES.some((pattern) => pattern.test(label)),
   ))].sort((left, right) => left.localeCompare(right));
 }
 
-export async function computeTriageStateFingerprint(body: string, labels: readonly string[]): Promise<string> {
+export async function computeTriageStateFingerprint(body        , labels                   )                  {
   const withoutCompletion = normalizeLf(body || "").replace(completionRegex("g"), "");
   const normalizedBody = withoutCompletion
     .split("\n")
@@ -213,12 +213,12 @@ export async function computeTriageStateFingerprint(body: string, labels: readon
   return `sha256:${hex}`;
 }
 
-type ChecklistSection = { revision: number; content: string; closed: boolean };
+                                                                               
 
-function extractChecklistSections(body: string): ChecklistSection[] {
+function extractChecklistSections(body        )                     {
   const text = normalizeLf(body || "");
   const starts = [...text.matchAll(sectionStartRegex("g"))];
-  const out: ChecklistSection[] = [];
+  const out                     = [];
   for (const start of starts) {
     const startIndex = start.index ?? 0;
     const contentStart = startIndex + start[0].length;
@@ -233,15 +233,15 @@ function extractChecklistSections(body: string): ChecklistSection[] {
   return out;
 }
 
-function checklistItems(section: string): {
-  observed: string[];
-  unchecked: string[];
-  malformed: string[];
-} {
+function checklistItems(section        )   
+                     
+                      
+                      
+  {
   const lines = normalizeLf(section).split("\n");
-  const observed: string[] = [];
-  const unchecked: string[] = [];
-  const malformed: string[] = [];
+  const observed           = [];
+  const unchecked           = [];
+  const malformed           = [];
 
   for (let index = 0; index < lines.length; index += 1) {
     const marker = itemMarkerRegex("").exec(lines[index] ?? "");
@@ -259,9 +259,9 @@ function checklistItems(section: string): {
 }
 
 export async function evaluateTriageChecklistStructure(
-  body: string | null | undefined,
-  labels: readonly string[],
-): Promise<TriageChecklistState> {
+  body                           ,
+  labels                   ,
+)                                {
   const text = body ?? "";
   const expectedIds = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
   const sections = extractChecklistSections(text);
@@ -270,7 +270,7 @@ export async function evaluateTriageChecklistStructure(
   const parsedItems = activeSection
     ? checklistItems(activeSection.content)
     : { observed: [], unchecked: [], malformed: [] };
-  const reasons: TriageChecklistReason[] = [];
+  const reasons                          = [];
 
   if (sections.length === 0) reasons.push("missing_checklist");
   if (sections.length > 1) reasons.push("duplicate_checklist");
@@ -314,7 +314,7 @@ export async function evaluateTriageChecklistStructure(
   if (executionSubstrateLabels.length === 0) reasons.push("missing_execution_substrate_label");
   if (executionSubstrateLabels.length > 1) reasons.push("conflicting_execution_substrate_labels");
 
-  let expectedFingerprint: string | null = null;
+  let expectedFingerprint                = null;
   const structurallyComplete = Boolean(
     activeSection?.closed
     && itemSetMatches
@@ -349,26 +349,26 @@ export async function evaluateTriageChecklistStructure(
   };
 }
 
-export function triageProjectionErrorMessage(state: TriageChecklistState): string {
+export function triageProjectionErrorMessage(state                      )         {
   return `Refused triage completion projection: ${state.current_triaged_label} requires one current complete checklist and matching ${GOVERNED_TRIAGE_CHECKLIST.completionMarkerName} fingerprint; reasons=${state.reasons.join(",") || "unknown"}.`;
 }
 
 
 /** Public completion API: structural checks alone are not semantic triage completion. */
 export async function evaluateTriageChecklistState(
-  body: string,
-  labels: readonly string[] = [],
-  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId">,
-): Promise<TriageChecklistState & { semantic_reasons?: string[]; scope_resolved?: boolean }> {
+  body        ,
+  labels                    = [],
+  semanticInput                                                                                                                                                 ,
+)                                                                                            {
   const structure = await evaluateTriageChecklistStructure(body, labels);
   if (!semanticInput) return { ...structure, needs_triage: true,
     unchecked_item_ids: [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
-    reasons: [...new Set([...structure.reasons, "semantic_evidence_required" as const])],
+    reasons: [...new Set([...structure.reasons, "semantic_evidence_required"         ])],
     semantic_reasons: ["missing_semantic_evidence"], scope_resolved: false };
-  const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.ts");
+  const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.js");
   const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
   return { ...structure, needs_triage: result.needsTriage,
     unchecked_item_ids: result.scopeResolved ? structure.unchecked_item_ids : [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
-    reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending" as const])] : structure.reasons,
+    reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending"         ])] : structure.reasons,
     semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };
 }

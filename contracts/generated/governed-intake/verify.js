@@ -24,55 +24,55 @@ export const REQUIRED_RELEASE_PAYLOADS = [
   "compose.ts", "compose.js",
   "governed-intake-policy-binding.ts", "governed-intake-policy-binding.js",
   "policy-binding.ts", "policy-binding.js",
-] as const;
-export type GovernedIntakeReleaseFileEntry = { path: string; sha256: string; byteLength: number };
-export type GovernedIntakeReleaseManifest = {
-  schema: "GovernedIntakeReleaseManifestV1";
-  schemaFamily: "GovernedIntakeBodyV1";
-  revision: number;
-  producer: { repository: string; commit: string };
-  payloadDigest: string;
-  files: Record<string, GovernedIntakeReleaseFileEntry>;
-  build?: { runtime: string; compiler: string };
-};
-export type VerifyReleaseOptions = {
-  releaseDir?: string;
-  expectedRepository?: string;
-  expectedRevision?: number;
-  expectedCommit?: string;
-  expectedPayloadDigest?: string;
-};
-export type GovernedIntakeReleasePin = {
-  repository: typeof RELEASE_PRODUCER;
-  commit: string;
-  revision: number;
-  payloadDigest: string;
-};
-export type VerifyReleaseErrorCode = "missing_manifest" | "invalid_manifest" | "unsupported_schema"
-  | "repository_mismatch" | "revision_mismatch" | "commit_mismatch" | "digest_mismatch"
-  | "missing_file" | "corrupt_file" | "invalid_pin";
-export type VerifyReleaseResult = { ok: true; manifest: GovernedIntakeReleaseManifest }
-  | { ok: false; code: VerifyReleaseErrorCode; error: string; details?: Record<string, unknown> };
-const fullCommit = (value: unknown): value is string =>
+]         ;
+                                                                                                  
+                                             
+                                            
+                                       
+                   
+                                                   
+                        
+                                                        
+                                                
+  
+                                    
+                      
+                              
+                            
+                          
+                                 
+  
+                                        
+                                      
+                 
+                   
+                        
+  
+                                                                                                   
+                                                                                       
+                                                    
+                                                                                       
+                                                                                                  
+const fullCommit = (value         )                  =>
   typeof value === "string" && /^[0-9a-f]{40}$/.test(value) && !/^0+$/.test(value);
-const digest = (value: unknown): value is string => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
-const object = (value: unknown): value is Record<string, unknown> =>
+const digest = (value         )                  => typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
+const object = (value         )                                   =>
   value !== null && typeof value === "object" && !Array.isArray(value);
-export const sha256 = (bytes: Buffer | string): string => createHash("sha256").update(bytes).digest("hex");
-export function computePayloadDigest(files: Record<string, GovernedIntakeReleaseFileEntry>): string {
+export const sha256 = (bytes                 )         => createHash("sha256").update(bytes).digest("hex");
+export function computePayloadDigest(files                                                )         {
   return sha256(Object.keys(files).sort().map((key) => {
     const entry = files[key];
     return `${entry.path}:${entry.sha256}:${String(entry.byteLength)}`;
   }).join("\n"));
 }
-const fail = (code: VerifyReleaseErrorCode, error: string): VerifyReleaseResult => ({ ok: false, code, error });
+const fail = (code                        , error        )                      => ({ ok: false, code, error });
 
 /** Structural/integrity check; use admitGovernedIntakeRelease for external identity admission. */
 export function verifyGovernedIntakeRelease(
-  releaseDirOrManifest: string | GovernedIntakeReleaseManifest,
-  options: VerifyReleaseOptions = {},
-): VerifyReleaseResult {
-  let raw: unknown;
+  releaseDirOrManifest                                        ,
+  options                       = {},
+)                      {
+  let raw         ;
   const dir = typeof releaseDirOrManifest === "string" ? releaseDirOrManifest : options.releaseDir;
   try {
     if (typeof releaseDirOrManifest === "string") {
@@ -82,7 +82,7 @@ export function verifyGovernedIntakeRelease(
       raw = JSON.parse(readFileSync(file, "utf8"));
     } else raw = releaseDirOrManifest;
   } catch (error) {
-    return fail((error as NodeJS.ErrnoException).code === "ENOENT" ? "missing_manifest" : "invalid_manifest", String(error));
+    return fail((error                         ).code === "ENOENT" ? "missing_manifest" : "invalid_manifest", String(error));
   }
   if (!object(raw)) return fail("invalid_manifest", "manifest must be an object");
   if (raw.schema !== RELEASE_MANIFEST_SCHEMA || raw.schemaFamily !== RELEASE_SCHEMA_FAMILY) {
@@ -105,7 +105,7 @@ export function verifyGovernedIntakeRelease(
       return fail("invalid_manifest", `invalid payload path or metadata: ${name}`);
     }
   }
-  const manifest = raw as GovernedIntakeReleaseManifest;
+  const manifest = raw                                 ;
   if (computePayloadDigest(manifest.files) !== manifest.payloadDigest) return fail("digest_mismatch", "manifest payloadDigest does not match file metadata");
   if (options.expectedPayloadDigest !== undefined && manifest.payloadDigest !== options.expectedPayloadDigest) return fail("digest_mismatch", "payloadDigest differs from admitted digest");
   if (dir) {
@@ -123,23 +123,23 @@ export function verifyGovernedIntakeRelease(
       const policyAlias = readFileSync(path.join(dir, "policy.json"));
       const policyCanonical = readFileSync(path.join(dir, "governed-intake-triage-policy.v1.json"));
       if (!policyAlias.equals(policyCanonical)) return fail("corrupt_file", "policy aliases contain different bytes");
-      const contract: unknown = JSON.parse(canonical.toString("utf8"));
+      const contract          = JSON.parse(canonical.toString("utf8"));
       if (!object(contract) || contract.schema !== RELEASE_SCHEMA_FAMILY || contract.version !== manifest.revision || contract.owner !== RELEASE_PRODUCER) {
         return fail("corrupt_file", "contract schema, revision or owner differs from release identity");
       }
-      const policy: unknown = JSON.parse(policyCanonical.toString("utf8"));
+      const policy          = JSON.parse(policyCanonical.toString("utf8"));
       if (!object(policy) || policy.schema !== "GovernedTriagePolicyV1" || policy.owner !== RELEASE_PRODUCER) {
         return fail("corrupt_file", "policy schema or owner differs from producer identity");
       }
     } catch (error) {
-      return fail((error as NodeJS.ErrnoException).code === "ENOENT" ? "missing_file" : "corrupt_file", String(error));
+      return fail((error                         ).code === "ENOENT" ? "missing_file" : "corrupt_file", String(error));
     }
   }
   return { ok: true, manifest };
 }
 
 /** Never derive this pin from the same untrusted manifest being admitted. */
-export function admitGovernedIntakeRelease(dir: string, pin: GovernedIntakeReleasePin): VerifyReleaseResult {
+export function admitGovernedIntakeRelease(dir        , pin                          )                      {
   if (!object(pin) || pin.repository !== RELEASE_PRODUCER || !fullCommit(pin.commit)
     || !Number.isSafeInteger(pin.revision) || pin.revision < 1 || !digest(pin.payloadDigest)) {
     return fail("invalid_pin", "a separately admitted repository/commit/revision/payloadDigest pin is required");
@@ -150,7 +150,7 @@ export function admitGovernedIntakeRelease(dir: string, pin: GovernedIntakeRelea
   });
 }
 
-export function loadGovernedIntakeRelease(dir: string, options: VerifyReleaseOptions = {}) {
+export function loadGovernedIntakeRelease(dir        , options                       = {}) {
   const result = verifyGovernedIntakeRelease(dir, options);
   if (!result.ok) throw new Error(`governed-intake release: ${result.code}: ${result.error}`);
   return {

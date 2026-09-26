@@ -4,7 +4,7 @@ about: Concise feature, leverage, risk-reduction, or discovery item for triage
 labels: agent-review, priority:triage-tbd, work:untriaged
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 19). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 20). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 Machine and triage intake use the governed task body and checklist from this producer.
 This feature chooser is not a second checklist, cadence schedule, or registry/shed form.
