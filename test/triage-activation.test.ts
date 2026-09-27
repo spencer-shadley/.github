@@ -175,6 +175,16 @@ test("effort calibration references policy JSON and drops compulsory RCA/N=1 cap
   assert.match(generateTaskMarkdown(contract), /Certified atomic-high remains high/);
 });
 
+test("ownership and synergy checklist avoid repeated full-census ceremony", () => {
+  const owner = contract.triageChecklist.items.find((item: { id: string }) => item.id === "fix-owner-responsibility");
+  const dedup = contract.triageChecklist.items.find((item: { id: string }) => item.id === "dedup-queue-synergy");
+  assert.match(owner.text, /Reuse a prior high-confidence ownership receipt/);
+  assert.match(owner.text, /does not require a model seat/);
+  assert.match(dedup.text, /Search open work in the resolved owner first/);
+  assert.match(dedup.text, /closed history only for regression\/prior-fix/);
+  assert.match(dedup.text, /Reuse a fresh synergy receipt/);
+});
+
 test("verification is required before implementation but not as triage prose", () => {
   const verify = contract.triageChecklist.items.find((item: { id: string }) => item.id === "verify-human-required");
   assert.match(verify.text, /before an implementation writer starts/);
