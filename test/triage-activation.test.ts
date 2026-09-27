@@ -236,6 +236,18 @@ test("unsupported consumers fail closed instead of completing from local boxes",
   assert.ok(result.reasons.includes("stale_release_pin"));
 });
 
+test("closed or inactive issues remain out of scope without becoming pending triage", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  for (const patch of [{ state: "closed" as const }, { repositoryActive: false }]) {
+    const evidence = await verifiedEvidence("ordinary");
+    Object.assign(evidence, patch);
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.equal(result.status, "out_of_scope", JSON.stringify(result.reasons));
+    assert.equal(result.needsTriage, false, JSON.stringify(result.reasons));
+    assert.equal(result.implementationCandidate, false);
+  }
+});
+
 for (const kind of ["ordinary", "atomic-high", "parent"] as const) {
   test(`adapter-verified ${kind} can complete composed triage with shape-appropriate candidacy`, async () => {
     const { body, labels } = await completedBodyAndLabels(dispositionLabels(kind));
