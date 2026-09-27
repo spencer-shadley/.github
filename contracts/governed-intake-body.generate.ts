@@ -844,7 +844,7 @@ export function runSelfcheck(root = REPO_ROOT) {
   assert.ok(itemIds.indexOf("scope-decomposition") > itemIds.indexOf("dedup-queue-synergy"), "scope item follows value/dedup");
   assert.ok(itemIds.indexOf("scope-decomposition") < itemIds.indexOf("priority-work-dimensions"), "scope item precedes final attributes");
   assert.match(markdown, /Child triage does not wait for a parent completion stamp/);
-  assert.match(yaml, /qualified `effort:high` atomic leaves/);
+  assert.match(yaml, /before an implementation writer starts/);
   assert.equal(markdown.includes("The triage role does not plan, decompose, mint, or commission implementation writers."), false);
   assert.equal(JSON.stringify(contract.effortCalibration).includes("preventionRcaDefault"), false);
   assert.equal(JSON.stringify(contract.effortCalibration).includes("tipRedDefectDefault"), false);
