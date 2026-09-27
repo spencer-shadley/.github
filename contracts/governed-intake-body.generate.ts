@@ -142,7 +142,11 @@ function assertTriageChecklistContract(raw: ReturnType<typeof JSON.parse>) {
   assert.equal(semantics(scope).childTriageRequiresParentStamp, false);
   assert.equal(semantics(scope).legacyProgressLabelRequired, false);
   const verify = checklist.items.find((item: ChecklistItem) => item.id === "verify-human-required");
-  assert.deepEqual(semantics(verify).verifyFenceRequiredFor, ["ordinary-auto", "atomic-high-auto"]);
+  assert.deepEqual(semantics(verify).verifyFenceRequiredFor, []);
+  assert.deepEqual(
+    semantics(verify).verificationContractRequiredBeforeImplementation,
+    ["ordinary-auto", "atomic-high-auto"],
+  );
   assert.equal(semantics(verify).trackingParentInheritsChildVerify, false);
   assert.equal(raw.effortCalibration?.source, "contracts/governed-intake-triage-policy.v1.json");
   assert.equal(raw.effortCalibration?.preventionRcaDefault, undefined);
