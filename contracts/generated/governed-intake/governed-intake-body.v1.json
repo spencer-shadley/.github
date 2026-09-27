@@ -1,7 +1,7 @@
 {
   "schema": "GovernedIntakeBodyV1",
-  "version": 20,
-  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Bump version whenever this contract or its generated projections change.",
+  "version": 21,
+  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Bump version whenever this contract or its generated projections change.",
   "requiredHeadings": [
     "Work type",
     "What happened or what is needed?",
@@ -208,7 +208,7 @@
       {
         "id": "verify-human-required",
         "title": "Verify + human-required fences",
-        "text": "`tier:auto` executable leaves require the current scoped named-file `## Verify` fence, including ordinary `effort:low|medium` leaves and qualified `effort:high` atomic leaves. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority.",
+        "text": "`tier:auto` executable leaves require a bounded scoped verification contract before an implementation writer starts, but completed triage does not require the issue body to already contain `## Verify`. Reuse a current scoped named-file `## Verify` fence when present; otherwise the implementation commissioning path derives and persists/backfills the verification contract before dispatch. If safe scoped verification cannot yet be derived, the leaf waits on verification clarification at implementation preflight rather than remaining untriaged. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A verification-contract derivation allowance is never blanket body-rewrite authority.",
         "dependsOn": [
           "scope-decomposition",
           "priority-work-dimensions"
@@ -221,11 +221,12 @@
           "priority-work-dimensions"
         ],
         "semantics": {
-          "verifyFenceRequiredFor": [
+          "verifyFenceRequiredFor": [],
+          "trackingParentInheritsChildVerify": false,
+          "verificationContractRequiredBeforeImplementation": [
             "ordinary-auto",
             "atomic-high-auto"
-          ],
-          "trackingParentInheritsChildVerify": false
+          ]
         }
       },
       {
