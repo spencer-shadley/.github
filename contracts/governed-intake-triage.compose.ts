@@ -229,7 +229,7 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   const status = asStatus(unique(reasons), policy);
   return {
     status,
-    needsTriage: status !== "complete",
+    needsTriage: status === "out_of_scope" ? policy.needsTriage : status !== "complete",
     implementationCandidate: status === "complete" && policy.implementationCandidate,
     implementationEligible: status === "complete" && implementation.eligible,
     scopeResolved: policy.scopeResolved,
