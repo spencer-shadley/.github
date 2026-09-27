@@ -4,19 +4,19 @@
   "revision": 21,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "bd46fb79aa0f2e97f24a6c664653641297102119"
+    "commit": "20e9c344b479832b2c5130c44c78fb149613e7df"
   },
-  "payloadDigest": "ffded44923751f88c45f610dc75df719c0f9120cb1665d28e6ca7af9e28f1277",
+  "payloadDigest": "53d7cd2129d98710446a8b54b51429de246666042bc9ffb6afc036a378e7bafd",
   "files": {
     "compose.js": {
       "path": "compose.js",
-      "sha256": "1c7dcbf6ed2baac978df15e4dbee8b5e9eb68f3a38eb17d288a3ebaf73fdb5d5",
-      "byteLength": 9676
+      "sha256": "69cfa35c0d67c9a4efd0183237023581ca5728bc38539286dc731a7adf95872c",
+      "byteLength": 9725
     },
     "compose.ts": {
       "path": "compose.ts",
-      "sha256": "015bffd030e0b8000cfdff929910070aad41478a695379f26ffa75a3f2865c3c",
-      "byteLength": 9676
+      "sha256": "85f80bf58b68f7756be5e76e6e5a28d2bb112ab643e512911b765b94ced281d2",
+      "byteLength": 9725
     },
     "contract.json": {
       "path": "contract.json",
@@ -125,13 +125,13 @@
     },
     "governed-intake-triage.compose.js": {
       "path": "governed-intake-triage.compose.js",
-      "sha256": "1c7dcbf6ed2baac978df15e4dbee8b5e9eb68f3a38eb17d288a3ebaf73fdb5d5",
-      "byteLength": 9676
+      "sha256": "69cfa35c0d67c9a4efd0183237023581ca5728bc38539286dc731a7adf95872c",
+      "byteLength": 9725
     },
     "governed-intake-triage.compose.ts": {
       "path": "governed-intake-triage.compose.ts",
-      "sha256": "015bffd030e0b8000cfdff929910070aad41478a695379f26ffa75a3f2865c3c",
-      "byteLength": 9676
+      "sha256": "85f80bf58b68f7756be5e76e6e5a28d2bb112ab643e512911b765b94ced281d2",
+      "byteLength": 9725
     },
     "policy-binding.js": {
       "path": "policy-binding.js",
