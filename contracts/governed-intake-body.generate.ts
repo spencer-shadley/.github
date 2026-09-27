@@ -142,7 +142,11 @@ function assertTriageChecklistContract(raw: ReturnType<typeof JSON.parse>) {
   assert.equal(semantics(scope).childTriageRequiresParentStamp, false);
   assert.equal(semantics(scope).legacyProgressLabelRequired, false);
   const verify = checklist.items.find((item: ChecklistItem) => item.id === "verify-human-required");
-  assert.deepEqual(semantics(verify).verifyFenceRequiredFor, ["ordinary-auto", "atomic-high-auto"]);
+  assert.deepEqual(semantics(verify).verifyFenceRequiredFor, []);
+  assert.deepEqual(
+    semantics(verify).verificationContractRequiredBeforeImplementation,
+    ["ordinary-auto", "atomic-high-auto"],
+  );
   assert.equal(semantics(verify).trackingParentInheritsChildVerify, false);
   assert.equal(raw.effortCalibration?.source, "contracts/governed-intake-triage-policy.v1.json");
   assert.equal(raw.effortCalibration?.preventionRcaDefault, undefined);
@@ -840,7 +844,7 @@ export function runSelfcheck(root = REPO_ROOT) {
   assert.ok(itemIds.indexOf("scope-decomposition") > itemIds.indexOf("dedup-queue-synergy"), "scope item follows value/dedup");
   assert.ok(itemIds.indexOf("scope-decomposition") < itemIds.indexOf("priority-work-dimensions"), "scope item precedes final attributes");
   assert.match(markdown, /Child triage does not wait for a parent completion stamp/);
-  assert.match(yaml, /qualified `effort:high` atomic leaves/);
+  assert.match(yaml, /before an implementation writer starts/);
   assert.equal(markdown.includes("The triage role does not plan, decompose, mint, or commission implementation writers."), false);
   assert.equal(JSON.stringify(contract.effortCalibration).includes("preventionRcaDefault"), false);
   assert.equal(JSON.stringify(contract.effortCalibration).includes("tipRedDefectDefault"), false);

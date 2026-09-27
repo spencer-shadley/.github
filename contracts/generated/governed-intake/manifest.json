@@ -1,12 +1,12 @@
 {
   "schema": "GovernedIntakeReleaseManifestV1",
   "schemaFamily": "GovernedIntakeBodyV1",
-  "revision": 20,
+  "revision": 21,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "cdd254ff7ee05e0148da22ede5bd8deab1e9b484"
+    "commit": "bd46fb79aa0f2e97f24a6c664653641297102119"
   },
-  "payloadDigest": "e8a19cac85303dcca2688e24888a21828df3e5cd5f918b28ac2d5baa30af9431",
+  "payloadDigest": "ffded44923751f88c45f610dc75df719c0f9120cb1665d28e6ca7af9e28f1277",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -20,8 +20,8 @@
     },
     "contract.json": {
       "path": "contract.json",
-      "sha256": "f2ab07b86e36985118aac10fa129a0d5dbb93a8bc1f042fd8442240bb2a887f1",
-      "byteLength": 20756
+      "sha256": "90ae166b0a9b95d74f332c98d689ccef43e56320bd4a41cde3b168bb8d15eff7",
+      "byteLength": 22031
     },
     "delta-planner.js": {
       "path": "delta-planner.js",
@@ -45,23 +45,23 @@
     },
     "feature.md": {
       "path": "feature.md",
-      "sha256": "fca9e691d40f34721a426692e935325459185178c563f26e6f8148ff66c251c2",
+      "sha256": "f0bde7e364d153b1e0d814dd2e723899ee7b3d1c98c57db3d8125de7a590a86c",
       "byteLength": 2762
     },
     "feature.yml": {
       "path": "feature.yml",
-      "sha256": "290a5619c4066f25a21a1b5a5b6c42adfb2025499b5c5d2ee5fb9ecc575140aa",
+      "sha256": "621442ec47f57dac8be94aa74abf49f4c799ff8bc129b368ac961f68de28c9f6",
       "byteLength": 4409
     },
     "generator.js": {
       "path": "generator.js",
-      "sha256": "710ef7f69da0cf13fe955a6a4107ca2677b4ac20b0be73681ae7146903abe51a",
-      "byteLength": 41047
+      "sha256": "80efe1006d4b6b4f146a4462883843219349d74f3d61df593daf6fd81c9f2270",
+      "byteLength": 41153
     },
     "generator.ts": {
       "path": "generator.ts",
-      "sha256": "418047de561118ab8c70a7dce483c5690d31ece6337b4384e4498f85d40e92e5",
-      "byteLength": 41047
+      "sha256": "9c1b6b32978fad01167eaf6fb8781ac2d1c1f87bebcedd7b00f50ff111376a91",
+      "byteLength": 41153
     },
     "governed-intake-body.evaluate.js": {
       "path": "governed-intake-body.evaluate.js",
@@ -75,8 +75,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "f2ab07b86e36985118aac10fa129a0d5dbb93a8bc1f042fd8442240bb2a887f1",
-      "byteLength": 20756
+      "sha256": "90ae166b0a9b95d74f332c98d689ccef43e56320bd4a41cde3b168bb8d15eff7",
+      "byteLength": 22031
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -160,13 +160,13 @@
     },
     "task.md": {
       "path": "task.md",
-      "sha256": "a6cb15588e5c624f88473a0dc87b4547bffacb3ce0393fb4a098f725ce186137",
-      "byteLength": 14855
+      "sha256": "eaae2f8052502a93b07fac2c23dda9655f236d865fc5bb6ca3f66e38d63cf62e",
+      "byteLength": 15824
     },
     "task.yml": {
       "path": "task.yml",
-      "sha256": "2f0a9bfba238ee2fee2499f043f14e5e1a439ffa2f235bb3ae990fc6c0e19a19",
-      "byteLength": 17072
+      "sha256": "83b67b23158733163bc5d72966e91e5f076a9401876bb6d6bfd37964e1430715",
+      "byteLength": 18041
     },
     "triage-evaluator.js": {
       "path": "triage-evaluator.js",

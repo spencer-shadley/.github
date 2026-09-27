@@ -175,11 +175,26 @@ test("effort calibration references policy JSON and drops compulsory RCA/N=1 cap
   assert.match(generateTaskMarkdown(contract), /Certified atomic-high remains high/);
 });
 
-test("Verify obligation covers auto-executable high leaves and not tracking parents", () => {
+test("ownership and synergy checklist avoid repeated full-census ceremony", () => {
+  const owner = contract.triageChecklist.items.find((item: { id: string }) => item.id === "fix-owner-responsibility");
+  const dedup = contract.triageChecklist.items.find((item: { id: string }) => item.id === "dedup-queue-synergy");
+  assert.match(owner.text, /Reuse a prior high-confidence ownership receipt/);
+  assert.match(owner.text, /does not require a model seat/);
+  assert.match(dedup.text, /Search open work in the resolved owner first/);
+  assert.match(dedup.text, /closed history only for regression\/prior-fix/);
+  assert.match(dedup.text, /Reuse a fresh synergy receipt/);
+});
+
+test("verification is required before implementation but not as triage prose", () => {
   const verify = contract.triageChecklist.items.find((item: { id: string }) => item.id === "verify-human-required");
-  assert.match(verify.text, /qualified `effort:high` atomic leaves/);
+  assert.match(verify.text, /before an implementation writer starts/);
+  assert.match(verify.text, /does not require the issue body to already contain `## Verify`/);
   assert.match(verify.text, /Tracking parents do not inherit child Verify/);
-  assert.deepEqual(verify.semantics.verifyFenceRequiredFor, ["ordinary-auto", "atomic-high-auto"]);
+  assert.deepEqual(verify.semantics.verifyFenceRequiredFor, []);
+  assert.deepEqual(
+    verify.semantics.verificationContractRequiredBeforeImplementation,
+    ["ordinary-auto", "atomic-high-auto"],
+  );
   assert.equal(verify.semantics.trackingParentInheritsChildVerify, false);
 });
 

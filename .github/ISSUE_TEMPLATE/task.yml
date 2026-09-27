@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 20). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 21). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -12,7 +12,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 20).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 21).
         This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
         Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
@@ -83,22 +83,22 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=20 -->
+        <!-- governed-triage-checklist: revision=21 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
         <!-- governed-triage-item: value-direction -->
         - [ ] **Value + direction evidence**: Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator.
         <!-- governed-triage-item: fix-owner-responsibility -->
-        - [ ] **Fix-owner + responsibility**: Verify with `fleet-repo-responsibility-routing`, the target repo's current `AGENTS.md`, and `repos/infra/fleet-registry/dist/fleet-registry-release.json` (`FleetRegistryReleaseV1`). Never substitute retired registry markdown for that release.
+        - [ ] **Fix-owner + responsibility**: Resolve fix ownership from the current FleetRegistryReleaseV1 and repository charter evidence. Reuse a prior high-confidence ownership receipt for an existing issue while its durable outcome, repository, relevant scope, and governing charter identity are unchanged. Reroute new work, moves/transfers, cross-repo expansion, ambiguous ownership, charter changes, and catch-all `code`/`agent-orchestrator` cases. An obvious deterministic single-owner result does not require a model seat; use routed judgment only for genuine ambiguity.
         <!-- governed-triage-item: dedup-queue-synergy -->
-        - [ ] **Dedup + queue synergy**: Search related open/closed work and apply `docs/guides/queue-synergy.md`. Reuse or strengthen the canonical owner instead of creating a parallel implementation track.
+        - [ ] **Dedup + queue synergy**: Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive; inspect sibling repos only for shared/cross-repo surfaces. Reuse a fresh synergy receipt while issue class, owner, and material scope are unchanged. Never create a parallel implementation track when canonical work already owns the outcome.
         <!-- governed-triage-item: scope-decomposition -->
         - [ ] **Scope + decomposition**: Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp-not-needed`, low/medium), qualified atomic-high leaf (`decomp-atomic` + `effort:high` with independent confirmation), or tracking parent (`decomp` + `epic` with a validated child graph). Unresolved, unknown, or unqualified evidence stays pending. Child triage does not wait for a parent completion stamp. Do not require `decomp-in-progress`. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity. Bind the assessment to the actual server-fetched issue identity and normalized scope using the producer-owned identity API; matching caller-supplied identities or structural checkbox checks alone never establish semantic completion.
         <!-- governed-triage-item: priority-work-dimensions -->
         - [ ] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Effort definitions and examples come from the canonical governed-intake triage policy, not private calibration caps. Missing or unclear effort is unknown, not low. Certified atomic-high remains high. Never self-admit P0.
         <!-- governed-triage-item: verify-human-required -->
-        - [ ] **Verify + human-required fences**: `tier:auto` executable leaves require the current scoped named-file `## Verify` fence, including ordinary `effort:low|medium` leaves and qualified `effort:high` atomic leaves. Repair that narrow fence only when the current actor is allowed to edit it; otherwise hand off the repair. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A fence-edit allowance is never blanket body-rewrite authority.
+        - [ ] **Verify + human-required fences**: `tier:auto` executable leaves require a bounded scoped verification contract before an implementation writer starts, but completed triage does not require the issue body to already contain `## Verify`. Reuse a current scoped named-file `## Verify` fence when present; otherwise the implementation commissioning path derives and persists/backfills the verification contract before dispatch. If safe scoped verification cannot yet be derived, the leaf waits on verification clarification at implementation preflight rather than remaining untriaged. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A verification-contract derivation allowance is never blanket body-rewrite authority.
         <!-- governed-triage-item: cloud-runnable -->
         - [ ] **Cloud vs local execution**: Assess the implementation stage using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Before triage can complete, apply exactly one execution-substrate label: `cloud-ready` when implementation can run in an authorized provider-hosted environment, or `local-required` when implementation needs a fleet/local machine. Never leave both or neither on a completed triage. Record `ready` or `not-ready`, a short reason, and any separately required local verification/rollout in the existing triage receipt; an unresolved or `unknown` assessment stays untriaged. If one exact host is required, also apply its machine label. Tracking parents do not inherit every child host or substrate requirement.
         <!-- governed-triage-item: disposition-effect-authority -->
