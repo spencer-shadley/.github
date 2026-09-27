@@ -134,7 +134,7 @@
       {
         "id": "fix-owner-responsibility",
         "title": "Fix-owner + responsibility",
-        "text": "Verify with `fleet-repo-responsibility-routing`, the target repo's current `AGENTS.md`, and `repos/infra/fleet-registry/dist/fleet-registry-release.json` (`FleetRegistryReleaseV1`). Never substitute retired registry markdown for that release.",
+        "text": "Resolve fix ownership from the current FleetRegistryReleaseV1 and repository charter evidence. Reuse a prior high-confidence ownership receipt for an existing issue while its durable outcome, repository, relevant scope, and governing charter identity are unchanged. Reroute new work, moves/transfers, cross-repo expansion, ambiguous ownership, charter changes, and catch-all `code`/`agent-orchestrator` cases. An obvious deterministic single-owner result does not require a model seat; use routed judgment only for genuine ambiguity.",
         "dependsOn": [
           "canonical-flow"
         ],
@@ -145,7 +145,7 @@
       {
         "id": "dedup-queue-synergy",
         "title": "Dedup + queue synergy",
-        "text": "Search related open/closed work and apply `docs/guides/queue-synergy.md`. Reuse or strengthen the canonical owner instead of creating a parallel implementation track.",
+        "text": "Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive; inspect sibling repos only for shared/cross-repo surfaces. Reuse a fresh synergy receipt while issue class, owner, and material scope are unchanged. Never create a parallel implementation track when canonical work already owns the outcome.",
         "dependsOn": [
           "canonical-flow",
           "value-direction",
