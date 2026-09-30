@@ -31,6 +31,15 @@ import {
                     
 } from "./governed-intake-triage-policy.evaluate.js";
 import {
+  bindTaskProfileContract,
+  deriveTaskLabels,
+  evaluateTaskLabelProjection,
+  resolveRuntimeTaskProfile,
+                           
+                         
+} from "./governed-intake-task-profile.evaluate.js";
+import taskProfileContractJson from "./governed-intake-task-profile.v1.json" with { type: "json" };
+import {
   planChecklistDelta,
   validateChecklistRelease,
                       
@@ -74,6 +83,12 @@ export function currentChecklistRelease()                   {
                                          
       
 
+/**
+ * TaskProfileV1 is produced after scope-decomposition, on ordinary/atomic-high executable
+ * leaves only. `record` is opaque (validated by `resolveRuntimeTaskProfile`); `required`
+ * governs whether a missing/stale/invalid record blocks completion or degrades gracefully
+ * to `legacy-unprofiled`. See spencer-shadley/code#6458 and .github#13 for the design record.
+ */
                                       
                                                                                              
                                            
@@ -82,6 +97,13 @@ export function currentChecklistRelease()                   {
                                   
                                                                                            
                                    
+                                                                        
+ 
+
+                                            
+                                                              
+                   
+                           
  
 
                                                                                            
@@ -102,6 +124,7 @@ export function currentChecklistRelease()                   {
                          
                                         
                                                    
+                                                
  
 
 function asStatus(reasons                   , policy                         )                       {
@@ -150,6 +173,7 @@ export async function evaluateGovernedIntakeTriage(input                     )  
       rubricIdentity: bound.rubricIdentity,
       checklistDelta,
       consumerCutover: COMPOSE_CONSUMER_CUTOVER,
+      taskProfile: null,
     };
   }
   if (evidence.kind === "unsupported") {
@@ -172,6 +196,7 @@ export async function evaluateGovernedIntakeTriage(input                     )  
       rubricIdentity: bound.rubricIdentity,
       checklistDelta,
       consumerCutover: COMPOSE_CONSUMER_CUTOVER,
+      taskProfile: null,
     };
   }
   if (evidence.kind !== "adapter-verified") {
@@ -193,6 +218,7 @@ export async function evaluateGovernedIntakeTriage(input                     )  
       rubricIdentity: bound.rubricIdentity,
       checklistDelta,
       consumerCutover: COMPOSE_CONSUMER_CUTOVER,
+      taskProfile: null,
     };
   }
 
@@ -226,6 +252,35 @@ export async function evaluateGovernedIntakeTriage(input                     )  
   const policy = await evaluateTriagePolicy(bound, snapshot);
   reasons.push(...policy.reasons);
   const implementation = await evaluateImplementationCandidate(bound, snapshot, input.implementationReceiptId);
+
+  // TaskProfileV1 applies only to executable leaves (ordinary/atomic-high), never a tracking
+  // parent. It is evaluated whenever a disposition resolved, independent of otherwise-pending
+  // policy reasons, so a profile mismatch reports its own typed reason rather than hiding
+  // behind an unrelated checklist/effort gap.
+  const taskProfileInput = input.taskProfile ?? null;
+  let taskProfile                                   = null;
+  if (policy.disposition) {
+    const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson                       );
+    if (policy.disposition === "parent") {
+      if (taskProfileInput?.record) reasons.push("tracking_parent_task_profile");
+      taskProfile = { status: "not-applicable", labels: [], contractIdentity: taskProfileBound.contractIdentity };
+    } else {
+      const runtime = resolveRuntimeTaskProfile(
+        taskProfileBound, taskProfileInput?.record ?? null,
+        { workUnitKey: snapshot.workUnitKey, scopeFingerprint: snapshot.scopeFingerprint },
+      );
+      if (runtime.kind === "legacy-unprofiled") {
+        if (taskProfileInput?.required) reasons.push(`task_profile_${runtime.reason}`);
+        taskProfile = { status: "legacy-unprofiled", labels: [], contractIdentity: taskProfileBound.contractIdentity };
+      } else {
+        const labels = deriveTaskLabels(taskProfileBound, runtime.profile);
+        const projection = evaluateTaskLabelProjection(taskProfileBound, runtime.profile, input.labels);
+        reasons.push(...projection.reasons);
+        taskProfile = { status: "profiled", labels, contractIdentity: taskProfileBound.contractIdentity };
+      }
+    }
+  }
+
   const status = asStatus(unique(reasons), policy);
   return {
     status,
@@ -243,5 +298,6 @@ export async function evaluateGovernedIntakeTriage(input                     )  
     rubricIdentity: bound.rubricIdentity,
     checklistDelta,
     consumerCutover: COMPOSE_CONSUMER_CUTOVER,
+    taskProfile,
   };
 }
