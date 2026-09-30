@@ -34,6 +34,8 @@ import {
   fingerprintIssueScope, bindTriagePolicy,
   type SemanticEvidenceInput,
 } from "../contracts/governed-intake-triage.compose.ts";
+import { bindTaskProfileContract, type TaskProfileContract, type TaskProfileRecord } from "../contracts/governed-intake-task-profile.evaluate.ts";
+import taskProfileContractJson from "../contracts/governed-intake-task-profile.v1.json" with { type: "json" };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = loadContract(root);
@@ -304,6 +306,65 @@ test("parents are tracking only and cannot deadlock child triage on a parent sta
   assert.equal(result.scopeResolved, true);
   assert.equal(result.implementationCandidate, false);
   assert.ok(result.reasons.includes("required_leaf_triage_incomplete"));
+  assert.equal(result.status, "pending");
+});
+
+test("ordinary leaf with no supplied task profile degrades to legacy-unprofiled without a pending reason", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = await verifiedEvidence("ordinary");
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+  assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+  assert.equal(result.taskProfile?.status, "legacy-unprofiled");
+  assert.equal(result.reasons.some((reason) => reason.startsWith("task_profile_")), false);
+});
+
+test("ordinary leaf with a bound task profile record projects its derived labels", async () => {
+  const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary"), "task:implement"]);
+  const evidence = await verifiedEvidence("ordinary");
+  const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson as TaskProfileContract);
+  const record: TaskProfileRecord = {
+    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: "high", rationale: "known bounded fix" },
+    workUnitKey: evidence.workUnitKey, scopeFingerprint: evidence.scopeFingerprint, contractIdentity: taskProfileBound.contractIdentity,
+  };
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record, required: true } });
+  assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+  assert.equal(result.taskProfile?.status, "profiled");
+  assert.deepEqual(result.taskProfile?.labels, ["task:implement"]);
+});
+
+test("a task profile whose derived label is not yet reflected on the issue stays pending until readback", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = await verifiedEvidence("ordinary");
+  const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson as TaskProfileContract);
+  const record: TaskProfileRecord = {
+    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: "high", rationale: "known bounded fix" },
+    workUnitKey: evidence.workUnitKey, scopeFingerprint: evidence.scopeFingerprint, contractIdentity: taskProfileBound.contractIdentity,
+  };
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record, required: true } });
+  assert.equal(result.status, "pending");
+  assert.ok(result.reasons.includes("task_label_projection_mismatch"));
+  assert.equal(result.taskProfile?.status, "profiled");
+});
+
+test("a required but missing task profile on an executable leaf stays pending, not completed", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = await verifiedEvidence("ordinary");
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record: null, required: true } });
+  assert.equal(result.status, "pending");
+  assert.ok(result.reasons.includes("task_profile_missing"), JSON.stringify(result.reasons));
+});
+
+test("a tracking parent never receives an aggregate task profile", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("parent"));
+  const evidence = await verifiedEvidence("parent");
+  const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson as TaskProfileContract);
+  const record: TaskProfileRecord = {
+    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: "high", rationale: "invalid on a parent" },
+    workUnitKey: evidence.workUnitKey, scopeFingerprint: evidence.scopeFingerprint, contractIdentity: taskProfileBound.contractIdentity,
+  };
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record, required: false } });
+  assert.equal(result.taskProfile?.status, "not-applicable");
+  assert.ok(result.reasons.includes("tracking_parent_task_profile"));
   assert.equal(result.status, "pending");
 });
 

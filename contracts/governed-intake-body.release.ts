@@ -40,6 +40,10 @@ export const RELEASE_SOURCE_FILES = {
   "compose.ts": "contracts/governed-intake-triage.compose.ts",
   "governed-intake-policy-binding.ts": "contracts/governed-intake-policy-binding.ts",
   "policy-binding.ts": "contracts/governed-intake-policy-binding.ts",
+  "governed-intake-task-profile.v1.json": "contracts/governed-intake-task-profile.v1.json",
+  "task-profile-contract.json": "contracts/governed-intake-task-profile.v1.json",
+  "governed-intake-task-profile.evaluate.ts": "contracts/governed-intake-task-profile.evaluate.ts",
+  "task-profile-evaluator.ts": "contracts/governed-intake-task-profile.evaluate.ts",
 } as const;
 export type BuildReleaseOptions = { repoRoot?: string; outputDir?: string; commit: string };
 export function buildGovernedIntakeRelease(options: BuildReleaseOptions) {
