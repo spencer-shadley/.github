@@ -154,3 +154,32 @@ readback prove it. Moving producer ownership does not justify silently changing 
 - [GitHub CLI issue creation](https://cli.github.com/manual/gh_issue_create) documents body-text input.
 - [Reusable workflows](https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows)
   require an explicit caller; Actions workflows do not inherit as community-health files.
+
+## Worked examples: outcome-shaped vs prescriptive
+
+Optional — read this only if the inline template comments on "Durable fix and acceptance" and
+"Relevant details" are not enough (code#7074). It does not add policy: the binding rule is the
+template itself, plus [fleet DOCTRINE §37](https://github.com/spencer-shadley/code/blob/master/DOCTRINE.md#37-work-items-have-forced-exits-and-review-stays-on-the-pr)
+and [code's reviewers guide](https://github.com/spencer-shadley/code/blob/master/docs/guides/reviewers-guide.md)
+for what a reviewer may block on. Do not copy this section's wording into an issue body or a review
+comment; link here instead.
+
+**Outcome-shaped (binding acceptance criterion names a real consumer or evidence):**
+
+> ## Durable fix and acceptance
+> - `admitModelSeat` returns `claude-sonnet-5-5` (or better) for high-effort implement tasks once the
+>   catalog lists it as served; verified by re-running the seat-admission fixture in
+>   `model-router/test/admission.test.ts` against the live catalog.
+> - No open PR references a moved source line by exact path:line; the reviewer confirms the acceptance
+>   criterion still holds against the current head instead.
+
+**Prescriptive (pins an implementation the reviewer then enforces instead of the outcome):**
+
+> ## Durable fix and acceptance
+> - Edit `catalogs/canonical-v1.ts:171` to change `"claude-sonnet-5"` to `"claude-sonnet-5-5"`.
+
+The second example is the literal failure this section exists to prevent: the coordinator's own brief
+pinned `canonical-v1.ts:171`, the line moved, and an otherwise-reasonable seat stopped instead of
+pursuing the outcome. Move implementation pointers like this into "Relevant details" as an explicitly
+advisory hint (`<!-- advisory, not binding: ... -->`) the implementer may disregard; a reviewer may not
+block on "did it differently from the hint" alone.

@@ -1,7 +1,7 @@
 {
   "schema": "GovernedIntakeBodyV1",
-  "version": 21,
-  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Bump version whenever this contract or its generated projections change.",
+  "version": 22,
+  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Bump version whenever this contract or its generated projections change.",
   "requiredHeadings": [
     "Work type",
     "What happened or what is needed?",
@@ -301,7 +301,8 @@
           "disposition-effect-authority",
           "higher-intelligence-handoff",
           "github-effects-quota",
-          "taxonomy"
+          "taxonomy",
+          "outcome-shaped-acceptance"
         ],
         "evidenceKeys": [
           "completion"
@@ -327,6 +328,17 @@
         ],
         "resultDependencies": [
           "scope-decomposition"
+        ]
+      },
+      {
+        "id": "outcome-shaped-acceptance",
+        "title": "Outcome-shaped acceptance",
+        "text": "Confirm 'Durable fix and acceptance' states binding acceptance criteria (each names a real consumer or the evidence that stands in for one) rather than a prescribed implementation, and that any implementation suggestions live only in 'Relevant details' as explicitly advisory. Rewrite a prescriptive body into this shape using skills/gh-issue-value-review's refresh-required procedure instead of restating it here.",
+        "dependsOn": [
+          "canonical-flow"
+        ],
+        "evidenceKeys": [
+          "acceptance-shape"
         ]
       }
     ],
