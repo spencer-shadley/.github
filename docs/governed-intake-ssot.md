@@ -35,6 +35,26 @@ evidence; a legacy caller with only checked boxes cannot report completed triage
 Source tests do not prove deployed model eligibility, generic custody recovery, label cleanup, or
 live form inheritance on public and private repositories.
 
+## Adopted TaskProfileV1 source
+
+The five-category ten-point TaskProfile vector (semantic task truth, not execution policy: no
+model, provider, account, pool, effort setting, harness or benchmark) is authored once in
+[`contracts/governed-intake-task-profile.v1.json`](../contracts/governed-intake-task-profile.v1.json).
+Read its [generated guide](task-profile.md); do not copy category definitions, confidence
+vocabulary or label-projection rules into provider skills, Router, Gateway or benchmark YAML.
+
+`contracts/governed-intake-task-profile.evaluate.ts` is a pure evaluator
+(`bindTaskProfileContract`, `validateTaskProfile`, `deriveTaskLabels`,
+`evaluateTaskLabelProjection`, `decideTaskProfileReuse`, `resolveRuntimeTaskProfile`), composed
+into `evaluateGovernedIntakeTriage` (`contracts/governed-intake-triage.compose.ts`) as an optional
+`taskProfile` input evaluated only for ordinary/atomic-high executable leaves, never a tracking
+parent. TaskProfile identity is a deterministic canonical-JSON digest of the contract, independent
+of the triage-checklist revision and rubric identity, so a TaskProfile-only source change never
+forces a whole-fleet re-triage. Missing/invalid/stale evidence resolves to `legacy-unprofiled`,
+never `human-required` and never a fabricated vector. [code#6458](https://github.com/spencer-shadley/code/issues/6458)
+and [model-router#1239/#1240](https://github.com/spencer-shadley/model-router/issues/1239) are the
+design/consumer owners; this file does not claim their deployed cutover.
+
 ## End state
 
 The GovernedIntakeBodyV1 semantic source/release and its live GitHub Issue Form belong in this
