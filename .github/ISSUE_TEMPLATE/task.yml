@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 21). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 22). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -12,7 +12,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 21).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 22).
         This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
         Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
@@ -83,7 +83,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=21 -->
+        <!-- governed-triage-checklist: revision=22 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -111,6 +111,8 @@ body:
         - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
         <!-- governed-triage-item: taxonomy -->
         - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
+        <!-- governed-triage-item: outcome-shaped-acceptance -->
+        - [ ] **Outcome-shaped acceptance**: Confirm 'Durable fix and acceptance' states binding acceptance criteria (each names a real consumer or the evidence that stands in for one) rather than a prescribed implementation, and that any implementation suggestions live only in 'Relevant details' as explicitly advisory. Rewrite a prescriptive body into this shape using skills/gh-issue-value-review's refresh-required procedure instead of restating it here.
         <!-- /governed-triage-checklist -->
     validations:
       required: true
@@ -120,7 +122,9 @@ body:
     attributes:
       label: "Relevant details"
       description: |
-        Evidence, links, impact. When filing via cli-wrappers, fill provenance exactly:
+        Evidence and data (binding facts), plus ADVISORY implementation suggestions the
+        implementer may choose to ignore — differing from a suggested approach here is not a
+        review defect. When filing via cli-wrappers, fill provenance exactly:
         repository, commit (>=7-char SHA), path.
     validations:
       required: true
@@ -191,7 +195,13 @@ body:
     id: durable-fix-and-acceptance
     attributes:
       label: "Durable fix and acceptance"
-      description: Bullet list the loop's verify gate can check.
+      description: |
+        BINDING acceptance criteria the loop's verify gate can check; each criterion names a
+        real consumer or the evidence that stands in for one. Implementation steps, file paths,
+        and line numbers are advisory — put them in Relevant details instead; a reviewer may not
+        block on the implementer choosing a different approach (fleet DOCTRINE §37). Optional
+        guidance + worked examples, read only if you want more:
+        docs/governed-intake-ssot.md#worked-examples-outcome-shaped-vs-prescriptive
     validations:
       required: true
 

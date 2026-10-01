@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, work:untriaged
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 21). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 22). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=21 -->
+<!-- governed-triage-checklist: revision=22 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -54,10 +54,14 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
 <!-- governed-triage-item: taxonomy -->
 - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
+<!-- governed-triage-item: outcome-shaped-acceptance -->
+- [ ] **Outcome-shaped acceptance**: Confirm 'Durable fix and acceptance' states binding acceptance criteria (each names a real consumer or the evidence that stands in for one) rather than a prescribed implementation, and that any implementation suggestions live only in 'Relevant details' as explicitly advisory. Rewrite a prescriptive body into this shape using skills/gh-issue-value-review's refresh-required procedure instead of restating it here.
 <!-- /governed-triage-checklist -->
 
 ## Relevant details
-<!-- Evidence, links, impact. When filing via cli-wrappers, fill provenance exactly: -->
+<!-- Evidence and data (binding facts), plus ADVISORY implementation suggestions the implementer
+     may choose to ignore — differing from a suggested approach here is not a review defect.
+     When filing via cli-wrappers, fill provenance exactly: -->
 - repository: spencer-shadley/.github
 - commit: <!-- exact 40-character source commit from the admitted release -->
 - path: .github/ISSUE_TEMPLATE/task.yml
@@ -120,8 +124,13 @@ N/A — <reason>
 At planning/closure, every rank requires a real disposition and an acted-on artifact or an explicit evidence-backed reason for delegation, non-action, unsupported scope, or evidence ceiling. Evidence ceiling is reserved for genuinely unobtainable evidence, not a default terminator. Defects also require both ladders at each rank.
 
 ## Durable fix and acceptance
-<!-- Bullet list the loop's verify gate can check. The better this is, the likelier a clean
-     autonomous fix. -->
+<!-- BINDING: this is the acceptance-criteria section. Bullet list the loop's verify gate can
+     check; each criterion names a real consumer or the evidence that stands in for one. The
+     better this is, the likelier a clean autonomous fix. Do not prescribe implementation steps,
+     file paths, or line numbers here — those are advisory and belong in Relevant details; the
+     implementer may choose a different approach and a reviewer may not block on that difference
+     alone (fleet DOCTRINE §37). Optional guidance + worked good/bad examples, read only if you
+     want more: docs/governed-intake-ssot.md#worked-examples-outcome-shaped-vs-prescriptive -->
 
 ## Human-decision state
 <!-- No human decision required | Decision needed: <exact question for Spencer> -->

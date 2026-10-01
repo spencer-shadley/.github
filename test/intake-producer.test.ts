@@ -67,6 +67,27 @@ test("complete body is accepted while incomplete or malformed identities are ref
   assert.equal(validateGovernedWorkUnitKey(marker.replace("sha256:", "sha256:x")).reason, "malformed");
   assert.equal(validateGovernedIntakeBody(validBody().replace("| Domain | Producer", "| Wrong | Producer")).ok, false);
 });
+test("body with empty acceptance criteria is refused; a file:line reference warns without blocking (code#7074)", () => {
+  const empty = validBody().replace(
+    "## Durable fix and acceptance\nProducer and verified consumers agree on release identity.",
+    "## Durable fix and acceptance\n",
+  );
+  const emptyResult = validateGovernedIntakeBody(empty);
+  assert.equal(emptyResult.ok, false);
+  assert.ok(
+    !emptyResult.ok && emptyResult.missing.some((m) => /Durable fix and acceptance content/.test(m)),
+  );
+
+  const prescriptive = validBody().replace(
+    "Producer and verified consumers agree on release identity.",
+    "Edit contracts/governed-intake-body.evaluate.ts:171 to change the regex.",
+  );
+  const prescriptiveResult = validateGovernedIntakeBody(prescriptive);
+  assert.equal(prescriptiveResult.ok, true);
+  assert.ok(prescriptiveResult.warnings?.some((w) => /file:line reference/.test(w)));
+
+  assert.equal(validateGovernedIntakeBody(validBody()).warnings, undefined);
+});
 test("governed key preserves canonical identity case and length-framed Unicode normalization", () => {
   const a = computeGovernedWorkUnitKey({ ...identity, canonicalWorkUnitIdentity: " Café " });
   const b = computeGovernedWorkUnitKey({ ...identity, fixOwnerGitHubSlug: " spencer-shadley/.github ", workType: "task", canonicalWorkUnitIdentity: "Cafe\u0301" });
