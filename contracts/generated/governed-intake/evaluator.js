@@ -421,8 +421,16 @@ export function validateGovernedWorkUnitKey(
   
 
                                     
-                                       
                                                             
+                                                                                 
+
+/**
+ * Evidence-only signal that a binding section reads as prescribed implementation rather than an
+ * outcome/acceptance statement (code#7074): a file path pinned to a line number, the strongest
+ * cited symptom (a moved `canonical-v1.ts:171` reference stopped a reasonable seat). Advisory only —
+ * it never refuses a body, it only flags it for `gh-issue-value-review`'s refresh-required rewrite.
+ */
+const PRESCRIPTIVE_FILE_LINE_RE = /\b[\w./-]+\.(?:ts|tsx|js|jsx|mjs|py|go|rs|json|ya?ml|md):\d+\b/;
 
 export function sectionContent(text        , heading        )         {
   const lines = text.split("\n");
@@ -595,6 +603,7 @@ export function validateGovernedIntakeMarkdown(
   const contract = options?.contract ?? DEFAULT_CONTRACT;
   const text = stripFrontmatter(markdown);
   const missing           = [];
+  const warnings           = [];
 
   for (const h of contract.requiredHeadings) {
     if (!new RegExp(String.raw`^##\s+` + escapeRegExp(h) + String.raw`\s*$`, "im").test(text)) {
@@ -749,6 +758,22 @@ export function validateGovernedIntakeMarkdown(
   } else if (mode === "body") {
     if (/<reason>/i.test(trimmedLeases) || /^N\/A\s*[—–-]\s*<.*>$/i.test(trimmedLeases)) {
       missing.push("Exact leases: placeholders are not accepted in body admission");
+    }
+  }
+
+  if (mode === "body") {
+    const acceptance = sectionContent(text, "Durable fix and acceptance");
+    if (acceptance.length === 0) {
+      missing.push(
+        "Durable fix and acceptance content (acceptance criteria cannot be empty or only " +
+          "placeholder comment)",
+      );
+    } else if (PRESCRIPTIVE_FILE_LINE_RE.test(acceptance)) {
+      warnings.push(
+        "Durable fix and acceptance: contains a file:line reference, which reads as a prescribed " +
+          "implementation step rather than an outcome/acceptance criterion; implementation guidance " +
+          "belongs in Relevant details as advisory, not here (code#7074)",
+      );
     }
   }
 
@@ -933,8 +958,8 @@ export function validateGovernedIntakeMarkdown(
   }
 
   return missing.length > 0
-    ? { ok: false, missing, schemaVersion: SCHEMA_VERSION }
-    : { ok: true, schemaVersion: SCHEMA_VERSION };
+    ? { ok: false, missing, schemaVersion: SCHEMA_VERSION, ...(warnings.length > 0 ? { warnings } : {}) }
+    : { ok: true, schemaVersion: SCHEMA_VERSION, ...(warnings.length > 0 ? { warnings } : {}) };
 }
 
 export function validateIssueTemplate(
