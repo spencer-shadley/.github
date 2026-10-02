@@ -14,7 +14,11 @@
       "depends_on": [],
       "blocked_by": [],
       "description": "Prove the CLI consumer pin fails closed",
-      "status": "ready",
+      "status": "running",
+      "seat": {
+        "host": "rinnegan",
+        "job": "job-1790900747242-08kh4l"
+      },
       "done_when": "origin/master verifies the admitted .github pin and payload digest fail closed, or a PR that does so is merged",
       "lease_scope": "contracts/governed-intake-producer.pin.json, scripts/sync-governed-intake-contract.ts, scripts/governed-intake-bundle-files.ts, scripts/publish-governed-intake-bundle-dist.ts, src/lib/generated/governed-intake.ts, test/governed-intake-bundle-dist.test.ts, package.json governed-intake scripts, README/docs that name the intake producer",
       "authoritative_source": "body",

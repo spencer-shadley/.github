@@ -35,11 +35,11 @@ spencer-shadley/.github is the only GovernedIntakeBodyV1 producer. Consumers nam
 <!-- dag-view:begin source=./gh13-account-intake-ssot.dag.json — generated from that data file by skills/programme-decomp-execute/scripts/dag-view.ts (`pnpm decomp:dag -- --write <file.md>`); edit the data file, never this block -->
 **Programme DAG** [gh13-account-intake-ssot](https://github.com/spencer-shadley/.github/issues/13) — Account-wide issue-intake SSOT and local-template deletion · source of truth: `./gh13-account-intake-ssot.dag.json`
 
-**4 chunks:** 4 ○ ready
+**4 chunks:** 1 ▶ running · 3 ○ ready
 
 | Chunk | What and why | Wave | Depends on | Blocked by | Status | Done when |
 |---|---|---|---|---|---|---|
-| `C1231` ([cli-wrappers#1231](https://github.com/spencer-shadley/cli-wrappers/issues/1231)) | Prove the CLI consumer pin fails closed | W1 | — | — | ○ ready | origin/master verifies the admitted .github pin and payload digest fail closed, or a PR that does so is merged |
+| `C1231` ([cli-wrappers#1231](https://github.com/spencer-shadley/cli-wrappers/issues/1231)) | Prove the CLI consumer pin fails closed | W1 | — | — | ▶ running · seat rinnegan job-1790900747242-08kh4l | origin/master verifies the admitted .github pin and payload digest fail closed, or a PR that does so is merged |
 | `C6453` ([code#6453](https://github.com/spencer-shadley/code/issues/6453)) | Delete Code's editable intake producer authority | W1 | — | — | ○ ready | origin/master has no editable GovernedIntakeBody producer; consumers fail closed on the admitted .github commit and payload digest |
 | `C6454` ([code#6454](https://github.com/spencer-shadley/code/issues/6454)) | Prove local template absence and the fleet invariant | W1 | — | — | ○ ready | Current FleetRegistry members have no unexplained local issue-template override on the default branch, and a fleet invariant for that fact is on origin/master |
 | `C15` ([.github#15](https://github.com/spencer-shadley/.github/issues/15)) | Align active non-Code guidance with the producer | W1 | — | — | ○ ready | Active .github guidance matches the live producer, and every other active authority hit is historical, already owned, or repaired on its default branch |
@@ -47,7 +47,7 @@ spencer-shadley/.github is the only GovernedIntakeBodyV1 producer. Consumers nam
 ```mermaid
 flowchart TD
   subgraph W1["Wave 1"]
-    c_c1231["○ C1231 (cli-wrappers#1231) · ready<br/>Prove the CLI consumer pin fails closed"]
+    c_c1231[["▶ C1231 (cli-wrappers#1231) · running<br/>Prove the CLI consumer pin fails closed"]]
     c_c6453["○ C6453 (code#6453) · ready<br/>Delete Code's editable intake producer authority"]
     c_c6454["○ C6454 (code#6454) · ready<br/>Prove local template absence and the fleet invariant"]
     c_c15["○ C15 (.github#15) · ready<br/>Align active non-Code guidance with the producer"]
@@ -60,7 +60,8 @@ flowchart TD
   classDef merged fill:#d1fae5,stroke:#047857,stroke-width:2px,color:#064e3b
   classDef done fill:#d1fae5,stroke:#047857,stroke-width:2px,color:#064e3b
   classDef external fill:#fff7ed,stroke:#c2410c,stroke-width:2px,stroke-dasharray:6 3,color:#7c2d12
-  class c_c1231,c_c6453,c_c6454,c_c15 ready
+  class c_c6453,c_c6454,c_c15 ready
+  class c_c1231 running
   click c_c1231 href "https://github.com/spencer-shadley/cli-wrappers/issues/1231" "C1231 — cli-wrappers#1231" _blank
   click c_c6453 href "https://github.com/spencer-shadley/code/issues/6453" "C6453 — code#6453" _blank
   click c_c6454 href "https://github.com/spencer-shadley/code/issues/6454" "C6454 — code#6454" _blank
