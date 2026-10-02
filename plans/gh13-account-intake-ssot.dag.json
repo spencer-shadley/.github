@@ -1,0 +1,89 @@
+{
+  "schema": "ProgrammeDagV1",
+  "programme": {
+    "id": "gh13-account-intake-ssot",
+    "title": "Account-wide issue-intake SSOT and local-template deletion",
+    "issue": "https://github.com/spencer-shadley/.github/issues/13"
+  },
+  "chunks": [
+    {
+      "id": "C1231",
+      "repo": "spencer-shadley/cli-wrappers",
+      "issue": "https://github.com/spencer-shadley/cli-wrappers/issues/1231",
+      "wave": 1,
+      "depends_on": [],
+      "blocked_by": [],
+      "description": "Prove the CLI consumer pin fails closed",
+      "status": "running",
+      "seat": {
+        "host": "rinnegan",
+        "job": "job-1790900747242-08kh4l"
+      },
+      "done_when": "origin/master verifies the admitted .github pin and payload digest fail closed, or a PR that does so is merged",
+      "lease_scope": "contracts/governed-intake-producer.pin.json, scripts/sync-governed-intake-contract.ts, scripts/governed-intake-bundle-files.ts, scripts/publish-governed-intake-bundle-dist.ts, src/lib/generated/governed-intake.ts, test/governed-intake-bundle-dist.test.ts, package.json governed-intake scripts, README/docs that name the intake producer",
+      "authoritative_source": "body",
+      "non_goals": [
+        "Do not mint a second producer pin",
+        "Do not bump the pin for the SECURITY.md-only tip",
+        "Do not delete fleet issue templates",
+        "Do not edit Code"
+      ]
+    },
+    {
+      "id": "C6453",
+      "repo": "spencer-shadley/code",
+      "issue": "https://github.com/spencer-shadley/code/issues/6453",
+      "wave": 1,
+      "depends_on": [],
+      "blocked_by": [],
+      "description": "Delete Code's editable intake producer authority",
+      "status": "ready",
+      "done_when": "origin/master has no editable GovernedIntakeBody producer; consumers fail closed on the admitted .github commit and payload digest",
+      "lease_scope": "contracts/governed-intake-*.ts, contracts/governed-intake-producer-release.test.ts, contracts/generated/governed-intake/**, tools/checks/contracts/check-governed-intake-body-schema.ts, tools/checks/repo/integrity/cli-wrappers/check-governed-intake-pin-drift.ts, tools/reconcile/governed-intake/**, active docs/skills that still name Code as the intake producer",
+      "authoritative_source": "body",
+      "non_goals": [
+        "Do not add the fleet-wide local-template invariant (code#6454)",
+        "Do not edit cli-wrappers",
+        "Do not resume code#6761",
+        "Do not touch code#6463, code#6465, or code#6468"
+      ]
+    },
+    {
+      "id": "C6454",
+      "repo": "spencer-shadley/code",
+      "issue": "https://github.com/spencer-shadley/code/issues/6454",
+      "wave": 1,
+      "depends_on": [],
+      "blocked_by": [],
+      "description": "Prove local template absence and the fleet invariant",
+      "status": "ready",
+      "done_when": "Current FleetRegistry members have no unexplained local issue-template override on the default branch, and a fleet invariant for that fact is on origin/master",
+      "lease_scope": "tools/checks/repo/integrity/issue-template-override/** and repo-template scripts/check-issue-template-intake.ts only if that script still materializes a local template",
+      "authoritative_source": "body",
+      "non_goals": [
+        "Do not edit Code governed-intake producer or consumer files (code#6453)",
+        "Do not edit cli-wrappers",
+        "Do not mint ceremonial test issues",
+        "Do not add GitHub Actions or a sync service"
+      ]
+    },
+    {
+      "id": "C15",
+      "repo": "spencer-shadley/.github",
+      "issue": "https://github.com/spencer-shadley/.github/issues/15",
+      "wave": 1,
+      "depends_on": [],
+      "blocked_by": [],
+      "description": "Align active non-Code guidance with the producer",
+      "status": "ready",
+      "done_when": "Active .github guidance matches the live producer, and every other active authority hit is historical, already owned, or repaired on its default branch",
+      "lease_scope": "docs/governed-intake-ssot.md, README.md, AGENTS.md, CONTRIBUTING.md",
+      "authoritative_source": "body",
+      "non_goals": [
+        "Do not edit Code or cli-wrappers",
+        "Do not rewrite historical plans",
+        "Do not change the semantic contract or task.yml"
+      ]
+    }
+  ]
+}
