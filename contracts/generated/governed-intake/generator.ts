@@ -449,7 +449,6 @@ export function generateTaskYaml(contract) {
     "# Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml",
     "name: Task / bug / feature",
     "description: Triage-ready issue — the autonomous pipeline authors a plan from this",
-    "title: \"\"",
     "labels:",
     "  - agent-review",
     "  - priority:triage-tbd",
@@ -639,7 +638,6 @@ export function generateFeatureYaml(contract) {
     "# Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/feature.yml",
     "name: Feature / engineering leverage",
     "description: File a concise feature, leverage, risk-reduction, or discovery item for triage.",
-    "title: \"\"",
     "labels:",
     "  - agent-review",
     "  - priority:triage-tbd",
@@ -774,10 +772,60 @@ function assertIncludes(haystack, needle, label) {
   assert.ok(haystack.includes(needle), `${label}: missing ${JSON.stringify(needle)}`);
 }
 
+// GitHub Issue Forms top-level schema (docs: "Syntax for issue forms"). GitHub rejects an invalid
+// form silently in the chooser, so a schema-invalid projection hides every inherited form (.github#31).
+const ISSUE_FORM_TOP_LEVEL_KEYS = new Set(["name", "description", "body", "assignees", "labels", "title", "projects", "type"]);
+const ISSUE_FORM_REQUIRED_NONEMPTY_STRINGS = ["name", "description"];
+const ISSUE_FORM_OPTIONAL_NONEMPTY_STRINGS = ["title", "type"];
+
+function parseTopLevelScalar(raw: string): string | null {
+  const value = raw.trim();
+  if (value === "" || value === "~" || value === "null") return null;
+  if (value.startsWith("\"")) return JSON.parse(value);
+  if (value.startsWith("'")) {
+    assert.ok(value.length >= 2 && value.endsWith("'"), `unterminated single-quoted scalar ${value}`);
+    return value.slice(1, -1).replaceAll("''", "'");
+  }
+  return value;
+}
+
+export function assertGitHubIssueFormTopLevel(yamlText: string, label = "issue form"): void {
+  const entries = new Map<string, { scalar: string | null; hasBlock: boolean }>();
+  const lines = normalizeLf(yamlText).split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line === "" || line.startsWith("#") || /^\s/.test(line)) continue;
+    const match = /^([A-Za-z_][A-Za-z0-9_-]*):(?:\s(.*))?$/.exec(line);
+    assert.ok(match, `${label}: unsupported top-level line ${JSON.stringify(line)}`);
+    const key = match[1];
+    assert.ok(ISSUE_FORM_TOP_LEVEL_KEYS.has(key), `${label}: unknown top-level key ${key}`);
+    assert.equal(entries.has(key), false, `${label}: duplicate top-level key ${key}`);
+    const hasBlock = i + 1 < lines.length && /^\s+\S/.test(lines[i + 1]);
+    entries.set(key, { scalar: parseTopLevelScalar(match[2] ?? ""), hasBlock });
+  }
+  for (const key of ISSUE_FORM_REQUIRED_NONEMPTY_STRINGS) {
+    const entry = entries.get(key);
+    assert.ok(entry, `${label}: ${key} is required`);
+    assert.ok(typeof entry.scalar === "string" && entry.scalar.trim() !== "" && !entry.hasBlock,
+      `${label}: ${key} must be of type String and cannot be empty`);
+  }
+  for (const key of ISSUE_FORM_OPTIONAL_NONEMPTY_STRINGS) {
+    const entry = entries.get(key);
+    if (!entry) continue;
+    // Optional in GitHub's schema, but when present it must be a non-empty String; omit it instead.
+    assert.ok(typeof entry.scalar === "string" && entry.scalar.trim() !== "" && !entry.hasBlock,
+      `${label}: ${key} must be of type String and cannot be empty`);
+  }
+  const body = entries.get("body");
+  assert.ok(body && body.scalar === null && body.hasBlock, `${label}: body must be a non-empty array`);
+}
+
 export function runSelfcheck(root = REPO_ROOT) {
   const contract = loadContract(root);
   const markdown = generateTaskMarkdown(contract);
   const yaml = generateTaskYaml(contract);
+  assertGitHubIssueFormTopLevel(yaml, "task issue form");
+  assertGitHubIssueFormTopLevel(generateFeatureYaml(contract), "feature issue form");
 
   for (const heading of contract.requiredHeadings) {
     assert.match(

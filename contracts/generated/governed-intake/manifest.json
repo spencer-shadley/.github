@@ -4,9 +4,9 @@
   "revision": 22,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "763aa95282da19e923b6f5834c6f1a51a9ec3bd5"
+    "commit": "d2ee7995026cfceba4ecb1d459a19dd893a28948"
   },
-  "payloadDigest": "2007e37b0d8ca0f5c5a2cd91641ac84f9dea9b0ec26f1b66481c722cc50fb46a",
+  "payloadDigest": "94c8c124d34b3fb303ea7b337f6bad1a6a1142efff3c2994df510f0dc746c244",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -50,18 +50,18 @@
     },
     "feature.yml": {
       "path": "feature.yml",
-      "sha256": "3b855fb6845f8ea31621933d09ed97e0bef26fa716b56fc9dba902979cb20b12",
-      "byteLength": 4409
+      "sha256": "c7dfe756112216d5829d59c60e7af1c0a4e319f35e4c2226cdd02081ae81090d",
+      "byteLength": 4399
     },
     "generator.js": {
       "path": "generator.js",
-      "sha256": "b573bba4904b13c652bbd8191f50f735755584ee2b8485075860fc6d22115496",
-      "byteLength": 42639
+      "sha256": "06806b0b8e794dff8cd3261b1257b05dc33b0533eebd8866b55673c716e48feb",
+      "byteLength": 45389
     },
     "generator.ts": {
       "path": "generator.ts",
-      "sha256": "f1f03daf0ad56ef8841b3908f3148d0daa1a14dd2124c8e059c381b2992ea767",
-      "byteLength": 42639
+      "sha256": "fb02f86f1a26c29fa0319af36237e228552c911b87ae175c9c2d254497439678",
+      "byteLength": 45389
     },
     "governed-intake-body.evaluate.js": {
       "path": "governed-intake-body.evaluate.js",
@@ -195,8 +195,8 @@
     },
     "task.yml": {
       "path": "task.yml",
-      "sha256": "d311bad733073c8223ff1e58f8697773d3a871f73f150b8d353e50b28f081e89",
-      "byteLength": 19226
+      "sha256": "320c1fd8da7ffa2fe3f7012dcdbc9f0b81ad1166888101615008d66f91f6fcd4",
+      "byteLength": 19216
     },
     "triage-evaluator.js": {
       "path": "triage-evaluator.js",
