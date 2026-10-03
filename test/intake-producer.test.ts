@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, sy
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadContract, generateTaskMarkdown, generateTaskYaml, checkProjections, writeProjections } from "../contracts/governed-intake-body.generate.ts";
+import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections } from "../contracts/governed-intake-body.generate.ts";
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
 import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
@@ -57,6 +57,28 @@ test("canonical projections are exact, valid, and contain no cross-repository co
   assert.match(generateTaskMarkdown(c), /repository: spencer-shadley\/\.github/);
   assert.equal(c.owner, "spencer-shadley/.github");
   assert.match(generateTaskYaml(c), /description: "One paragraph\. For bugs: symptom \+ repro\. For features: the user-visible outcome\."/);
+});
+test("live issue forms satisfy GitHub's top-level Issue Form schema (.github#31)", () => {
+  const forms = {
+    task: readFileSync(path.join(root, ".github/ISSUE_TEMPLATE/task.yml"), "utf8"),
+    feature: readFileSync(path.join(root, ".github/ISSUE_TEMPLATE/feature.yml"), "utf8"),
+    generatedTask: generateTaskYaml(c),
+    generatedFeature: generateFeatureYaml(c),
+  };
+  for (const [name, yaml] of Object.entries(forms)) {
+    assert.doesNotThrow(() => assertGitHubIssueFormTopLevel(yaml, name), name);
+    assert.doesNotMatch(yaml, /^title:\s*(?:""|''|~|null)?\s*$/m, `${name}: optional title must be omitted, not empty`);
+  }
+  const withTitle = (value: string) => forms.task.replace(/^labels:/m, `title: ${value}\nlabels:`);
+  // GitHub: "title must be of type String and cannot be empty" hides every inherited form.
+  for (const bad of ['""', "''", "", "~", "null", '"   "']) {
+    assert.throws(() => assertGitHubIssueFormTopLevel(withTitle(bad)), /title must be of type String and cannot be empty/, `title: ${bad}`);
+  }
+  assert.doesNotThrow(() => assertGitHubIssueFormTopLevel(withTitle('"[Task] "')));
+  assert.throws(() => assertGitHubIssueFormTopLevel(forms.task.replace(/^name: .*$/m, 'name: ""')), /name must be of type String/);
+  assert.throws(() => assertGitHubIssueFormTopLevel(forms.task.replace(/^description: .*\n/m, "")), /description is required/);
+  assert.throws(() => assertGitHubIssueFormTopLevel(forms.task.replace(/^labels:/m, "titel: x\nlabels:")), /unknown top-level key titel/);
+  assert.throws(() => assertGitHubIssueFormTopLevel(forms.task.replace(/^body:\n[\s\S]*$/m, "body:\n")), /body must be a non-empty array/);
 });
 test("complete body is accepted while incomplete or malformed identities are refused", () => {
   assert.deepEqual(validateGovernedIntakeBody(validBody()), { ok: true, schemaVersion: "governed-intake-body-v1" });

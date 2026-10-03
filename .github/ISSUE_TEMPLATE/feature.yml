@@ -3,7 +3,6 @@
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/feature.yml
 name: Feature / engineering leverage
 description: File a concise feature, leverage, risk-reduction, or discovery item for triage.
-title: ""
 labels:
   - agent-review
   - priority:triage-tbd
