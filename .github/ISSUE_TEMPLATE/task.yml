@@ -3,7 +3,6 @@
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
 description: Triage-ready issue — the autonomous pipeline authors a plan from this
-title: ""
 labels:
   - agent-review
   - priority:triage-tbd
