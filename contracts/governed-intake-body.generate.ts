@@ -730,12 +730,45 @@ export function projectionPaths(root = REPO_ROOT) {
   };
 }
 
+const PRODUCER_ORIGIN = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)spencer-shadley\/\.github(?:\.git)?$/;
+
+/** Drop credentials (`https://user[:secret]@`, `scheme://user:secret@`) from a remote URL (.github#39). */
+export function stripRemoteUrlCredentials(url: string): string {
+  return url
+    .replace(/^(https?:\/\/)[^/@\s]*@/i, "$1")
+    .replace(/^([a-z][a-z0-9+.-]*:\/\/[^/@:\s]*):[^/@\s]*@/i, "$1@");
+}
+
+/** Remote URL safe to print: any credential is replaced, never echoed (.github#39). */
+export function redactRemoteUrl(url: string): string {
+  return url
+    .replace(/^(https?:\/\/)[^/@\s]+@/i, "$1<redacted>@")
+    .replace(/^([a-z][a-z0-9+.-]*:\/\/[^/@:\s]*):[^/@\s]*@/i, "$1:<redacted>@");
+}
+
+/**
+ * Refuse projection writes outside the producer checkout. Identity is the origin URL as stored
+ * in the repository's config, not `git remote get-url`: that returns the `url.<base>.insteadOf`
+ * rewrite, which on a credentialed host carries a token and is not the repository's identity
+ * (.github#39). Credentials are stripped before matching and never appear in the refusal.
+ */
 export function assertProducerCheckout(root = REPO_ROOT): void {
-  const origin = execFileSync("git", ["remote", "get-url", "origin"], {
-    cwd: root, encoding: "utf8", windowsHide: true,
-  }).trim();
-  assert.match(origin, /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)spencer-shadley\/\.github(?:\.git)?$/,
-    "projection writes belong only to the spencer-shadley/.github producer checkout");
+  let stored: string;
+  try {
+    stored = execFileSync("git", ["config", "--get", "remote.origin.url"], {
+      cwd: root, encoding: "utf8", windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
+  } catch {
+    throw new assert.AssertionError({
+      message: "projection writes belong only to the spencer-shadley/.github producer checkout (no origin remote configured)",
+    });
+  }
+  if (!PRODUCER_ORIGIN.test(stripRemoteUrlCredentials(stored))) {
+    // A hand-built AssertionError: assert.match would attach the raw URL as `actual`.
+    throw new assert.AssertionError({
+      message: `projection writes belong only to the spencer-shadley/.github producer checkout (origin: ${redactRemoteUrl(stored)})`,
+    });
+  }
   assert.equal(loadContract(root).owner, "spencer-shadley/.github");
 }
 

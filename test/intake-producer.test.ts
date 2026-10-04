@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, sy
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections } from "../contracts/governed-intake-body.generate.ts";
+import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials } from "../contracts/governed-intake-body.generate.ts";
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
 import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
@@ -143,6 +143,53 @@ test("producer refuses uncommitted source, a branch instead of commit, and ordin
   assert.throws(() => buildGovernedIntakeRelease({ repoRoot: s.source, commit: s.commit }), /source does not match/);
   s.git("remote", "set-url", "origin", "https://github.com/spencer-shadley/code.git");
   assert.throws(() => writeProjections(s.source), /projection writes belong only/);
+});
+/** Error text plus any `actual`/`expected` the test runner would print for it. */
+function printedError(fn: () => void): string {
+  try { fn(); } catch (error) {
+    const e = error as { message?: unknown; actual?: unknown; expected?: unknown; stack?: unknown };
+    return [e.message, e.actual, e.expected, e.stack].map((part) => String(part ?? "")).join("\n");
+  }
+  assert.fail("expected a refusal");
+}
+test("producer identity ignores a credentialed insteadOf rewrite and never prints the credential (.github#39)", (t) => {
+  const s = scratch(t);
+  const secret = "DUMMYSECRET39abc";
+  // Repository-local rewrite, as a host's global `url.<base>.insteadOf` would apply it.
+  s.git("config", `url.https://x-access-token:${secret}@github.com/.insteadOf`, "https://github.com/");
+  // Precondition without echoing the URL: the effective (rewritten) origin carries a credential.
+  assert.ok(s.git("remote", "get-url", "origin").includes("x-access-token:"), "the effective URL carries a credential");
+  assert.doesNotThrow(() => assertProducerCheckout(s.source));
+  assert.doesNotThrow(() => buildGovernedIntakeRelease({ repoRoot: s.source, commit: s.commit }));
+
+  s.git("remote", "set-url", "origin", "https://github.com/spencer-shadley/code.git");
+  const refusal = printedError(() => assertProducerCheckout(s.source));
+  assert.match(refusal, /projection writes belong only/);
+  assert.match(refusal, /origin: https:\/\/github\.com\/spencer-shadley\/code\.git/);
+  assert.doesNotMatch(refusal, new RegExp(secret));
+});
+test("a credential stored in origin itself is stripped for matching and redacted in the refusal (.github#39)", (t) => {
+  const s = scratch(t);
+  const secret = "DUMMYSECRET39def";
+  s.git("remote", "set-url", "origin", `https://x-access-token:${secret}@github.com/spencer-shadley/.github.git`);
+  assert.doesNotThrow(() => assertProducerCheckout(s.source));
+  s.git("remote", "set-url", "origin", `https://x-access-token:${secret}@github.com/spencer-shadley/code.git`);
+  const refusal = printedError(() => writeProjections(s.source));
+  assert.match(refusal, /projection writes belong only.*origin: https:\/\/<redacted>@github\.com\/spencer-shadley\/code\.git/);
+  assert.doesNotMatch(refusal, new RegExp(secret));
+  s.git("remote", "remove", "origin");
+  assert.throws(() => assertProducerCheckout(s.source), /no origin remote configured/);
+});
+test("remote URL credential helpers keep the canonical producer forms (.github#39)", () => {
+  for (const url of ["https://github.com/spencer-shadley/.github.git", "git@github.com:spencer-shadley/.github.git", "ssh://git@github.com/spencer-shadley/.github"]) {
+    assert.equal(stripRemoteUrlCredentials(url), url);
+    assert.equal(redactRemoteUrl(url), url);
+  }
+  assert.equal(stripRemoteUrlCredentials("https://x-access-token:s3cr3t@github.com/o/r.git"), "https://github.com/o/r.git");
+  assert.equal(stripRemoteUrlCredentials("https://ghp_token@github.com/o/r.git"), "https://github.com/o/r.git");
+  assert.equal(stripRemoteUrlCredentials("ssh://git:s3cr3t@github.com/o/r"), "ssh://git@github.com/o/r");
+  assert.equal(redactRemoteUrl("https://x-access-token:s3cr3t@github.com/o/r.git"), "https://<redacted>@github.com/o/r.git");
+  assert.equal(redactRemoteUrl("ssh://git:s3cr3t@github.com/o/r"), "ssh://git:<redacted>@github.com/o/r");
 });
 test("published JavaScript actually executes the same body and checklist evaluators", async (t) => {
   const s = scratch(t);
