@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 22). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 23). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -6,12 +6,12 @@ description: Triage-ready issue — the autonomous pipeline authors a plan from 
 labels:
   - agent-review
   - priority:triage-tbd
-  - work:untriaged
+  - progress:triage
 body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 22).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 23).
         This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
         Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
@@ -82,7 +82,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=22 -->
+        <!-- governed-triage-checklist: revision=23 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -107,7 +107,7 @@ body:
         <!-- governed-triage-item: github-effects-quota -->
         - [ ] **GitHub effects + quota**: Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep.
         <!-- governed-triage-item: confirm-receipt -->
-        - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
+        - [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `metadata:triage-vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
         <!-- governed-triage-item: taxonomy -->
         - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
         <!-- governed-triage-item: outcome-shaped-acceptance -->
