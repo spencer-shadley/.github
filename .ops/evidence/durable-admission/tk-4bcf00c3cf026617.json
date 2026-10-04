@@ -1,0 +1,18 @@
+{
+  "schema_version": "durable-admission-receipt-v1",
+  "ticketId": "tk-4bcf00c3cf026617",
+  "identity": {
+    "workId": "spencer-shadley/code#7625",
+    "workDigest": "74285a7f3678819a4c35ad7a1d311836d90729ca0b248264c9855373f4e7f65f",
+    "consumerStage": "implementer",
+    "intentHash": "23e0135d2bff6920d81b6aa99d4e0ea91709e4553e4b9c7ad9e1166d8cdbeb57",
+    "generation": 1,
+    "callerHostId": "rinnegan",
+    "targetRepo": "spencer-shadley/code"
+  },
+  "requestDigest": "sha256:41f44d7091dee407601e3396692bb567f7edf19bd35c3d53fe893ec8fc4812f8",
+  "state": "terminal_refused",
+  "recordedAt": "2026-10-04T02:28:12.319Z",
+  "authoritativeStoreRef": "evidence-only:rinnegan/tk-4bcf00c3cf026617",
+  "generation": 1
+}
