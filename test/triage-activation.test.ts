@@ -36,13 +36,22 @@ import {
 } from "../contracts/governed-intake-triage.compose.ts";
 import { bindTaskProfileContract, type TaskProfileContract, type TaskProfileRecord } from "../contracts/governed-intake-task-profile.evaluate.ts";
 import taskProfileContractJson from "../contracts/governed-intake-task-profile.v1.json" with { type: "json" };
+import { fingerprintDirectionFacts } from "../contracts/governed-intake-policy-binding.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = loadContract(root);
 const bound = boundTriagePolicyFromProducer();
 const identity = { fixOwnerGitHubSlug: "Spencer-Shadley/.github", workType: "Task", canonicalWorkUnitIdentity: "policy activation" };
 const actualIssue = { repository: "spencer-shadley/.github", issueNumber: 19, title: "Activate policy" };
-const evaluateGovernedIntakeTriage = (input: Parameters<typeof evaluateProducerTriage>[0]) => evaluateProducerTriage({ subject: actualIssue, ...input });
+const evaluateGovernedIntakeTriage = (input: Parameters<typeof evaluateProducerTriage>[0]) => {
+  const facts = { seed: actualIssue, threads: [{ ...actualIssue, materialFingerprint: `sha256:${"a".repeat(64)}`, decisions: [] }],
+    sourceFingerprint: `sha256:${"b".repeat(64)}`, ownershipFingerprint: `sha256:${"c".repeat(64)}`, relatedWorkFingerprint: `sha256:${"d".repeat(64)}` };
+  return evaluateProducerTriage({ subject: actualIssue,
+    directionImpact: { ...subject, factsFingerprint: fingerprintDirectionFacts(facts), revision: contract.version,
+      assessment: "no-impact", rationale: "This synthetic leaf changes no related direction." },
+    directionObservation: { facts, coverage: "complete", publication: { repository: "spencer-shadley/.github",
+      sourceCommit: "a".repeat(40), payloadDigest: "b".repeat(64), revision: contract.version } }, ...input });
+};
 const subject = {
   workUnitKey: `sha256:${computeGovernedWorkUnitKey(identity)}`,
   scopeFingerprint: fingerprintIssueScope({ ...actualIssue, body: validBody() }),

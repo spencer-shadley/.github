@@ -183,3 +183,33 @@ pinned `canonical-v1.ts:171`, the line moved, and an otherwise-reasonable seat s
 pursuing the outcome. Move implementation pointers like this into "Relevant details" as an explicitly
 advisory hint (`<!-- advisory, not binding: ... -->`) the implementer may disregard; a reviewer may not
 block on "did it differently from the hint" alone.
+
+## Direction-impact semantic completion
+
+The `value-direction` and `dedup-queue-synergy` stable obligations consume direction-impact evidence
+through `evaluateGovernedIntakeTriage`, also exposed by the public completion API. The current
+contract's revision remains the only completion revision; inactive taxonomy candidates confer no
+publication or label authority. See Code's [reusable audit](https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md)
+for neighborhood judgment and governed reconciliation.
+
+Consumer adapters provide a `directionImpact` assessment and a separate `directionObservation`
+from actual server-fetched seed/thread identities, complete material decision evidence, source,
+ownership and related-work facts. `fingerprintDirectionFacts` binds material facts and ignores
+invocation timestamps, receipt comments and labels. The adapter must obtain these observations
+independently of the assessed receipt, adjudicate accepted/proposed/reversed decisions and verify
+the authoritative release before effects; this pure producer cannot authenticate arbitrary caller
+objects or fetch GitHub. Unsupported adapters and missing evidence stay pending.
+
+No-impact requires reasoned assessment and no cohort effects. Potential material impact requires
+the existing audit's exact frozen selection and verified readbacks, current publication identity,
+accepted causal decisions for changed dispositions, and conservation/relationship evidence.
+Superseded valid outcomes require an independently read-back destination. Failed, launched,
+incomplete, unsupported and unknown results remain pending under the existing settlement identity.
+No label rename or checked box satisfies those obligations. The public completion API exposes
+pending direction and synergy items to the existing delta consumer.
+
+Changed material direction, scope, accepted decisions, source, ownership or related-work facts
+invalidate the declared stable obligations. Only observed changed results propagate to dependents;
+unchanged valid facts reuse evidence without semantic reruns, comments or recursive triggers.
+Consumer preparation must prove current and candidate compatibility before actual publication;
+Code #7476 owns adoption and live invocation, and .github#32 keeps its separate taxonomy gate.
