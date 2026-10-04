@@ -1,5 +1,5 @@
 {
-  "observedAt": "2026-10-04T02:23:24.092Z",
+  "observedAt": "2026-10-04T02:50:39.244Z",
   "consumer": "Code actual github-mcp-worker adapter",
   "current": {
     "repository": "spencer-shadley/.github",
@@ -13,9 +13,9 @@
     "payloadDigest": "sha256:94c8c124d34b3fb303ea7b337f6bad1a6a1142efff3c2994df510f0dc746c244"
   },
   "candidate": {
-    "source": "b291207f65ddc1a2e4dff4b6b6d865acfdd5e2a3",
+    "source": "8df7b85d8a3bae06af386f6cb796b72b2dadeff3",
     "revision": 23,
-    "digest": "556b49377580add7b4553cbe25413161b6e4d366ee0172aec457c210577ad197"
+    "digest": "eb8a197aed88ebc009a4ad2ff42a5776d138a2ca4eb381b3de4878501397517c"
   },
   "candidateApi": "actual adapter loads verified JS and fails closed without evidence",
   "activationReady": false,
