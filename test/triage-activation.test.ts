@@ -43,15 +43,17 @@ const contract = loadContract(root);
 const bound = boundTriagePolicyFromProducer();
 const identity = { fixOwnerGitHubSlug: "Spencer-Shadley/.github", workType: "Task", canonicalWorkUnitIdentity: "policy activation" };
 const actualIssue = { repository: "spencer-shadley/.github", issueNumber: 19, title: "Activate policy" };
-const evaluateGovernedIntakeTriage = (input: Parameters<typeof evaluateProducerTriage>[0]) => {
+const observedNoImpact = () => {
   const facts = { seed: actualIssue, threads: [{ ...actualIssue, materialFingerprint: `sha256:${"a".repeat(64)}`, decisions: [] }],
     sourceFingerprint: `sha256:${"b".repeat(64)}`, ownershipFingerprint: `sha256:${"c".repeat(64)}`, relatedWorkFingerprint: `sha256:${"d".repeat(64)}` };
-  return evaluateProducerTriage({ subject: actualIssue,
+  return {
     directionImpact: { ...subject, factsFingerprint: fingerprintDirectionFacts(facts), revision: contract.version,
-      assessment: "no-impact", rationale: "This synthetic leaf changes no related direction." },
-    directionObservation: { facts, coverage: "complete", publication: { repository: "spencer-shadley/.github",
-      sourceCommit: "a".repeat(40), payloadDigest: "b".repeat(64), revision: contract.version } }, ...input });
+      assessment: "no-impact" as const, rationale: "This synthetic leaf changes no related direction." },
+    directionObservation: { facts, coverage: "complete" as const, publication: { repository: "spencer-shadley/.github",
+      sourceCommit: "a".repeat(40), payloadDigest: "b".repeat(64), revision: contract.version } } };
 };
+const evaluateGovernedIntakeTriage = (input: Parameters<typeof evaluateProducerTriage>[0]) =>
+  evaluateProducerTriage({ subject: actualIssue, ...observedNoImpact(), ...input });
 const subject = {
   workUnitKey: `sha256:${computeGovernedWorkUnitKey(identity)}`,
   scopeFingerprint: fingerprintIssueScope({ ...actualIssue, body: validBody() }),
@@ -501,7 +503,7 @@ test("legacy public two-argument checklist API cannot restamp unresolved work", 
 test("public checklist API composes verified ordinary evidence rather than blocking every issue", async () => {
   const { evaluateTriageChecklistState: publicState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
   const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
-  const result = await publicState(body, labels, { subject: actualIssue, evidence: await verifiedEvidence("ordinary") });
+  const result = await publicState(body, labels, { subject: actualIssue, evidence: await verifiedEvidence("ordinary"), ...observedNoImpact() });
   assert.equal(result.needs_triage, false, JSON.stringify(result.semantic_reasons));
   assert.equal(result.scope_resolved, true);
 });
