@@ -156,7 +156,7 @@ function completionRegex(flags = "g"): RegExp {
 }
 
 function triagedLabelRegex(): RegExp {
-  return new RegExp(`^${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}(\\d+)$`, "i");
+  return new RegExp(`^(?:${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}|triaged:v)(\\d+)$`, "i");
 }
 
 const TRIAGE_OWNED_LABEL_REGEXES = GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.map(
