@@ -183,3 +183,25 @@ pinned `canonical-v1.ts:171`, the line moved, and an otherwise-reasonable seat s
 pursuing the outcome. Move implementation pointers like this into "Relevant details" as an explicitly
 advisory hint (`<!-- advisory, not binding: ... -->`) the implementer may disregard; a reviewer may not
 block on "did it differently from the hint" alone.
+
+## Candidate revision 23 release: accepted taxonomy staging
+
+Under [.github#32](https://github.com/spencer-shadley/.github/issues/32) and [code#7586](https://github.com/spencer-shadley/code/pull/7639), candidate revision 23 adopts the accepted fleet-wide multidimensional taxonomy:
+- **Taxonomy dimensions and cardinalities:**
+  - `delivers`: 0..* (`delivers:agent-efficiency`, `human-efficiency`, `reliability`, `cost-efficiency`, `capability`).
+  - `type`: 1..* after triage (`type:feature`, `bug`, `regression`, `migration`, `deletion`, `research`, `maintenance`). Coexistence allowed (e.g. migration + deletion, bug + regression). Regression requires prior reference. Research conclusions: `positive`, `negative`, `inconclusive`.
+  - `source`: 1..* after triage (`source:human`, `runtime-signal`, `retro-skill`, `retro-bot`, `scheduled-task`, plus dynamic `source:retro-skill:<slug>` / `source:scheduled-task:<slug>`).
+  - `effort`: exactly 1 (`effort:low`, `medium`, `high`).
+  - `priority:repo` and `priority:fleet`: exactly 1 each (`priority:repo:p0`..`p5`, `priority:fleet:p0`..`p5`).
+  - `blocked`: 0..* (`blocked:time`, `blocked:human-required`, `blocked:issue`).
+  - `environment`: 0..* (`environment:fleet-local`, dynamic `host:<host>`, `hardware:<slug>`).
+  - `progress`: exactly 1 (`progress:triage`, `progress:planned`, `progress:implementing`, `progress:reviewing`, `progress:implemented`, `progress:verified`). Replaces prior stage without accumulation.
+  - `decomp`: 0..1 (`decomp:required`, `decomp:in-progress`, `decomp:complete`, `decomp:unnecessary`).
+  - `resolution`: 0 while open, exactly 1 resolved (`resolution:delivered`, `duplicate`, `superseded`, `declined`, `obsolete`). `delivered` requires verified acceptance (`progress:verified`). Non-delivery closure preserves last actual progress. Reopening clears resolution and invalid stamps.
+  - `resolution:obsolete`: immediate before implementation upon accepted direction/retirement, cites causing issue + decision comment, cause backlink listing obsolete issues, preserves last actual progress.
+  - `resolution:superseded`: preserves destination.
+  - `metadata`: `metadata:triage-vN` (dynamic). Only `metadata:triage-v23` represents completed current semantic triage in revision 23. Old stamps (`triaged:v22`), missing stamps, forged stamps, or structurally-checked-only stamps never produce completion.
+  - Initial filing defaults: `labels: agent-review, priority:triage-tbd, progress:triage`.
+- **Staging protocol:**
+  Candidate release artifacts and tests are prepared and pinned on the exact candidate branch for downstream consumer preparation without prematurely activating live issue forms or releases on `main`. Deployed consumers continue using published revision 22 until coordinated fleet activation.
+

@@ -1,12 +1,12 @@
 {
   "schema": "GovernedIntakeReleaseManifestV1",
   "schemaFamily": "GovernedIntakeBodyV1",
-  "revision": 22,
+  "revision": 23,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "d2ee7995026cfceba4ecb1d459a19dd893a28948"
+    "commit": "6425de19f8a401226ef8b332e78c428c10092f93"
   },
-  "payloadDigest": "94c8c124d34b3fb303ea7b337f6bad1a6a1142efff3c2994df510f0dc746c244",
+  "payloadDigest": "170617c8552f89750fe3457a710edc3f8c8324a90a337cd337c126d9a77a338b",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -20,8 +20,8 @@
     },
     "contract.json": {
       "path": "contract.json",
-      "sha256": "c3ae7c7a02c2cfcc3d8b75df58d7ee9a3b5628293c6a36255d2d7431eeff14f5",
-      "byteLength": 23173
+      "sha256": "3778402ae4b120a93b0f515cb6b7e7554308a8c6cefb07fe161a2ad5e74177d7",
+      "byteLength": 23725
     },
     "delta-planner.js": {
       "path": "delta-planner.js",
@@ -45,23 +45,23 @@
     },
     "feature.md": {
       "path": "feature.md",
-      "sha256": "5271945eb5a676d99797290e9b0e6ec5392a36269c4400b9f3f22fb8a303e658",
-      "byteLength": 2762
+      "sha256": "7afd15a0c39918b1aa68febc6dc4c536f041eb01cae392a0779c06550e9536d0",
+      "byteLength": 2763
     },
     "feature.yml": {
       "path": "feature.yml",
-      "sha256": "c7dfe756112216d5829d59c60e7af1c0a4e319f35e4c2226cdd02081ae81090d",
-      "byteLength": 4399
+      "sha256": "a4919d553c88badc84a7da9ca018331bcf5f7e4a5bce3a8f84ccc6b67443e738",
+      "byteLength": 4400
     },
     "generator.js": {
       "path": "generator.js",
-      "sha256": "06806b0b8e794dff8cd3261b1257b05dc33b0533eebd8866b55673c716e48feb",
-      "byteLength": 45389
+      "sha256": "a2031f9e24ed037e68e2b23d90cda160478ececae05f5976f10868481ae9de1b",
+      "byteLength": 45613
     },
     "generator.ts": {
       "path": "generator.ts",
-      "sha256": "fb02f86f1a26c29fa0319af36237e228552c911b87ae175c9c2d254497439678",
-      "byteLength": 45389
+      "sha256": "79b052cbbc20f5a64a4af95b5105857248d5b2869f32012f535c5f9f65961bad",
+      "byteLength": 45613
     },
     "governed-intake-body.evaluate.js": {
       "path": "governed-intake-body.evaluate.js",
@@ -75,8 +75,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "c3ae7c7a02c2cfcc3d8b75df58d7ee9a3b5628293c6a36255d2d7431eeff14f5",
-      "byteLength": 23173
+      "sha256": "3778402ae4b120a93b0f515cb6b7e7554308a8c6cefb07fe161a2ad5e74177d7",
+      "byteLength": 23725
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -120,13 +120,13 @@
     },
     "governed-intake-triage-state.evaluate.js": {
       "path": "governed-intake-triage-state.evaluate.js",
-      "sha256": "e317863788baea9ee0ba3b83515da28dbea3f4d141c29d8d881a125d1e46732f",
-      "byteLength": 16428
+      "sha256": "7ca68c892d04bca6e18b2b9e2daf034943e8cf74cb7f37e5466ea42fb6ef24a7",
+      "byteLength": 16442
     },
     "governed-intake-triage-state.evaluate.ts": {
       "path": "governed-intake-triage-state.evaluate.ts",
-      "sha256": "c252762fd97f05349c8b65dc8985f6835f5b435e6f498b754d7c285761bc173d",
-      "byteLength": 16428
+      "sha256": "1c38126e54d25f620ec5c8327b805e1ec48e264dc14274fe648c84a6674f3298",
+      "byteLength": 16442
     },
     "governed-intake-triage-state.migrate.js": {
       "path": "governed-intake-triage-state.migrate.js",
@@ -190,23 +190,23 @@
     },
     "task.md": {
       "path": "task.md",
-      "sha256": "910968f293a01ef0a17a24dc93ad2141d8358bae1d39d434a821990e0e54776d",
-      "byteLength": 17054
+      "sha256": "efc1652d3781437bb2b41c5d12a1c5f242b2cc14ca85b2c3bf4d85f206ce4b9d",
+      "byteLength": 17063
     },
     "task.yml": {
       "path": "task.yml",
-      "sha256": "320c1fd8da7ffa2fe3f7012dcdbc9f0b81ad1166888101615008d66f91f6fcd4",
-      "byteLength": 19216
+      "sha256": "30f3022d6b120e3af9562de1e551864655eeb89e721a7c189c072c027a6c0554",
+      "byteLength": 19225
     },
     "triage-evaluator.js": {
       "path": "triage-evaluator.js",
-      "sha256": "e317863788baea9ee0ba3b83515da28dbea3f4d141c29d8d881a125d1e46732f",
-      "byteLength": 16428
+      "sha256": "7ca68c892d04bca6e18b2b9e2daf034943e8cf74cb7f37e5466ea42fb6ef24a7",
+      "byteLength": 16442
     },
     "triage-evaluator.ts": {
       "path": "triage-evaluator.ts",
-      "sha256": "c252762fd97f05349c8b65dc8985f6835f5b435e6f498b754d7c285761bc173d",
-      "byteLength": 16428
+      "sha256": "1c38126e54d25f620ec5c8327b805e1ec48e264dc14274fe648c84a6674f3298",
+      "byteLength": 16442
     },
     "verify.js": {
       "path": "verify.js",

@@ -1,7 +1,7 @@
 {
   "schema": "GovernedIntakeBodyV1",
-  "version": 22,
-  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Bump version whenever this contract or its generated projections change.",
+  "version": 23,
+  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Version 23 (code#7586, .github#32) adopts the accepted multidimensional taxonomy (delivers, type, source, effort, priority:repo, priority:fleet, blocked, environment, progress, decomp, resolution) and updates the triage completion stamp namespace from triaged:vN to metadata:triage-vN with filing defaults agent-review, priority:triage-tbd, progress:triage. Bump version whenever this contract or its generated projections change.",
   "requiredHeadings": [
     "Work type",
     "What happened or what is needed?",
@@ -92,12 +92,12 @@
     "itemMarkerName": "governed-triage-item",
     "completionMarkerName": "governed-triage-completion",
     "fingerprintAlgorithm": "sha256",
-    "fingerprintScope": "Normalize LF, remove governed-triage-completion markers, trim trailing horizontal whitespace per line, trim the whole body, then append sorted unique triage-owned labels other than triaged:v* and SHA-256 the UTF-8 bytes.",
+    "fingerprintScope": "Normalize LF, remove governed-triage-completion markers, trim trailing horizontal whitespace per line, trim the whole body, then append sorted unique triage-owned labels other than metadata:triage-v* / triaged:v* and SHA-256 the UTF-8 bytes.",
     "pendingLabels": [
       "priority:triage-tbd",
-      "work:untriaged"
+      "progress:triage"
     ],
-    "triagedLabelPrefix": "triaged:v",
+    "triagedLabelPrefix": "metadata:triage-v",
     "triageOwnedLabelPatterns": [
       "^priority:(?:repo|fleet):p\\d+$",
       "^priority:rubric-v1$",
@@ -109,7 +109,15 @@
       "^human-required$",
       "^wait-slo-breached$",
       "^cloud-ready$",
-      "^local-required$"
+      "^local-required$",
+      "^delivers:",
+      "^type:",
+      "^source:",
+      "^blocked:",
+      "^environment:",
+      "^progress:",
+      "^decomp:",
+      "^resolution:"
     ],
     "items": [
       {
@@ -288,7 +296,7 @@
       {
         "id": "confirm-receipt",
         "title": "Confirm + receipt",
-        "text": "Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.",
+        "text": "Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `metadata:triage-vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.",
         "dependsOn": [
           "canonical-flow",
           "value-direction",

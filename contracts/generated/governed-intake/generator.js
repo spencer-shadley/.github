@@ -114,6 +114,8 @@ function assertTriageChecklistContract(raw                               ) {
   for (const field of ["heading", "sectionMarkerName", "itemMarkerName", "completionMarkerName", "triagedLabelPrefix"]) {
     assert.ok(typeof checklist[field] === "string" && checklist[field].length > 0, `triageChecklist.${field} missing`);
   }
+  assert.equal(checklist.triagedLabelPrefix, "metadata:triage-v", "triageChecklist.triagedLabelPrefix must be metadata:triage-v");
+  assert.deepEqual(checklist.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
   assert.ok(Array.isArray(checklist.pendingLabels));
   assert.ok(Array.isArray(checklist.triageOwnedLabelPatterns));
   assert.deepEqual(checklist.executionSubstrateLabels, ["cloud-ready", "local-required"]);
@@ -317,7 +319,7 @@ export function generateTaskMarkdown(contract) {
     "---",
     "name: Task / bug / feature",
     "about: Triage-ready issue — the autonomous pipeline authors a plan from this",
-    "labels: agent-review, priority:triage-tbd, work:untriaged",
+    "labels: agent-review, priority:triage-tbd, progress:triage",
     "---",
     "",
     generatedBanner(contract),
@@ -452,7 +454,7 @@ export function generateTaskYaml(contract) {
     "labels:",
     "  - agent-review",
     "  - priority:triage-tbd",
-    "  - work:untriaged",
+    "  - progress:triage",
     "body:",
     "  - type: markdown",
     "    attributes:",
@@ -588,7 +590,7 @@ export function generateFeatureMarkdown(contract) {
     "---",
     "name: Feature / engineering leverage",
     "about: Concise feature, leverage, risk-reduction, or discovery item for triage",
-    "labels: agent-review, priority:triage-tbd, work:untriaged",
+    "labels: agent-review, priority:triage-tbd, progress:triage",
     "---",
     "",
     generatedBanner(contract),
@@ -641,7 +643,7 @@ export function generateFeatureYaml(contract) {
     "labels:",
     "  - agent-review",
     "  - priority:triage-tbd",
-    "  - work:untriaged",
+    "  - progress:triage",
     "body:",
     "  - type: markdown",
     "    attributes:",
