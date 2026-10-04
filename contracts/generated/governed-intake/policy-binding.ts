@@ -35,6 +35,43 @@ export interface IssueScopeSource {
   body: string;
 }
 
+/** Independently fetched material facts; omit invocation times, labels and receipt comments.
+ * The consumer adapter owns complete thread pagination and accepted-decision adjudication.
+ * A receipt's matching caller assertions are never a substitute for this observation.
+ */
+export interface DirectionFacts {
+  seed: { repository: string; issueNumber: number };
+  threads: { repository: string; issueNumber: number; materialFingerprint: string;
+    decisions: { commentId: number; state: "proposed" | "accepted" | "reversed"; contentFingerprint: string }[] }[];
+  sourceFingerprint: string;
+  ownershipFingerprint: string;
+  relatedWorkFingerprint: string;
+}
+
+export function fingerprintDirectionFacts(facts: DirectionFacts): string {
+  const issue = (value: { repository: string; issueNumber: number }) => {
+    if (!/^[^/\s]+\/[^/\s]+$/.test(value.repository) || !Number.isSafeInteger(value.issueNumber) || value.issueNumber < 1) {
+      throw new TypeError("invalid direction issue identity");
+    }
+    return `${value.repository.toLowerCase()}#${value.issueNumber}`;
+  };
+  const sha = (value: string) => { if (!/^sha256:[0-9a-f]{64}$/.test(value)) throw new TypeError("invalid direction material fingerprint"); return value; };
+  const threads = facts.threads.map(thread => {
+    const decisions = thread.decisions.map(decision => {
+      if (!Number.isSafeInteger(decision.commentId) || decision.commentId < 1
+        || !["proposed", "accepted", "reversed"].includes(decision.state)) throw new TypeError("invalid direction decision");
+      return { ...decision, contentFingerprint: sha(decision.contentFingerprint) };
+    }).sort((a, b) => a.commentId - b.commentId);
+    if (new Set(decisions.map(d => d.commentId)).size !== decisions.length) throw new TypeError("duplicate direction decision");
+    return { issue: issue(thread), materialFingerprint: sha(thread.materialFingerprint), decisions };
+  }).sort((a, b) => a.issue.localeCompare(b.issue));
+  if (new Set(threads.map(t => t.issue)).size !== threads.length || !threads.some(t => t.issue === issue(facts.seed))) {
+    throw new TypeError("missing seed or duplicate direction thread");
+  }
+  return digest({ seed: issue(facts.seed), threads, source: sha(facts.sourceFingerprint),
+    ownership: sha(facts.ownershipFingerprint), relatedWork: sha(facts.relatedWorkFingerprint) });
+}
+
 /** Checklist checks and machine completion markers do not change the implementation scope. */
 export function normalizeIssueScopeBody(body: string): string {
   const checklist = contractJson.triageChecklist;

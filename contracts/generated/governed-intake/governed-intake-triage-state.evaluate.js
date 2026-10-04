@@ -358,7 +358,7 @@ export function triageProjectionErrorMessage(state                      )       
 export async function evaluateTriageChecklistState(
   body        ,
   labels                    = [],
-  semanticInput                                                                                                                                                 ,
+  semanticInput                                                                                                                                                                                              ,
 )                                                                                            {
   const structure = await evaluateTriageChecklistStructure(body, labels);
   if (!semanticInput) return { ...structure, needs_triage: true,
@@ -367,8 +367,11 @@ export async function evaluateTriageChecklistState(
     semantic_reasons: ["missing_semantic_evidence"], scope_resolved: false };
   const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.js");
   const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
+  const directionPending = result.reasons.some(reason => reason.startsWith("direction_") || reason === "no_impact_has_cohort_effects");
   return { ...structure, needs_triage: result.needsTriage,
-    unchecked_item_ids: result.scopeResolved ? structure.unchecked_item_ids : [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
+    unchecked_item_ids: [...new Set([...structure.unchecked_item_ids,
+      ...(result.scopeResolved ? [] : ["scope-decomposition"]),
+      ...(directionPending ? ["value-direction", "dedup-queue-synergy"] : [])])],
     reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending"         ])] : structure.reasons,
     semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };
 }

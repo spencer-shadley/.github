@@ -1,0 +1,23 @@
+import {createTriageRuntime, resolveGovernedIntakeRuntime} from 'file:///C:/code/tools/github-mcp-worker/src/triage-checklist-state.ts';
+import * as candidate from '../../contracts/generated/governed-intake/governed-intake-triage-state.evaluate.js';
+import {verifyGovernedIntakeRelease} from '../../contracts/governed-intake-release.verify.ts';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import assert from 'node:assert/strict';
+const verified=verifyGovernedIntakeRelease('contracts/generated/governed-intake');assert.equal(verified.ok,true);if(!verified.ok)throw Error('candidate corrupt');
+const manifest=verified.manifest;const contract=JSON.parse(readFileSync('contracts/generated/governed-intake/contract.json','utf8'));
+const current=createTriageRuntime(); const prepared=createTriageRuntime(null,{producer:candidate,contract,manifest,pin:{}});
+assert.equal(current.currentRevision,22);assert.equal(prepared.currentRevision,manifest.revision);
+const result=await prepared.evaluateTriageChecklistState(prepared.renderTriageChecklistBlock({checked:true}),[prepared.currentTriagedLabel,'cloud-ready']);
+assert.equal(result.needs_triage,true);assert.ok(result.reasons.includes('semantic_evidence_required'));
+const api=async (path)=>JSON.parse(execFileSync('gh',['api',path.slice(1)],{encoding:'utf8',windowsHide:true,timeout:30000}));
+const live=await resolveGovernedIntakeRuntime('',api);assert.equal(live.currentRevision,22);
+const simulatedApi=async path=>{
+ if(path.endsWith('/spencer-shadley/.github'))return{default_branch:'main'};
+ if(path.includes('/commits/'))return{sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim()};
+ if(path.includes('/contents/contracts/generated/governed-intake/manifest.json'))return{encoding:'base64',content:Buffer.from(JSON.stringify(manifest)).toString('base64')};
+ throw Error('unexpected request '+path);
+};
+let refusal;try{await resolveGovernedIntakeRuntime('',simulatedApi)}catch(e){refusal=String(e)}assert.match(refusal,/commit_mismatch|digest_mismatch/);
+const report={observedAt:new Date().toISOString(),consumer:'Code actual github-mcp-worker adapter',current:live.identity,candidate:{source:manifest.producer.commit,revision:manifest.revision,digest:manifest.payloadDigest},candidateApi:'actual adapter loads verified JS and fails closed without evidence',activationReady:false,existingDeployedPreparationRefusal:refusal};
+writeFileSync('.ops/receipts/consumer-compatibility.json',JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report,null,2));

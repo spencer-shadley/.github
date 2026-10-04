@@ -1,0 +1,100 @@
+{
+  "ok": true,
+  "code": "opened",
+  "attempt": {
+    "schema": "IssueExecutionAttemptV1",
+    "attemptId": "3ef5c062-61dd-4fa1-9912-fcb7367b687b",
+    "repo": "spencer-shadley/.github",
+    "issueNumber": 35,
+    "owner": "job-1791079482432-n26gum",
+    "state": "IMPLEMENTING",
+    "generation": 1,
+    "fencingToken": 1,
+    "paths": [
+      "contracts/governed-intake-body.v1.json",
+      "contracts/governed-intake-triage-state.migrate.ts",
+      "contracts/governed-intake-triage.compose.ts",
+      "contracts/governed-intake-policy-binding.ts",
+      "contracts/governed-intake-body.generate.ts",
+      "contracts/governed-intake-body.release.ts",
+      "contracts/generated/governed-intake/",
+      ".github/ISSUE_TEMPLATE/task.yml",
+      ".github/ISSUE_TEMPLATE/feature.yml",
+      "test/triage-migration.test.ts",
+      "test/triage-source.test.ts",
+      "test/triage-policy.test.ts",
+      "test/intake-producer.test.ts",
+      "docs/governed-intake-ssot.md"
+    ],
+    "resources": [
+      "spencer-shadley/.github:governed-intake-release-publication",
+      "spencer-shadley/.github:account-issue-forms"
+    ],
+    "ttlMs": 5400000,
+    "acquiredAt": "2026-10-04T02:10:04.257Z",
+    "heartbeat": "2026-10-04T02:10:04.257Z",
+    "expiresAt": "2026-10-04T03:40:04.257Z",
+    "pathKeysHeld": true,
+    "pathLeaseLockPath": "C:\\Users\\spenc\\AppData\\Local\\agent-orchestrator\\attempt-custody\\path-leases\\cf2477a683b3aecc4cb5ae77\\.orchestrator-path-leases\\468d01e2b14f4a87.lease",
+    "resourceLockPaths": [
+      "C:\\Users\\spenc\\AppData\\Local\\agent-orchestrator\\attempt-custody\\repositories\\636637d3255623ce2fadf2c8\\attempt-resources\\.orchestrator-attempt-resource-spencer-shadley-.github-governed-intake-release-publication.lease",
+      "C:\\Users\\spenc\\AppData\\Local\\agent-orchestrator\\attempt-custody\\repositories\\636637d3255623ce2fadf2c8\\attempt-resources\\.orchestrator-attempt-resource-spencer-shadley-.github-account-issue-forms.lease"
+    ],
+    "issueClaimKind": "impl",
+    "issueLeaseId": "5252924c-d041-4e51-9ed8-129cb6ad6b90",
+    "issueLeaseCommentId": 5975664079,
+    "supersededBy": null,
+    "projectDir": "C:\\code\\.worktrees\\direction-coherence-producer-35-prepared",
+    "workItemId": null,
+    "selectionReceipt": null,
+    "authorityEpoch": null,
+    "attemptDeadline": null,
+    "reservations": [],
+    "handoffLaneId": null,
+    "landedSha": null,
+    "settlementError": null,
+    "plane": "infra"
+  },
+  "residentHandoff": {
+    "schema": "IssueExecutionResidentAttemptHandoffV1",
+    "ownerProcessId": 85776,
+    "attemptId": "3ef5c062-61dd-4fa1-9912-fcb7367b687b",
+    "generation": 1,
+    "fencingToken": 1,
+    "projectDir": "C:\\code\\.worktrees\\direction-coherence-producer-35-prepared",
+    "repo": "spencer-shadley/.github",
+    "issueNumber": 35,
+    "paths": [
+      "contracts/governed-intake-body.v1.json",
+      "contracts/governed-intake-triage-state.migrate.ts",
+      "contracts/governed-intake-triage.compose.ts",
+      "contracts/governed-intake-policy-binding.ts",
+      "contracts/governed-intake-body.generate.ts",
+      "contracts/governed-intake-body.release.ts",
+      "contracts/generated/governed-intake/",
+      ".github/ISSUE_TEMPLATE/task.yml",
+      ".github/ISSUE_TEMPLATE/feature.yml",
+      "test/triage-migration.test.ts",
+      "test/triage-source.test.ts",
+      "test/triage-policy.test.ts",
+      "test/intake-producer.test.ts",
+      "docs/governed-intake-ssot.md"
+    ],
+    "resources": [
+      "spencer-shadley/.github:governed-intake-release-publication",
+      "spencer-shadley/.github:account-issue-forms"
+    ],
+    "fenceEnvValues": {
+      "ORCH_ISSUE_ATTEMPT_ID": "3ef5c062-61dd-4fa1-9912-fcb7367b687b",
+      "ORCH_ISSUE_ATTEMPT_FENCE": "1",
+      "ORCH_ISSUE_ATTEMPT_GENERATION": "1",
+      "ORCH_ISSUE_ATTEMPT_PROJECT_DIR": "C:\\code\\.worktrees\\direction-coherence-producer-35-prepared"
+    }
+  },
+  "fenceEnvValues": {
+    "ORCH_ISSUE_ATTEMPT_ID": "3ef5c062-61dd-4fa1-9912-fcb7367b687b",
+    "ORCH_ISSUE_ATTEMPT_FENCE": "1",
+    "ORCH_ISSUE_ATTEMPT_GENERATION": "1",
+    "ORCH_ISSUE_ATTEMPT_PROJECT_DIR": "C:\\code\\.worktrees\\direction-coherence-producer-35-prepared"
+  }
+}
