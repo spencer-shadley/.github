@@ -1,0 +1,23 @@
+{
+  "observedAt": "2026-10-04T02:23:24.092Z",
+  "consumer": "Code actual github-mcp-worker adapter",
+  "current": {
+    "repository": "spencer-shadley/.github",
+    "defaultBranch": "main",
+    "commit": "c0b3cbe3a28a2047c28bb4942f4f3a90659fa792",
+    "sourcePath": "contracts/governed-intake-body.v1.json",
+    "blobSha": "6cf18690001cefb6e1480d69bc783e0a4c8e7e82",
+    "revision": 22,
+    "producerCommit": "d2ee7995026cfceba4ecb1d459a19dd893a28948",
+    "releaseCommit": "c0b3cbe3a28a2047c28bb4942f4f3a90659fa792",
+    "payloadDigest": "sha256:94c8c124d34b3fb303ea7b337f6bad1a6a1142efff3c2994df510f0dc746c244"
+  },
+  "candidate": {
+    "source": "b291207f65ddc1a2e4dff4b6b6d865acfdd5e2a3",
+    "revision": 23,
+    "digest": "556b49377580add7b4553cbe25413161b6e4d366ee0172aec457c210577ad197"
+  },
+  "candidateApi": "actual adapter loads verified JS and fails closed without evidence",
+  "activationReady": false,
+  "existingDeployedPreparationRefusal": "Error: governed-intake commit_mismatch: admit the new producer release before deployment (spencer-shadley/.github)"
+}
