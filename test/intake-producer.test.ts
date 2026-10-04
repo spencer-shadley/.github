@@ -339,3 +339,16 @@ test('direction facts ignore ordering but retain actual thread and decision iden
   const identity=fingerprintDirectionFacts(facts); facts.threads.reverse(); assert.equal(fingerprintDirectionFacts(facts),identity);
   facts.threads[1].decisions[0].commentId++; assert.notEqual(fingerprintDirectionFacts(facts),identity);
 });
+
+test('no-impact cannot erase an existing unknown audit merely because outcome rows are empty', async () => {
+  const input = await directionFixture(true);
+  input.directionImpact!.assessment = 'no-impact';
+  delete input.directionImpact!.reconciliationReceiptId;
+  input.directionObservation!.reconciliation!.status = 'unknown';
+  input.directionObservation!.reconciliation!.outcomes = [];
+  input.directionObservation!.reconciliation!.selectedSubjects = [];
+  const result = await evaluateGovernedIntakeTriage(input);
+  assert.equal(result.status, 'pending');
+  assert.ok(result.reasons.includes('no_impact_has_cohort_effects'));
+  assert.equal(input.directionObservation!.reconciliation!.receiptId, 'existing-audit-settlement');
+});

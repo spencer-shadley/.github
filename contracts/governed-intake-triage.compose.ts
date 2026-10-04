@@ -294,7 +294,9 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
         || !/^[0-9a-f]{64}$/.test(publication.payloadDigest)) reasons.push("direction_publication_mismatch");
       if (!nonempty(direction.rationale)) reasons.push("direction_impact_rationale_required");
       if (direction.assessment === "no-impact") {
-        if (observed.reconciliation?.outcomes.length || direction.reconciliationReceiptId) reasons.push("no_impact_has_cohort_effects");
+        // Empty outcome rows do not prove an existing unknown audit had no effects.
+        // Settle that exact audit first; a no-impact shortcut cannot erase its ledger.
+        if (observed.reconciliation || direction.reconciliationReceiptId) reasons.push("no_impact_has_cohort_effects");
       } else if (direction.assessment === "potential-impact") {
         const audit = observed.reconciliation;
         if (!audit || audit.status !== "verified") reasons.push(`direction_reconciliation_${audit?.status ?? "missing"}`);
