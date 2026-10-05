@@ -1,7 +1,7 @@
 {
   "schema": "GovernedIntakeBodyV1",
-  "version": 23,
-  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Version 23 (Spencer, 2026-10-04) adds the standard `type:proposal` classification: triage gains a 'proposal-classification' checklist item that applies `type:proposal` alongside the issue's other type labels when the issue proposes a higher-level design or process change whose adoption awaits Spencer's decision. Delta re-triage of revision 22 issues evaluates only that new item. Bump version whenever this contract or its generated projections change.",
+  "version": 22,
+  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Bump version whenever this contract or its generated projections change.",
   "requiredHeadings": [
     "Work type",
     "What happened or what is needed?",
@@ -302,8 +302,7 @@
           "higher-intelligence-handoff",
           "github-effects-quota",
           "taxonomy",
-          "outcome-shaped-acceptance",
-          "proposal-classification"
+          "outcome-shaped-acceptance"
         ],
         "evidenceKeys": [
           "completion"
@@ -340,17 +339,6 @@
         ],
         "evidenceKeys": [
           "acceptance-shape"
-        ]
-      },
-      {
-        "id": "proposal-classification",
-        "title": "Proposal classification",
-        "text": "Apply `type:proposal` (from the work-spine type taxonomy, in addition to any other type label) when the issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision; remove it once that decision is recorded on the issue. Bounded defects, tasks and changes agents may decide under standing authority are not proposals. The label is descriptive: it never blocks other work, creates a human gate, or changes priority.",
-        "dependsOn": [
-          "canonical-flow"
-        ],
-        "evidenceKeys": [
-          "proposal"
         ]
       }
     ],

@@ -227,19 +227,3 @@ test("missing policy payload fails closed without requiring a symlink", (t) => {
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.code, "missing_file");
 });
-
-test("revision 23 adds proposal classification as a delta-only new item (type:proposal)", async () => {
-  const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
-  assert.equal(c.version, 23);
-  const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
-  const item = items.find((i) => i.id === "proposal-classification");
-  assert.ok(item && /type:proposal/.test(item.text));
-  assert.ok(items.find((i) => i.id === "confirm-receipt")?.dependsOn?.includes("proposal-classification"));
-  const previousItems = items.filter((i) => i.id !== "proposal-classification").map((i) => i.id === "confirm-receipt"
-    ? { ...i, dependsOn: (i.dependsOn ?? []).filter((d) => d !== "proposal-classification") } : i);
-  const delta = planChecklistDelta({ revision: 22, items: previousItems }, { revision: 23, items }, {
-    completionVerified: true, completedItemIds: previousItems.map((i) => i.id), staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [],
-  });
-  assert.deepEqual(delta.reevaluatedItems, [{ id: "proposal-classification", reasons: ["new-item"] }]);
-  assert.deepEqual(delta.mechanicallyChangedItemIds, ["confirm-receipt"]);
-});
