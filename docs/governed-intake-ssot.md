@@ -183,3 +183,7 @@ pinned `canonical-v1.ts:171`, the line moved, and an otherwise-reasonable seat s
 pursuing the outcome. Move implementation pointers like this into "Relevant details" as an explicitly
 advisory hint (`<!-- advisory, not binding: ... -->`) the implementer may disregard; a reviewer may not
 block on "did it differently from the hint" alone.
+
+## Proposal classification (revision 23)
+
+`type:proposal` is a standard type label (defined in Code's work-spine type taxonomy, `tools/work-spine/work-spine-contract.v1.json`). Triage applies it, in addition to any other type label, when an issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision, and removes it once that decision is recorded. It is descriptive only: it never blocks other work, creates a human gate, or changes priority. Revision 23 adds this as the `proposal-classification` checklist item, so delta re-triage of revision 22 issues evaluates only that new item.
