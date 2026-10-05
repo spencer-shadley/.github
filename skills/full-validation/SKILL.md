@@ -28,7 +28,8 @@ node --experimental-strip-types --test test/*.test.ts
 
 The suite includes template-link, PR-contract and intake-guidance checks, plus the governed triage
 policy evaluator, composed body/checklist/policy API, delta migration planner, portable release
-payloads, and deterministic policy-guide generation checks. The generation test includes a negative
+payloads, the published-release match (`test/published-release.test.ts`, .github#43: payload bytes equal
+the committed manifest), and deterministic policy-guide generation checks. The generation test includes a negative
 drift control and does not alter the checkout. Also run:
 
 ```text
