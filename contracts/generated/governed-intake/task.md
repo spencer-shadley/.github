@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, work:untriaged
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 22). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 23). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=22 -->
+<!-- governed-triage-checklist: revision=23 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -56,6 +56,8 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
 <!-- governed-triage-item: outcome-shaped-acceptance -->
 - [ ] **Outcome-shaped acceptance**: Confirm 'Durable fix and acceptance' states binding acceptance criteria (each names a real consumer or the evidence that stands in for one) rather than a prescribed implementation, and that any implementation suggestions live only in 'Relevant details' as explicitly advisory. Rewrite a prescriptive body into this shape using skills/gh-issue-value-review's refresh-required procedure instead of restating it here.
+<!-- governed-triage-item: proposal-classification -->
+- [ ] **Proposal classification**: Apply `type:proposal` (from the work-spine type taxonomy, in addition to any other type label) when the issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision; remove it once that decision is recorded on the issue. Bounded defects, tasks and changes agents may decide under standing authority are not proposals. The label is descriptive: it never blocks other work, creates a human gate, or changes priority.
 <!-- /governed-triage-checklist -->
 
 ## Relevant details
