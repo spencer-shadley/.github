@@ -2,7 +2,7 @@
 # Adopted triage policy
 
 Source: [governed-intake-triage-policy.v1.json](../contracts/governed-intake-triage-policy.v1.json), policy version 1, rubric version 1.
-Source bytes: `sha256:a6c2124222b4c5babc98e05f140788f7926e9ba2b54ad7200dfdd9f1715c9394`. This is a source digest, not a deployment receipt.
+Source bytes: `sha256:877957b3ef9372b98aac6df8f334a4f80b055048d78549447f793d31b94d6b77`. This is a source digest, not a deployment receipt.
 
 **Activation boundary:** this is a governed-intake source constituent. The producer release
 packages this policy with `evaluateGovernedIntakeTriage`, but checked boxes are not completed
@@ -23,11 +23,13 @@ Child triage does not require a parent completion stamp. Implementation admissio
 
 ## Resolved decomposition states
 
-| Disposition | Label projection | Effort | Tracking only | Qualified assessment | Independent confirmation |
-|---|---|---|---|---|---|
-| ordinary | `decomp-not-needed` | low, medium | false | false | false |
-| atomic-high | `decomp-atomic` | high | false | true | true |
-| parent | `decomp` + `epic` | low, medium, high | true | true | false |
+| Disposition | Label projection | Effort | Tracking only | Qualified assessment | Independent confirmation | Second opinion |
+|---|---|---|---|---|---|---|
+| ordinary | `decomp-not-needed` | low, medium | false | false | false | n/a |
+| atomic-high | `decomp-atomic` | high | false | true | true | encouraged |
+| parent | `decomp` + `epic` | low, medium, high | true | true | false | required |
+
+The two receipt columns name which second-opinion receipts apply to a disposition. They gate completion only where the last column says required; where it says encouraged, an absent receipt does not block and a supplied one is checked in full.
 
 Pending assessment is `decomp-needed`; missing labels do not make unresolved evidence disappear.
 Retired progress labels: `decomp-in-progress`.
@@ -54,7 +56,7 @@ Assess: approach clarity; material unknowns; coupling and correctness invariants
 - One repository, one PR, shared context or sequential dependencies alone proves neither atomicity nor low effort.
 - Prevention RCA is not an unconditional medium-effort or indivisibility classification. Conditional examples are not keyword classifiers.
 - Aggregate parent effort is not an ordinal sum and never sets every child capability floor.
-- Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause; lowering a high classification requires qualified adjudication.
+- Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause. Lowering a high classification does not require qualified adjudication; a second opinion is highly encouraged.
 - An atomic issue may contain a plan, checkpoints, multiple commits and multiple sessions.
 
 ### Conditional examples
@@ -67,7 +69,7 @@ Assess: approach clarity; material unknowns; coupling and correctness invariants
 | E-MEDIUM-EXTENSION | medium | Add a feature using an established extension point. | Architecture is settled; Implementation and edge-case tests require meaningful work |
 | E-MEDIUM-LIFECYCLE | medium | Repair an understood lifecycle transition with integration tests. | State invariant and mechanism are known; No novel distributed coordination design |
 | E-MEDIUM-PREVENTION | medium | Add a preventive check for a known failure class. | Failure mechanism is established; Control fits existing verification architecture |
-| E-HIGH-RACE | high | Diagnose and repair a subtle concurrency race preserving one inseparable invariant. | Concrete coupled-correctness difficulty is evidenced; Atomic outcome still needs qualified independent confirmation |
+| E-HIGH-RACE | high | Diagnose and repair a subtle concurrency race preserving one inseparable invariant. | Concrete coupled-correctness difficulty is evidenced; Qualified independent confirmation of the atomic outcome is highly encouraged |
 | E-HIGH-ALGORITHM | high | Redesign a complex algorithm with correctness and performance obligations. | Substantive new reasoning is needed; Useful decomposition must still be assessed |
 | E-HIGH-PROGRAMME | high | A large cross-owner architectural migration. | High refers to aggregate parent work; Canonical executable leaves are independently sized |
 | E-COUNTER-WAIT | unchanged | Same issue waits longer for CI, credentials or host access. | Residual scope and evidence did not change |
@@ -87,11 +89,34 @@ Task-relevant hard floors precede cost, latency, quota and placement. Consumers 
 Selection policy owner: `spencer-shadley/model-router`; serving identity owner: `spencer-shadley/model-gateway`.
 This contract deliberately contains no model allowlist or provider-specific invocation logic.
 
-distinct model family AND distinct provider; exact router and serving receipts required.
+When an independent confirmation is recorded: distinct model family AND distinct provider; exact router and serving receipts required.
 
 Durable pending/retry using the existing scheduler; never weaker substitution or a forced effort downgrade.
 
 Below-floor helpers may collect facts or apply deterministic authorized projections of current qualified evidence; they cannot replace judgment or high-effort execution.
+
+## Second opinion
+
+Status: **suggestion**. spencer-shadley/.github#48, operator decision 2026-10-06: the rule becomes a suggestion. Getting another opinion is highly encouraged; completion does not depend on it.
+
+Highly encouraged when:
+
+- An issue that carried a high-effort classification before is now assessed low or medium.
+- An issue is assessed high effort now (an atomic-high leaf): a qualified scope assessment and an independent confirmation.
+
+How to get one: Commission a qualified scope-assessment seat through the consumer's routed-seat path (in spencer-shadley/code: skills/gh-issue-triage-sweep/SKILL.md, which commissions the seat through skills/create-subagent/SKILL.md) and record its adapter-verified receipt as the assessment's assessorReceiptId. For an atomic-high leaf, also commission the independent atomic-confirmation seat the same way and record its receipt as confirmationReceiptId.
+
+A supplied receipt is checked exactly like a required one: same subject and assessment fingerprint, capability floor, verified serving identity and an agree verdict. An invalid or dissenting receipt keeps triage pending.
+
+Absence does not block completion. Neither effort history nor a current high-effort classification alone requires a receipt.
+
+Still required:
+
+- A consumer-established requiresQualifiedAssessment (for example human-required handling) still requires the qualified scope-assessment receipt.
+- Tracking parents keep the qualified scope-assessment receipt and the validated current graph receipt.
+- Atomic-high leaves keep the invariant, difficultyRationale and alternativesConsidered evidence fields.
+- Executing a high-effort leaf still requires the admitted implementation receipt; execution admission is separate from triage.
+- Identity, scope, fingerprint, checklist and direction-freshness checks are unchanged.
 
 ## Recovery without a progress label
 
