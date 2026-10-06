@@ -206,7 +206,7 @@ test('policy states the second opinion as a suggestion and says how to get one',
   assert.match(rawPolicy.secondOpinion.whenAbsent, /does not block completion/);
   assert.ok(!rawPolicy.effortRubric.rules.some(rule => /lowering a high classification requires/i.test(rule)));
 });
-// .github#48, coordinator's reading of "highly encouraged to get another opinion for high effort":
+// .github#48, operator decision ("highly encouraged to get another opinion for high effort"; asked whether it covers current-high issues too: "Both"):
 // for an atomic-high leaf the two second-opinion receipts are a suggestion, checked when recorded.
 async function atomicWithoutOpinions(): Promise<PolicySnapshot> {
   const s = await snapshot('atomic-high'); s.requiresQualifiedAssessment = false;
