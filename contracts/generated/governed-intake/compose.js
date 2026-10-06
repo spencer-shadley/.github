@@ -73,7 +73,8 @@ export function currentChecklistRelease()                   {
                                
                                      
                                 
-                               
+                                                                                                      
+                                
                                            
                                     
                                              
@@ -239,7 +240,6 @@ export async function evaluateGovernedIntakeTriage(input                     )  
     state: evidence.state,
     repositoryActive: evidence.repositoryActive,
     labels: [...input.labels],
-    priorHighEffort: evidence.priorHighEffort,
     requiresQualifiedAssessment: evidence.requiresQualifiedAssessment,
     assessment: evidence.assessment,
     currentGraphFingerprint: evidence.currentGraphFingerprint,
