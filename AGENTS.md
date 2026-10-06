@@ -42,5 +42,6 @@ current governed-intake bundle is compatibility producer state, not the desired 
 - Preserve the canonical `Agent Provenance Labels` and `Agent Cost Summary` (`<!-- agent-cost-summary-v1 -->`)
   contract in `.github/PULL_REQUEST_TEMPLATE.md`; do not redefine those field, metric, or accounting
   semantics in `AGENTS.md`.
+- `local-ci.json` is this repository's land-gate contract (local worktree CI, not hosted Actions; code ADR-0003 §4). Its gate runs `test/*.test.ts`, including `test/published-release.test.ts`, so a source change that drifts from the published governed-intake release fails before merge. Keep it in step with `npm test`.
 - Do not add GitHub Actions without an explicit fleet policy decision and repository-local evidence.
 - Verify referenced paths exist before publishing documentation changes.

@@ -1,0 +1,72 @@
+{
+  "schemaId": "https://schemas.repo-template.dev/local-ci-v3/local-ci-contract-v3.schema.json",
+  "schemaVersion": "3.0.0",
+  "contractId": "repo-template/local-ci-v3",
+  "repository": "spencer-shadley/.github",
+  "canonicalBranch": "main",
+  "prMergeProfileId": "merge",
+  "prBroaderFallback": true,
+  "prReceiptBindsCandidate": true,
+  "prReceiptBindsBase": true,
+  "prReceiptBindsIntegration": true,
+  "prReceipt": {
+    "bindsCandidate": true,
+    "bindsBase": true,
+    "bindsIntegration": true
+  },
+  "fullRequiredLegIds": [
+    "default"
+  ],
+  "commands": {
+    "authoritative-gate": {
+      "name": "verify",
+      "executable": "node",
+      "args": [
+        "--experimental-strip-types",
+        "--test",
+        "test/*.test.ts"
+      ],
+      "shell": "none",
+      "cwd": ".",
+      "timeoutSeconds": 600,
+      "expectedExitCode": 0,
+      "failureDisposition": "fail-gate",
+      "detectionProof": {
+        "exempt": "node --test exits non-zero when any test fails; test/published-release.test.ts fails when released payload bytes differ from the published manifest (.github#43)."
+      }
+    }
+  },
+  "environment": {
+    "runtime": {
+      "name": "node",
+      "versionConstraint": ">=24.0.0"
+    },
+    "packageManager": {
+      "name": "none",
+      "version": "0"
+    },
+    "supportedPlatforms": [
+      "win32",
+      "linux",
+      "darwin"
+    ],
+    "supportedArchitectures": [
+      "x64",
+      "arm64"
+    ],
+    "requiredEnvVars": [],
+    "requiredCredentials": [],
+    "networkExpectation": "offline-only"
+  },
+  "effects": {
+    "credentialsAccess": false,
+    "networkProviderAccess": false,
+    "providerSpend": false,
+    "externalMutation": false,
+    "registrationMutation": false,
+    "schedulesMutation": false,
+    "deploymentMutation": false,
+    "consumerBindingMutation": false,
+    "servingAuthorityMutation": false
+  }
+}
