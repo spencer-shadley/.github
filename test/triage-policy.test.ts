@@ -162,14 +162,49 @@ for (const labels of [[], ['decomp-not-needed'], ['decomp-not-needed', 'effort:m
     reason(await evaluateTriagePolicy(release, s), 'effort_not_exactly_one');
   });
 }
-test('cheap assessor cannot downgrade a previously-high issue', async () => {
+// .github#48 (operator decision 2026-10-06): effort history is a suggestion to get a second
+// opinion, never a completion requirement.
+test('an issue that was high before completes as ordinary without a qualified receipt', async () => {
   const s = await snapshot(); s.priorHighEffort = true;
-  reason(await evaluateTriagePolicy(release, s), 'scope-assessment:missing_or_duplicate_receipt');
+  assert.equal(s.trusted.admissions.length, 0);
+  const result = await evaluateTriagePolicy(release, s);
+  assert.equal(result.needsTriage, false, JSON.stringify(result)); assert.equal(result.implementationCandidate, true);
 });
-test('qualified evidence can genuinely correct an inflated high classification', async () => {
+test('deprecated priorHighEffort is ignored: true, false and absent evaluate identically', async () => {
+  const results = [];
+  for (const value of [true, false, undefined]) {
+    const s = await snapshot();
+    if (value === undefined) delete s.priorHighEffort; else s.priorHighEffort = value;
+    results.push(await evaluateTriagePolicy(release, s));
+  }
+  assert.deepEqual(results[0], results[1]); assert.deepEqual(results[1], results[2]);
+  assert.equal(results[2].needsTriage, false);
+});
+test('a non-boolean priorHighEffort is still a malformed snapshot', async () => {
+  const s = await snapshot() as unknown as Record<string, unknown>; s.priorHighEffort = 'yes';
+  reason(await evaluateTriagePolicy(release, s), 'malformed_policy_snapshot');
+});
+test('a second opinion obtained when lowering a previous high is recorded and accepted', async () => {
   const s = await snapshot(); s.priorHighEffort = true; s.assessment!.assessorReceiptId = 'correction';
   s.trusted.admissions.push(receipt('correction', 'scope-assessment', s.assessment!.assessmentFingerprint, 'a'));
   assert.equal((await evaluateTriagePolicy(release, s)).needsTriage, false);
+});
+for (const fault of ['dissent', 'unverified', 'dangling-pointer'] as const) {
+  test(`a voluntarily supplied second opinion is checked like a required one: ${fault}`, async () => {
+    const s = await snapshot(); s.assessment!.assessorReceiptId = 'opinion';
+    const opinion = receipt('opinion', 'scope-assessment', s.assessment!.assessmentFingerprint, 'a');
+    if (fault === 'dissent') opinion.verdict = 'disagree';
+    if (fault === 'unverified') opinion.servingVerified = false;
+    if (fault !== 'dangling-pointer') s.trusted.admissions.push(opinion);
+    const result = await evaluateTriagePolicy(release, s);
+    assert.equal(result.needsTriage, true); assert.ok(result.reasons.some(r => r.startsWith('scope-assessment')), JSON.stringify(result));
+  });
+}
+test('policy states the second opinion as a suggestion and says how to get one', () => {
+  assert.equal(rawPolicy.secondOpinion.status, 'suggestion');
+  assert.match(rawPolicy.secondOpinion.howToObtain, /assessorReceiptId/);
+  assert.match(rawPolicy.secondOpinion.whenAbsent, /does not block completion/);
+  assert.ok(!rawPolicy.effortRubric.rules.some(rule => /lowering a high classification requires/i.test(rule)));
 });
 test('difficult mislabeled work requires qualified assessment before ordinary completion', async () => {
   const s = await snapshot(); s.requiresQualifiedAssessment = true;

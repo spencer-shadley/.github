@@ -86,8 +86,14 @@ export interface PolicySnapshot extends Subject {
   state: 'open' | 'closed';
   repositoryActive: boolean;
   labels: string[];
-  /** Knowledge from prior trusted evidence, not merely the new desired effort label. */
-  priorHighEffort: boolean;
+  /**
+   * @deprecated Accepted and ignored since .github#48 (operator decision 2026-10-06). An issue is
+   * sized on its current scope whatever effort it carried before, so label history no longer
+   * requires a qualified receipt. A second assessment when lowering a previous high is highly
+   * encouraged (see `secondOpinion` in the policy) and is checked when supplied. Consumers may
+   * stop sending this field; remove it from this type once no admitted consumer sends it.
+   */
+  priorHighEffort?: boolean;
   requiresQualifiedAssessment: boolean;
   assessment: Assessment | null;
   currentGraphFingerprint: string | null;
@@ -133,10 +139,12 @@ function exactIdentity(receipt: QualifiedReceipt): boolean {
 function validSnapshot(snapshot: unknown): snapshot is PolicySnapshot {
   if (!object(snapshot) || !subjectFields.every(field => nonempty(snapshot[field]))) return false;
   if (snapshot.state !== 'open' && snapshot.state !== 'closed') return false;
-  for (const field of ['repositoryActive', 'priorHighEffort', 'requiresQualifiedAssessment',
+  for (const field of ['repositoryActive', 'requiresQualifiedAssessment',
     'hasExecutableChildGraph', 'checklistCurrentAndComplete', 'directionEvidenceFresh']) {
     if (typeof snapshot[field] !== 'boolean') return false;
   }
+  // Deprecated input (.github#48): still accepted from consumers that send it, never read.
+  if (!(snapshot.priorHighEffort === undefined || typeof snapshot.priorHighEffort === 'boolean')) return false;
   if (!strings(snapshot.labels)) return false;
   if (!(snapshot.assessment === null || object(snapshot.assessment))) return false;
   if (!(snapshot.currentGraphFingerprint === null || nonempty(snapshot.currentGraphFingerprint))) return false;
@@ -255,8 +263,11 @@ export async function evaluateTriagePolicy(release: BoundTriagePolicy, input: un
     if (!['high', 'medium'].includes(assessment.confidence)
       || !strings(assessment.blockingAssessmentUnknowns) || assessment.blockingAssessmentUnknowns.length
       || !strings(assessment.implementationUnknowns)) reasons.push('unresolved_assessment_uncertainty');
-    const needsQualified = spec.qualifiedAssessment || snapshot.priorHighEffort || snapshot.requiresQualifiedAssessment;
-    const assessor = needsQualified
+    // .github#48: effort history is not a trigger. A second assessment is required only by the
+    // disposition or a consumer-established `requiresQualifiedAssessment`; a receipt supplied
+    // voluntarily is checked exactly like a required one, so a recorded second opinion is never decorative.
+    const needsQualified = spec.qualifiedAssessment || snapshot.requiresQualifiedAssessment;
+    const assessor = needsQualified || nonempty(assessment.assessorReceiptId)
       ? qualified(snapshot, assessment.assessorReceiptId, 'scope-assessment', assessment.assessmentFingerprint, reasons) : null;
     if (spec.independentConfirmation) {
       for (const field of policy.evidence.atomicFields) {

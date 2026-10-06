@@ -73,7 +73,8 @@ export type SemanticEvidenceInput =
       scopeFingerprint: string;
       state: PolicySnapshot["state"];
       repositoryActive: boolean;
-      priorHighEffort: boolean;
+      /** @deprecated Accepted and ignored (.github#48): effort history no longer gates completion. */
+      priorHighEffort?: boolean;
       requiresQualifiedAssessment: boolean;
       assessment: Assessment | null;
       currentGraphFingerprint: string | null;
@@ -239,7 +240,6 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
     state: evidence.state,
     repositoryActive: evidence.repositoryActive,
     labels: [...input.labels],
-    priorHighEffort: evidence.priorHighEffort,
     requiresQualifiedAssessment: evidence.requiresQualifiedAssessment,
     assessment: evidence.assessment,
     currentGraphFingerprint: evidence.currentGraphFingerprint,

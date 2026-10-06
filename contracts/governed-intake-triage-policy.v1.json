@@ -83,6 +83,21 @@
     "independence": "distinct model family AND distinct provider; exact router and serving receipts required",
     "graphAuthority": "Code shared decomposition core; consume its validated current graph receipt, do not reimplement graph adjudication"
   },
+  "secondOpinion": {
+    "status": "suggestion",
+    "decision": "spencer-shadley/.github#48, operator decision 2026-10-06: the rule becomes a suggestion. Getting another opinion is highly encouraged; completion does not depend on it.",
+    "encouragedWhen": [
+      "An issue that carried a high-effort classification before is now assessed low or medium."
+    ],
+    "howToObtain": "Commission a qualified scope-assessment seat through the consumer's routed-seat path (in spencer-shadley/code: skills/gh-issue-triage-sweep/SKILL.md, which commissions the seat through skills/create-subagent/SKILL.md) and record its adapter-verified receipt as the assessment's assessorReceiptId.",
+    "whenObtained": "A supplied receipt is checked exactly like a required one: same subject and assessment fingerprint, capability floor, verified serving identity and an agree verdict. An invalid or dissenting receipt keeps triage pending.",
+    "whenAbsent": "Absence does not block completion. Effort history alone never requires a receipt.",
+    "stillRequired": [
+      "A consumer-established requiresQualifiedAssessment (for example human-required handling) still requires the qualified scope-assessment receipt.",
+      "Dispositions marked qualifiedAssessment or independentConfirmation keep those requirements.",
+      "Identity, scope, fingerprint, checklist and direction-freshness checks are unchanged."
+    ]
+  },
   "effortRubric": {
     "version": 1,
     "labels": {
@@ -113,7 +128,7 @@
       "One repository, one PR, shared context or sequential dependencies alone proves neither atomicity nor low effort.",
       "Prevention RCA is not an unconditional medium-effort or indivisibility classification. Conditional examples are not keyword classifiers.",
       "Aggregate parent effort is not an ordinal sum and never sets every child capability floor.",
-      "Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause; lowering a high classification requires qualified adjudication.",
+      "Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause. Lowering a high classification does not require qualified adjudication; a second opinion is highly encouraged.",
       "An atomic issue may contain a plan, checkpoints, multiple commits and multiple sessions."
     ],
     "receiptFields": [

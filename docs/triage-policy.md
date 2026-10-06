@@ -2,7 +2,7 @@
 # Adopted triage policy
 
 Source: [governed-intake-triage-policy.v1.json](../contracts/governed-intake-triage-policy.v1.json), policy version 1, rubric version 1.
-Source bytes: `sha256:a6c2124222b4c5babc98e05f140788f7926e9ba2b54ad7200dfdd9f1715c9394`. This is a source digest, not a deployment receipt.
+Source bytes: `sha256:ebc05d32f185ab3c9f7340656a86d1ba407d989b751ed6b67fc51b21b2a4af01`. This is a source digest, not a deployment receipt.
 
 **Activation boundary:** this is a governed-intake source constituent. The producer release
 packages this policy with `evaluateGovernedIntakeTriage`, but checked boxes are not completed
@@ -54,7 +54,7 @@ Assess: approach clarity; material unknowns; coupling and correctness invariants
 - One repository, one PR, shared context or sequential dependencies alone proves neither atomicity nor low effort.
 - Prevention RCA is not an unconditional medium-effort or indivisibility classification. Conditional examples are not keyword classifiers.
 - Aggregate parent effort is not an ordinal sum and never sets every child capability floor.
-- Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause; lowering a high classification requires qualified adjudication.
+- Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause. Lowering a high classification does not require qualified adjudication; a second opinion is highly encouraged.
 - An atomic issue may contain a plan, checkpoints, multiple commits and multiple sessions.
 
 ### Conditional examples
@@ -92,6 +92,26 @@ distinct model family AND distinct provider; exact router and serving receipts r
 Durable pending/retry using the existing scheduler; never weaker substitution or a forced effort downgrade.
 
 Below-floor helpers may collect facts or apply deterministic authorized projections of current qualified evidence; they cannot replace judgment or high-effort execution.
+
+## Second opinion
+
+Status: **suggestion**. spencer-shadley/.github#48, operator decision 2026-10-06: the rule becomes a suggestion. Getting another opinion is highly encouraged; completion does not depend on it.
+
+Highly encouraged when:
+
+- An issue that carried a high-effort classification before is now assessed low or medium.
+
+How to get one: Commission a qualified scope-assessment seat through the consumer's routed-seat path (in spencer-shadley/code: skills/gh-issue-triage-sweep/SKILL.md, which commissions the seat through skills/create-subagent/SKILL.md) and record its adapter-verified receipt as the assessment's assessorReceiptId.
+
+A supplied receipt is checked exactly like a required one: same subject and assessment fingerprint, capability floor, verified serving identity and an agree verdict. An invalid or dissenting receipt keeps triage pending.
+
+Absence does not block completion. Effort history alone never requires a receipt.
+
+Still required:
+
+- A consumer-established requiresQualifiedAssessment (for example human-required handling) still requires the qualified scope-assessment receipt.
+- Dispositions marked qualifiedAssessment or independentConfirmation keep those requirements.
+- Identity, scope, fingerprint, checklist and direction-freshness checks are unchanged.
 
 ## Recovery without a progress label
 

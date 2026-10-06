@@ -206,6 +206,34 @@ test("higher-intelligence item no longer forbids decomposition inside triage", (
   assert.equal(handoff.text.includes("does not plan, decompose, mint"), false);
 });
 
+// .github#48: Code's provenance contract (spencer-shadley/code#7817) has an `agent_unattested`
+// actor that records no model, effort or `triaged-by-*` label. The checklist must admit that run.
+test("confirm-receipt requires triaged-by only when a receipt names the model, and admits an unattested run", () => {
+  const confirm = contract.triageChecklist.items.find((item: { id: string }) => item.id === "confirm-receipt");
+  assert.equal(/every substantive model-triaged run/.test(confirm.text), false);
+  assert.match(confirm.text, /named by an authoritative execution or route receipt records additive model provenance using `triaged-by-<model>-<effort>`/);
+  assert.ok(confirm.text.includes("`agent_unattested`) completes with no `triaged-by-*` label"));
+  assert.match(confirm.text, /never invents a model or effort slug/);
+  assert.match(confirm.text, /never stripped on re-triage or correction/);
+  for (const projection of [generateTaskMarkdown(contract), readFileSync(path.join(root, ".github/ISSUE_TEMPLATE/task.yml"), "utf8")]) {
+    assert.ok(projection.includes(confirm.text), "projection carries the confirm-receipt text verbatim");
+  }
+});
+
+test("a previous high-effort label is a suggestion to get a second opinion, not a completion gate", async () => {
+  const handoff = contract.triageChecklist.items.find((item: { id: string }) => item.id === "higher-intelligence-handoff");
+  assert.match(handoff.text, /carried `effort:high` before and is now assessed low or medium/);
+  assert.match(handoff.text, /highly encouraged/);
+  assert.match(handoff.text, /completion does not depend on it/);
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = await verifiedEvidence("ordinary");
+  if (evidence.kind !== "adapter-verified") throw new Error("fixture");
+  evidence.priorHighEffort = true;
+  assert.equal(evidence.trusted.admissions.length, 0);
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+  assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+});
+
 test("feature projection drops cadence, combined discovery, and registry/shed checklists", () => {
   const yaml = generateFeatureYaml(contract);
   assert.equal(yaml.includes("at least every 30 minutes"), false);

@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, work:untriaged
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 22). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 23). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=22 -->
+<!-- governed-triage-checklist: revision=23 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -47,11 +47,11 @@ labels: agent-review, priority:triage-tbd, work:untriaged
 <!-- governed-triage-item: disposition-effect-authority -->
 - [ ] **Disposition != effect authority**: Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Execute close, move, substantive rewrite, or another restricted GitHub effect only when the current role is authorized; otherwise hand the adjudicated effect to the authorized executor with a durable receipt. Do not keep zombie work alive merely because the current seat cannot execute the terminal effect.
 <!-- governed-triage-item: higher-intelligence-handoff -->
-- [ ] **Higher-intelligence handoff**: `effort:high`, unclear effort, `human-required`, material remaining uncertainty, or programme-shaped work uses qualified higher-intelligence assessment inside triage. Scope and decomposition are the earlier `scope-decomposition` obligation. Confirmed tracking parents stay tracking-only. Unresolved delegation is not completed triage. The triage role does not mint implementation plans or commission implementation writers.
+- [ ] **Higher-intelligence handoff**: `effort:high`, unclear effort, `human-required`, material remaining uncertainty, or programme-shaped work uses qualified higher-intelligence assessment inside triage. Scope and decomposition are the earlier `scope-decomposition` obligation. Confirmed tracking parents stay tracking-only. Unresolved delegation is not completed triage. An issue that carried `effort:high` before and is now assessed low or medium is sized on its current scope: getting a qualified second assessment is highly encouraged (commission the routed assessment seat through `skills/gh-issue-triage-sweep/SKILL.md` and record its receipt), but completion does not depend on it. The triage role does not mint implementation plans or commission implementation writers.
 <!-- governed-triage-item: github-effects-quota -->
 - [ ] **GitHub effects + quota**: Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep.
 <!-- governed-triage-item: confirm-receipt -->
-- [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, every substantive model-triaged run records additive model provenance using `triaged-by-<model>-<effort>` derived from authoritative execution receipts (never stripped on re-triage or correction). The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
+- [ ] **Confirm + receipt**: Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, a substantive model-triaged run whose model and effort are named by an authoritative execution or route receipt records additive model provenance using `triaged-by-<model>-<effort>` derived from that receipt. A run by an authenticated agent that has no such receipt (provenance actor `agent_unattested`) completes with no `triaged-by-*` label for that run and never invents a model or effort slug. Existing `triaged-by-*` labels are never stripped on re-triage or correction. The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.
 <!-- governed-triage-item: taxonomy -->
 - [ ] **Taxonomy**: Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.
 <!-- governed-triage-item: outcome-shaped-acceptance -->
