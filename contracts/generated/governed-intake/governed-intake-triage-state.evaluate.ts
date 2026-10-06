@@ -156,7 +156,7 @@ function completionRegex(flags = "g"): RegExp {
 }
 
 function triagedLabelRegex(): RegExp {
-  return new RegExp(`^${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}(\\d+)$`, "i");
+  return new RegExp(`^(?:${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}|triaged:v)(\\d+)$`, "i");
 }
 
 const TRIAGE_OWNED_LABEL_REGEXES = GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.map(
@@ -358,7 +358,7 @@ export function triageProjectionErrorMessage(state: TriageChecklistState): strin
 export async function evaluateTriageChecklistState(
   body: string,
   labels: readonly string[] = [],
-  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId">,
+  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId" | "directionImpact" | "directionObservation">,
 ): Promise<TriageChecklistState & { semantic_reasons?: string[]; scope_resolved?: boolean }> {
   const structure = await evaluateTriageChecklistStructure(body, labels);
   if (!semanticInput) return { ...structure, needs_triage: true,
@@ -367,8 +367,11 @@ export async function evaluateTriageChecklistState(
     semantic_reasons: ["missing_semantic_evidence"], scope_resolved: false };
   const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.ts");
   const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
+  const directionPending = result.reasons.some(reason => reason.startsWith("direction_") || reason === "no_impact_has_cohort_effects");
   return { ...structure, needs_triage: result.needsTriage,
-    unchecked_item_ids: result.scopeResolved ? structure.unchecked_item_ids : [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
+    unchecked_item_ids: [...new Set([...structure.unchecked_item_ids,
+      ...(result.scopeResolved ? [] : ["scope-decomposition"]),
+      ...(directionPending ? ["value-direction", "dedup-queue-synergy"] : [])])],
     reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending" as const])] : structure.reasons,
     semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };
 }
