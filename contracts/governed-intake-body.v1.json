@@ -1,7 +1,7 @@
 {
   "schema": "GovernedIntakeBodyV1",
   "version": 23,
-  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Version 23 (Spencer, 2026-10-04) adds the standard `type:proposal` classification: triage gains a 'proposal-classification' checklist item that applies `type:proposal` alongside the issue's other type labels when the issue proposes a higher-level design or process change whose adoption awaits Spencer's decision. Delta re-triage of revision 22 issues evaluates only that new item. Version 23 (.github#48) aligns 'Confirm + receipt' with the `agent_unattested` provenance actor: `triaged-by-<model>-<effort>` is recorded only when an execution or route receipt names the model, and a run without one completes with no `triaged-by-*` label. It also records the operator decision that a previous high-effort classification no longer requires a qualified receipt: a second opinion is highly encouraged, not a completion requirement (see `secondOpinion` in the triage policy). The same applies to an atomic high-effort leaf: its qualified assessment and independent confirmation are highly encouraged and checked when recorded, and no longer gate completion. Bump version whenever this contract or its generated projections change.",
+  "description": "Machine-readable account-wide issue-intake contract owned by spencer-shadley/.github. Version 19 activates the canonical early scope-decomposition checklist item, binds effort to the merged triage-policy rubric, and composes body/checklist/fingerprint evaluation with evaluateTriagePolicy in the verified portable release. The live Issue Form and portable Markdown bodies are deterministic same-repository projections. Consumers admit a release by producer repository, exact source commit and payload digest; they do not author or publish template copies. Live GitHub inheritance of these forms is a producer projection, not proof that Code/CLI consumers have bound adapter-verified evidence. Version 21 moves bounded verification-contract derivation from triage completion to implementation preflight: triage records scope and execution shape, while the implementation owner must derive/persist verification before writer dispatch. Version 22 (code#7074) states outcome/acceptance content as binding and implementation guidance as advisory: 'Durable fix and acceptance' and 'Relevant details' gain inline binding/advisory guidance and an optional worked-examples link, the body validator refuses an empty or placeholder acceptance section and flags file/line-pinned implementation instructions inside it, and triage gains an 'outcome-shaped-acceptance' checklist item. Version 23 is one combined revision (.github#32, #35, #45, #48) published once: (1) the accepted multidimensional taxonomy (code#7586, .github#32: delivers, type, source, effort, priority:repo, priority:fleet, blocked, environment, progress, decomp, resolution) with the completion stamp namespace moving from triaged:vN to metadata:triage-vN and filing defaults agent-review, priority:triage-tbd, progress:triage; (2) the standard `type:proposal` classification (Spencer, 2026-10-04): triage gains a 'proposal-classification' checklist item that applies `type:proposal` alongside the issue's other type labels when the issue proposes a higher-level design or process change whose adoption awaits Spencer's decision; (3) verified direction-impact reconciliation (.github#35): material direction-impact assessment and verified/resumable reconciliation are bound to independently fetched issue/thread facts through the existing composed evaluator, without granting effect authority; and (4) .github#48: 'Confirm + receipt' admits the `agent_unattested` provenance actor (`triaged-by-<model>-<effort>` is recorded only when an execution or route receipt names the model, and a run without one completes with no `triaged-by-*` label), and a previous or atomic-high effort classification no longer requires a qualified second opinion: it is highly encouraged and checked when recorded, not a completion requirement (see `secondOpinion` in the triage policy). Delta re-triage of revision 22 issues evaluates only added or changed items and their dependents. Bump version whenever this contract or its generated projections change.",
   "requiredHeadings": [
     "Work type",
     "What happened or what is needed?",
@@ -92,12 +92,12 @@
     "itemMarkerName": "governed-triage-item",
     "completionMarkerName": "governed-triage-completion",
     "fingerprintAlgorithm": "sha256",
-    "fingerprintScope": "Normalize LF, remove governed-triage-completion markers, trim trailing horizontal whitespace per line, trim the whole body, then append sorted unique triage-owned labels other than triaged:v* and SHA-256 the UTF-8 bytes.",
+    "fingerprintScope": "Normalize LF, remove governed-triage-completion markers, trim trailing horizontal whitespace per line, trim the whole body, then append sorted unique triage-owned labels other than metadata:triage-v* / triaged:v* and SHA-256 the UTF-8 bytes.",
     "pendingLabels": [
       "priority:triage-tbd",
-      "work:untriaged"
+      "progress:triage"
     ],
-    "triagedLabelPrefix": "triaged:v",
+    "triagedLabelPrefix": "metadata:triage-v",
     "triageOwnedLabelPatterns": [
       "^priority:(?:repo|fleet):p\\d+$",
       "^priority:rubric-v1$",
@@ -109,7 +109,15 @@
       "^human-required$",
       "^wait-slo-breached$",
       "^cloud-ready$",
-      "^local-required$"
+      "^local-required$",
+      "^delivers:",
+      "^type:",
+      "^source:",
+      "^blocked:",
+      "^environment:",
+      "^progress:",
+      "^decomp:",
+      "^resolution:"
     ],
     "items": [
       {
@@ -123,13 +131,25 @@
       {
         "id": "value-direction",
         "title": "Value + direction evidence",
-        "text": "Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator.",
+        "text": "Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator. Explicitly assess whether new work or a materially accepted direction change could retire a component, migrate SSOT/ownership, or reshape related executable work. Use the reusable Code direction-coherence audit through existing triage. No-impact reasoning can complete without cohort mutations; potential material impact completes only after verified reconciliation. Failed, incomplete, unsupported or unknown reconciliation remains explicit and resumable in the existing audit ledger; dispatch alone is not completion. Bind the receipt to independently fetched actual issue/thread and accepted decision identities, normalized scope and current published contract, never labels or matching caller assertions.",
         "dependsOn": [
           "canonical-flow"
         ],
         "evidenceKeys": [
-          "direction"
-        ]
+          "direction",
+          "scope",
+          "accepted-decision",
+          "direction-source",
+          "direction-ownership",
+          "related-work"
+        ],
+        "semantics": {
+          "directionImpact": "adapter-observed-facts-v1",
+          "auditProcedure": "https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md",
+          "noImpactRequiresCohortMutation": false,
+          "materialImpactCompletion": "verified-reconciliation",
+          "unknownCompletion": false
+        }
       },
       {
         "id": "fix-owner-responsibility",
@@ -145,19 +165,30 @@
       {
         "id": "dedup-queue-synergy",
         "title": "Dedup + queue synergy",
-        "text": "Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive; inspect sibling repos only for shared/cross-repo surfaces. Reuse a fresh synergy receipt while issue class, owner, and material scope are unchanged. Never create a parallel implementation track when canonical work already owns the outcome.",
+        "text": "Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive; inspect sibling repos only for shared/cross-repo surfaces. Reuse a fresh synergy receipt while issue class, owner, and material scope are unchanged. Never create a parallel implementation track when canonical work already owns the outcome. For potential material direction impact, reconcile the any-age, relevant cross-repository neighborhood through the same direction-coherence audit. Distinguish obsolete remaining outcomes from valid outcomes superseded and conserved elsewhere; preserve unique acceptance/evidence, exact destination/decision links and active custody. Read the actually published resolution contract immediately before effects; no candidate activation, aliases, dual writes or legacy readiness fallback. Reuse unchanged valid material facts without repeated semantic passes, comments or recursive triggers; changed accepted decisions invalidate only affected obligations and observed result dependents.",
         "dependsOn": [
           "canonical-flow",
           "value-direction",
           "fix-owner-responsibility"
         ],
         "evidenceKeys": [
-          "dedup"
+          "dedup",
+          "accepted-decision",
+          "direction-source",
+          "direction-ownership",
+          "related-work"
         ],
         "resultDependencies": [
           "value-direction",
           "fix-owner-responsibility"
-        ]
+        ],
+        "semantics": {
+          "directionReconciliation": "existing-audit-ledger-readback-v1",
+          "effectVocabulary": "verified-published-contract-at-effect-time",
+          "obsolete": "no-valid-remaining-outcome",
+          "superseded": "valid-outcome-conserved-at-exact-destination",
+          "unchangedFacts": "reuse-no-comments-no-recursive-triggers"
+        }
       },
       {
         "id": "scope-decomposition",
@@ -288,7 +319,7 @@
       {
         "id": "confirm-receipt",
         "title": "Confirm + receipt",
-        "text": "Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `triaged:vN` stamp last when authorized and read it back. In addition, a substantive model-triaged run whose model and effort are named by an authoritative execution or route receipt records additive model provenance using `triaged-by-<model>-<effort>` derived from that receipt. A run by an authenticated agent that has no such receipt (provenance actor `agent_unattested`) completes with no `triaged-by-*` label for that run and never invents a model or effort slug. Existing `triaged-by-*` labels are never stripped on re-triage or correction. The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.",
+        "text": "Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `metadata:triage-vN` stamp last when authorized and read it back. In addition, a substantive model-triaged run whose model and effort are named by an authoritative execution or route receipt records additive model provenance using `triaged-by-<model>-<effort>` derived from that receipt. A run by an authenticated agent that has no such receipt (provenance actor `agent_unattested`) completes with no `triaged-by-*` label for that run and never invents a model or effort slug. Existing `triaged-by-*` labels are never stripped on re-triage or correction. The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.",
         "dependsOn": [
           "canonical-flow",
           "value-direction",

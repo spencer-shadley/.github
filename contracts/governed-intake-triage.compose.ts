@@ -11,7 +11,7 @@
  * Consumer cutover is out of band: this producer exposes the typed API and portable
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
-import { boundTriagePolicyFromProducer, fingerprintIssueScope, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
+import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson, type DirectionFacts, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
 export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.ts";
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
 import {
@@ -52,6 +52,45 @@ import bodyContract from "./governed-intake-body.v1.json" with { type: "json" };
 
 export const POLICY_PAYLOAD_NAME = "governed-intake-triage-policy.v1.json";
 export const COMPOSE_CONSUMER_CUTOVER = false as const;
+
+export interface DirectionImpactReceipt {
+  workUnitKey: string;
+  scopeFingerprint: string;
+  factsFingerprint: string;
+  revision: number;
+  assessment: "no-impact" | "potential-impact";
+  rationale: string;
+  reconciliationReceiptId?: string;
+}
+
+/** Actual adapter readbacks, supplied separately from the assessment being checked.
+ * Resolve and verify the authoritative release immediately before effects. The adapter
+ * owns GitHub permission, accepted decision judgment and requested-post-state readback;
+ * this pure composition neither authorizes effects nor trusts labels as decision evidence.
+ */
+export interface DirectionObservation {
+  facts: DirectionFacts;
+  coverage: "complete" | "incomplete" | "unknown";
+  publication: { repository: string; sourceCommit: string; payloadDigest: string; revision: number };
+  reconciliation?: {
+    receiptId: string;
+    factsFingerprint: string;
+    scopeFingerprint: string;
+    publication: DirectionObservation["publication"];
+    status: "verified" | "launched" | "failed" | "incomplete" | "unknown" | "unsupported";
+    /** Frozen selection read from the existing audit ledger; every selected issue needs a readback. */
+    selectedSubjects: { repository: string; issueNumber: number }[];
+    outcomes: {
+      subject: { repository: string; issueNumber: number };
+      disposition: "keep" | "obsolete" | "superseded" | "reshape";
+      decision?: { repository: string; issueNumber: number; commentId: number };
+      destination?: { repository: string; issueNumber: number };
+      readbackFingerprint: string;
+      conservationVerified: boolean;
+      relationshipsVerified: boolean;
+    }[];
+  };
+}
 
 const unique = (values: readonly string[]): string[] => [...new Set(values)];
 const nonempty = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
@@ -99,6 +138,9 @@ export interface ComposedTriageInput {
   priorChecklist?: { previous: ChecklistRelease | null; evidence: PriorChecklistEvidence };
   implementationReceiptId?: string;
   taskProfile?: { record: TaskProfileRecord | null; required: boolean };
+  directionImpact?: DirectionImpactReceipt;
+  /** Fetched independently by the authoritative consumer adapter, never from directionImpact. */
+  directionObservation?: DirectionObservation;
 }
 
 export interface ComposedTaskProfileResult {
@@ -231,6 +273,69 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   } catch { reasons.push("missing_or_invalid_subject_identity"); }
   if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
   if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
+
+  // Existing semantic composition consumes audit evidence; it does not add an audit evaluator
+  // or a second journal. Unknown effects stay with the caller's existing settlement identity.
+  const direction = input.directionImpact;
+  const observed = input.directionObservation;
+  if (!direction || !observed) reasons.push("direction_impact_evidence_required");
+  else {
+    try {
+      const factsFingerprint = fingerprintDirectionFacts(observed.facts);
+      const publication = observed.publication;
+      if (observed.coverage !== "complete") reasons.push("direction_thread_coverage_incomplete");
+      if (!input.subject || observed.facts.seed.repository.toLowerCase() !== input.subject.repository.toLowerCase()
+        || observed.facts.seed.issueNumber !== input.subject.issueNumber
+        || direction.workUnitKey !== actualKey.key || direction.scopeFingerprint !== actualScope
+        || direction.factsFingerprint !== factsFingerprint || direction.revision !== CURRENT_TRIAGE_REVISION) {
+        reasons.push("direction_impact_subject_or_facts_mismatch");
+      }
+      if (publication.repository !== "spencer-shadley/.github" || publication.revision !== CURRENT_TRIAGE_REVISION
+        || !/^(?!0{40}$)[0-9a-f]{40}$/.test(publication.sourceCommit)
+        || !/^[0-9a-f]{64}$/.test(publication.payloadDigest)) reasons.push("direction_publication_mismatch");
+      if (!nonempty(direction.rationale)) reasons.push("direction_impact_rationale_required");
+      if (direction.assessment === "no-impact") {
+        // Empty outcome rows do not prove an existing unknown audit had no effects.
+        // Settle that exact audit first; a no-impact shortcut cannot erase its ledger.
+        if (observed.reconciliation || direction.reconciliationReceiptId) reasons.push("no_impact_has_cohort_effects");
+      } else if (direction.assessment === "potential-impact") {
+        const audit = observed.reconciliation;
+        if (!audit || audit.status !== "verified") reasons.push(`direction_reconciliation_${audit?.status ?? "missing"}`);
+        else {
+          if (!nonempty(audit.receiptId) || audit.receiptId !== direction.reconciliationReceiptId
+            || audit.factsFingerprint !== factsFingerprint || audit.scopeFingerprint !== actualScope
+            || canonicalPolicyJson(audit.publication) !== canonicalPolicyJson(publication)) reasons.push("direction_reconciliation_binding_mismatch");
+          const identities = new Set<string>();
+          for (const outcome of audit.outcomes) {
+            const subject = observed.facts.threads.find(t => t.repository.toLowerCase() === outcome.subject.repository.toLowerCase()
+              && t.issueNumber === outcome.subject.issueNumber);
+            const identity = `${outcome.subject.repository.toLowerCase()}#${outcome.subject.issueNumber}`;
+            if (!subject || identities.has(identity) || !/^sha256:[0-9a-f]{64}$/.test(outcome.readbackFingerprint)
+              || outcome.conservationVerified !== true || outcome.relationshipsVerified !== true
+              || !["keep", "obsolete", "superseded", "reshape"].includes(outcome.disposition)) reasons.push("direction_reconciliation_readback_incomplete");
+            identities.add(identity);
+            if (outcome.disposition !== "keep") {
+              const decision = outcome.decision;
+              const thread = observed.facts.threads.find(t => decision && t.repository.toLowerCase() === decision.repository.toLowerCase()
+                && t.issueNumber === decision.issueNumber);
+              if (!thread?.decisions.some(d => d.commentId === decision?.commentId && d.state === "accepted")) {
+                reasons.push("direction_accepted_decision_required");
+              }
+            }
+            if (outcome.disposition === "superseded") {
+              const destination = outcome.destination;
+              if (!destination || !observed.facts.threads.some(t => t.repository.toLowerCase() === destination.repository.toLowerCase()
+                && t.issueNumber === destination.issueNumber)
+                || `${destination.repository.toLowerCase()}#${destination.issueNumber}` === identity) reasons.push("direction_conservation_destination_required");
+            }
+          }
+          const selected = audit.selectedSubjects.map(s => `${s.repository.toLowerCase()}#${s.issueNumber}`);
+          if (new Set(selected).size !== selected.length || selected.length !== identities.size
+            || selected.some(id => !identities.has(id))) reasons.push("direction_reconciliation_selection_incomplete");
+        }
+      } else reasons.push("direction_impact_assessment_invalid");
+    } catch { reasons.push("direction_impact_evidence_invalid"); }
+  }
 
   const snapshot: PolicySnapshot = {
     workUnitKey: actualKey.key ?? "invalid:work_unit_key",

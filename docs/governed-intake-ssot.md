@@ -197,3 +197,52 @@ block on "did it differently from the hint" alone.
 ## Proposal classification (revision 23)
 
 `type:proposal` is a standard type label (defined in Code's work-spine type taxonomy, `tools/work-spine/work-spine-contract.v1.json`). Triage applies it, in addition to any other type label, when an issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision, and removes it once that decision is recorded. It is descriptive only: it never blocks other work, creates a human gate, or changes priority. Revision 23 adds this as the `proposal-classification` checklist item, so delta re-triage of revision 22 issues evaluates only that new item.
+
+## Revision 23: accepted taxonomy
+
+Under [.github#32](https://github.com/spencer-shadley/.github/issues/32) and [code#7586](https://github.com/spencer-shadley/code/pull/7639), revision 23 adopts the accepted fleet-wide multidimensional taxonomy:
+- **Taxonomy dimensions and cardinalities:**
+  - `delivers`: 0..* (`delivers:agent-efficiency`, `human-efficiency`, `reliability`, `cost-efficiency`, `capability`).
+  - `type`: 1..* after triage (`type:feature`, `bug`, `regression`, `migration`, `deletion`, `research`, `maintenance`). Coexistence allowed (e.g. migration + deletion, bug + regression). Regression requires prior reference. Research conclusions: `positive`, `negative`, `inconclusive`.
+  - `source`: 1..* after triage (`source:human`, `runtime-signal`, `retro-skill`, `retro-bot`, `scheduled-task`, plus dynamic `source:retro-skill:<slug>` / `source:scheduled-task:<slug>`).
+  - `effort`: exactly 1 (`effort:low`, `medium`, `high`).
+  - `priority:repo` and `priority:fleet`: exactly 1 each (`priority:repo:p0`..`p5`, `priority:fleet:p0`..`p5`).
+  - `blocked`: 0..* (`blocked:time`, `blocked:human-required`, `blocked:issue`).
+  - `environment`: 0..* (`environment:fleet-local`, dynamic `host:<host>`, `hardware:<slug>`).
+  - `progress`: exactly 1 (`progress:triage`, `progress:planned`, `progress:implementing`, `progress:reviewing`, `progress:implemented`, `progress:verified`). Replaces prior stage without accumulation.
+  - `decomp`: 0..1 (`decomp:required`, `decomp:in-progress`, `decomp:complete`, `decomp:unnecessary`).
+  - `resolution`: 0 while open, exactly 1 resolved (`resolution:delivered`, `duplicate`, `superseded`, `declined`, `obsolete`). `delivered` requires verified acceptance (`progress:verified`). Non-delivery closure preserves last actual progress. Reopening clears resolution and invalid stamps.
+  - `resolution:obsolete`: immediate before implementation upon accepted direction/retirement, cites causing issue + decision comment, cause backlink listing obsolete issues, preserves last actual progress.
+  - `resolution:superseded`: preserves destination.
+  - `metadata`: `metadata:triage-vN` (dynamic). Only `metadata:triage-v23` represents completed current semantic triage in revision 23. Old stamps (`triaged:v22`), missing stamps, forged stamps, or structurally-checked-only stamps never produce completion.
+  - Initial filing defaults: `labels: agent-review, priority:triage-tbd, progress:triage`.
+- **Single combined cutover:** revision 23 is one combined revision carrying this taxonomy, the `proposal-classification` item, direction-impact reconciliation and the second-opinion/`agent_unattested` change ([.github#32](https://github.com/spencer-shadley/.github/issues/32), [#35](https://github.com/spencer-shadley/.github/issues/35), [#45](https://github.com/spencer-shadley/.github/issues/45), [#48](https://github.com/spencer-shadley/.github/issues/48)). Source and its generated release land in one pull request; that pull request is not merged until every required consumer has prepared and read back compatibility (Code [#7625](https://github.com/spencer-shadley/code/issues/7625)). Until then deployed consumers keep using published revision 22.
+
+## Direction-impact semantic completion
+
+The `value-direction` and `dedup-queue-synergy` stable obligations consume direction-impact evidence
+through `evaluateGovernedIntakeTriage`, also exposed by the public completion API. The current
+contract's revision remains the only completion revision. See Code's [reusable audit](https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md)
+for neighborhood judgment and governed reconciliation.
+
+Consumer adapters provide a `directionImpact` assessment and a separate `directionObservation`
+from actual server-fetched seed/thread identities, complete material decision evidence, source,
+ownership and related-work facts. `fingerprintDirectionFacts` binds material facts and ignores
+invocation timestamps, receipt comments and labels. The adapter must obtain these observations
+independently of the assessed receipt, adjudicate accepted/proposed/reversed decisions and verify
+the authoritative release before effects; this pure producer cannot authenticate arbitrary caller
+objects or fetch GitHub. Unsupported adapters and missing evidence stay pending.
+
+No-impact requires reasoned assessment and no cohort effects. Potential material impact requires
+the existing audit's exact frozen selection and verified readbacks, current publication identity,
+accepted causal decisions for changed dispositions, and conservation/relationship evidence.
+Superseded valid outcomes require an independently read-back destination. Failed, launched,
+incomplete, unsupported and unknown results remain pending under the existing settlement identity.
+No label rename or checked box satisfies those obligations. The public completion API exposes
+pending direction and synergy items to the existing delta consumer.
+
+Changed material direction, scope, accepted decisions, source, ownership or related-work facts
+invalidate the declared stable obligations. Only observed changed results propagate to dependents;
+unchanged valid facts reuse evidence without semantic reruns, comments or recursive triggers.
+Consumer preparation must prove current and candidate compatibility before actual publication;
+Code #7476 owns adoption and live invocation; revision 23 publication stays gated on the .github#32 consumer readiness (Code #7625).

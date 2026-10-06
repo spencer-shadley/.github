@@ -243,3 +243,128 @@ test("revision 23 adds proposal classification as a delta-only new item (type:pr
   assert.deepEqual(delta.reevaluatedItems, [{ id: "proposal-classification", reasons: ["new-item"] }]);
   assert.deepEqual(delta.mechanicallyChangedItemIds, ["confirm-receipt"]);
 });
+
+// #35 uses the real composition and public completion API with independently observed facts.
+import { evaluateGovernedIntakeTriage, currentChecklistRelease, type ComposedTriageInput, type DirectionObservation } from '../contracts/governed-intake-triage.compose.ts';
+import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts } from '../contracts/governed-intake-policy-binding.ts';
+import { fingerprintAssessment } from '../contracts/governed-intake-triage-policy.evaluate.ts';
+import { evaluateTriageChecklistState as evaluateSemanticChecklist } from '../contracts/governed-intake-triage-state.evaluate.ts';
+import { planChecklistDelta } from '../contracts/governed-intake-triage-state.migrate.ts';
+const directionHash = (letter: string) => `sha256:${letter.repeat(64)}`;
+async function directionFixture(material = false): Promise<ComposedTriageInput> {
+  const subject = { repository: 'spencer-shadley/.github', issueNumber: 35, title: 'Direction-impact producer' };
+  const body = validBody() + '\n' + renderTriageChecklistBlock({ checked: true });
+  const labels = [CURRENT_TRIAGED_LABEL, 'effort:medium', 'decomp-not-needed', 'cloud-ready', 'tier:auto'];
+  const completed = body + '\n' + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
+  const scopeFingerprint = fingerprintIssueScope({ ...subject, body: completed });
+  const workUnitKey = `sha256:${computeGovernedWorkUnitKey(identity)}`;
+  const bound = boundTriagePolicyFromProducer();
+  const assessment = { workUnitKey, scopeFingerprint, policyIdentity: bound.policyIdentity, rubricIdentity: bound.rubricIdentity,
+    disposition: 'ordinary' as const, effort: 'medium' as const, rationale: 'Bounded producer change.', verification: 'Named semantic fixtures.',
+    resumability: 'Existing receipt and settlement.', confidence: 'high' as const, blockingAssessmentUnknowns: [], implementationUnknowns: [], assessmentFingerprint: '' };
+  assessment.assessmentFingerprint = await fingerprintAssessment(assessment, null);
+  const publication = { repository: 'spencer-shadley/.github', sourceCommit: 'a'.repeat(40), payloadDigest: 'b'.repeat(64), revision: c.version };
+  const facts = { seed: subject, threads: [
+    { ...subject, materialFingerprint: directionHash('a'), decisions: [{ commentId: 5974265449, state: 'accepted' as const, contentFingerprint: directionHash('b') }] },
+    { repository: 'spencer-shadley/code', issueNumber: 7472, materialFingerprint: directionHash('c'), decisions: [] },
+  ], sourceFingerprint: directionHash('d'), ownershipFingerprint: directionHash('e'), relatedWorkFingerprint: directionHash('f') };
+  const factsFingerprint = fingerprintDirectionFacts(facts);
+  const directionObservation: DirectionObservation = { facts, coverage: 'complete', publication };
+  if (material) directionObservation.reconciliation = {
+    receiptId: 'existing-audit-settlement', factsFingerprint, scopeFingerprint, publication, status: 'verified',
+    selectedSubjects: [{ repository: 'spencer-shadley/code', issueNumber: 7472 }],
+    outcomes: [{ subject: { repository: 'spencer-shadley/code', issueNumber: 7472 }, disposition: 'obsolete',
+      decision: { repository: subject.repository, issueNumber: subject.issueNumber, commentId: 5974265449 },
+      readbackFingerprint: directionHash('a'), conservationVerified: true, relationshipsVerified: true }],
+  };
+  return { subject, body: completed, labels, evidence: { kind: 'adapter-verified', workUnitKey, scopeFingerprint, assessment,
+    state: 'open', repositoryActive: true, priorHighEffort: false, requiresQualifiedAssessment: false, currentGraphFingerprint: null,
+    hasExecutableChildGraph: false, finalAttributesScopeFingerprint: scopeFingerprint, directionEvidenceFresh: true,
+    trusted: { admissions: [], graphs: [], requiredCapabilities: { 'scope-assessment': 'floor', 'atomic-confirmation': 'floor', implementation: 'floor' } } },
+    directionImpact: { workUnitKey, scopeFingerprint, factsFingerprint, revision: c.version, assessment: material ? 'potential-impact' : 'no-impact',
+      rationale: material ? 'Accepted direction affects old cross-repo work.' : 'No component, SSOT, owner or related-work impact.',
+      ...(material ? { reconciliationReceiptId: 'existing-audit-settlement' } : {}) }, directionObservation };
+}
+test('direction no-impact completes with zero cohort effects and unchanged repeat is a pure no-op', async () => {
+  const input = await directionFixture(); const before = structuredClone(input);
+  const first = await evaluateGovernedIntakeTriage(input);
+  assert.equal(first.status, 'complete', JSON.stringify(first.reasons));
+  assert.deepEqual(await evaluateGovernedIntakeTriage(input), first); assert.deepEqual(input, before);
+  const release = currentChecklistRelease();
+  const delta = planChecklistDelta(release, release, { completionVerified: true, completedItemIds: release.items.map(i => i.id),
+    staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [] });
+  assert.deepEqual(delta.reevaluatedItems, []); assert.equal(delta.requiresResultReconciliation, false);
+});
+test('accepted retirement verified through existing audit completes; proposal cannot authorize it', async () => {
+  const input = await directionFixture(true);
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status, 'complete');
+  input.directionObservation!.facts.threads[0].decisions[0].state = 'proposed';
+  input.directionImpact!.factsFingerprint = fingerprintDirectionFacts(input.directionObservation!.facts);
+  input.directionObservation!.reconciliation!.factsFingerprint = input.directionImpact!.factsFingerprint;
+  const result = await evaluateGovernedIntakeTriage(input);
+  assert.equal(result.status, 'pending'); assert.ok(result.reasons.includes('direction_accepted_decision_required'));
+});
+for (const state of ['launched','failed','incomplete','unknown','unsupported'] as const) {
+  test(`direction ${state} settlement stays explicit/resumable instead of complete`, async () => {
+    const input = await directionFixture(true); input.directionObservation!.reconciliation!.status = state;
+    const result = await evaluateGovernedIntakeTriage(input);
+    assert.equal(result.status, 'pending'); assert.ok(result.reasons.includes(`direction_reconciliation_${state}`));
+    assert.equal(input.directionObservation!.reconciliation!.receiptId, 'existing-audit-settlement');
+    const publicResult = await evaluateSemanticChecklist(input.body, input.labels, input);
+    assert.equal(publicResult.needs_triage, true);
+    assert.ok(publicResult.unchecked_item_ids.includes('value-direction')); assert.ok(publicResult.unchecked_item_ids.includes('dedup-queue-synergy'));
+  });
+}
+test('changed accepted thread facts invalidate prior assessment despite matching scope and checked boxes', async () => {
+  const input = await directionFixture(); input.directionObservation!.facts.threads[0].decisions[0].contentFingerprint = directionHash('f');
+  const result = await evaluateGovernedIntakeTriage(input); assert.equal(result.status, 'pending');
+  assert.ok(result.reasons.includes('direction_impact_subject_or_facts_mismatch'));
+  const release = currentChecklistRelease();
+  const delta = planChecklistDelta(release, release, { completionVerified: true, completedItemIds: release.items.map(i => i.id),
+    staleItemIds: [], changedEvidenceKeys: ['accepted-decision'], changedResultItemIds: [] });
+  assert.deepEqual(delta.reevaluatedItems.map(i => i.id), ['value-direction','dedup-queue-synergy']);
+  assert.ok(delta.reusedItemIds.includes('priority-work-dimensions'));
+});
+for (const fault of ['seed','decision-thread','selection','readback','publication','coverage','missing'] as const) {
+  test(`direction independently observed ${fault} cannot be forged by receipt assertions`, async () => {
+    const input = await directionFixture(true); const observation = input.directionObservation!;
+    if(fault==='seed') observation.facts.seed.issueNumber++;
+    if(fault==='decision-thread') observation.reconciliation!.outcomes[0].decision!.issueNumber++;
+    if(fault==='selection') observation.reconciliation!.outcomes=[];
+    if(fault==='readback') observation.reconciliation!.outcomes[0].relationshipsVerified=false;
+    if(fault==='publication') observation.publication.revision++;
+    if(fault==='coverage') observation.coverage='unknown';
+    if(fault==='missing') delete input.directionObservation;
+    assert.equal((await evaluateGovernedIntakeTriage(input)).status,'pending');
+  });
+}
+test('superseded valid work requires a conserved readback destination, while obsolete needs no successor', async () => {
+  const input = await directionFixture(true); const outcome=input.directionObservation!.reconciliation!.outcomes[0];
+  outcome.disposition='superseded'; assert.equal((await evaluateGovernedIntakeTriage(input)).status,'pending');
+  outcome.destination={repository:'spencer-shadley/.github',issueNumber:35};
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status,'complete');
+  outcome.conservationVerified=false; assert.equal((await evaluateGovernedIntakeTriage(input)).status,'pending');
+});
+test('candidate taxonomy stamp cannot replace the actually current producer revision', async () => {
+  const input=await directionFixture(); input.labels=[...input.labels.filter(l=>l!==CURRENT_TRIAGED_LABEL),`metadata:triage-v${c.version+1}`];
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status,'pending');
+  input.directionImpact!.revision++; assert.ok((await evaluateGovernedIntakeTriage(input)).reasons.includes('direction_impact_subject_or_facts_mismatch'));
+});
+test('direction facts ignore ordering but retain actual thread and decision identity', async () => {
+  const input=await directionFixture(); const facts=input.directionObservation!.facts;
+  const identity=fingerprintDirectionFacts(facts); facts.threads.reverse(); assert.equal(fingerprintDirectionFacts(facts),identity);
+  facts.threads[1].decisions[0].commentId++; assert.notEqual(fingerprintDirectionFacts(facts),identity);
+});
+
+test('no-impact cannot erase an existing unknown audit merely because outcome rows are empty', async () => {
+  const input = await directionFixture(true);
+  input.directionImpact!.assessment = 'no-impact';
+  delete input.directionImpact!.reconciliationReceiptId;
+  input.directionObservation!.reconciliation!.status = 'unknown';
+  input.directionObservation!.reconciliation!.outcomes = [];
+  input.directionObservation!.reconciliation!.selectedSubjects = [];
+  const result = await evaluateGovernedIntakeTriage(input);
+  assert.equal(result.status, 'pending');
+  assert.ok(result.reasons.includes('no_impact_has_cohort_effects'));
+  assert.equal(input.directionObservation!.reconciliation!.receiptId, 'existing-audit-settlement');
+});
