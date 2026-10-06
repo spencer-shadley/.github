@@ -307,7 +307,23 @@ test("ordinary path stays inexpensive: no qualified receipts required", async ()
   assert.equal(result.implementationEligible, true);
 });
 
-test("atomic-high keeps high and requires independent qualified confirmation", async () => {
+test("atomic-high completes without second-opinion receipts; the checklist says they are encouraged", async () => {
+  const scope = contract.triageChecklist.items.find((item: { id: string }) => item.id === "scope-decomposition");
+  assert.match(scope.text, /highly encouraged and are checked when recorded, but completion does not depend on them/);
+  const handoff = contract.triageChecklist.items.find((item: { id: string }) => item.id === "higher-intelligence-handoff");
+  assert.equal(handoff.text.startsWith("`effort:high`"), false);
+  assert.match(handoff.text, /For `effort:high` work, and for an issue that carried `effort:high` before/);
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("atomic-high"));
+  const evidence = await verifiedEvidence("atomic-high");
+  evidence.requiresQualifiedAssessment = false;
+  delete evidence.assessment!.assessorReceiptId; delete evidence.assessment!.confirmationReceiptId;
+  evidence.trusted.admissions = [];
+  const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+  assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+  assert.equal(result.implementationEligible, false, "execution of a high-effort leaf still needs its admitted implementation receipt");
+});
+
+test("atomic-high keeps high; a recorded confirmation that cannot be verified keeps triage pending", async () => {
   const { body, labels } = await completedBodyAndLabels(dispositionLabels("atomic-high"));
   const evidence = await verifiedEvidence("atomic-high");
   evidence.trusted.admissions = evidence.trusted.admissions.filter((row) => row.role !== "atomic-confirmation");

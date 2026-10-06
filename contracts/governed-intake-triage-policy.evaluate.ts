@@ -13,6 +13,12 @@ export interface TriagePolicy {
   dispositions: Record<string, {
     labels: string[]; efforts: string[]; trackingOnly: boolean;
     qualifiedAssessment: boolean; independentConfirmation: boolean;
+    /**
+     * Whether the receipts named by the two flags above gate completion. Absent means
+     * 'required'. 'encouraged' (.github#48) makes them a strong suggestion: absent receipts
+     * do not block, supplied receipts are checked exactly as when required.
+     */
+    secondOpinion?: 'required' | 'encouraged';
   }>;
   pendingLabel: string;
   retiredProgressLabels: string[];
@@ -167,7 +173,8 @@ export function assertTriagePolicy(policy: TriagePolicy): void {
     if (!object(disposition) || !strings(disposition.labels) || !disposition.labels.length
       || !strings(disposition.efforts) || !disposition.efforts.length
       || !disposition.efforts.every(effort => ['low', 'medium', 'high'].includes(effort))
-      || (['trackingOnly', 'qualifiedAssessment', 'independentConfirmation'] as const).some(key => typeof disposition[key] !== 'boolean')) {
+      || (['trackingOnly', 'qualifiedAssessment', 'independentConfirmation'] as const).some(key => typeof disposition[key] !== 'boolean')
+      || !(disposition.secondOpinion === undefined || ['required', 'encouraged'].includes(disposition.secondOpinion))) {
       throw new Error('invalid_disposition_contract');
     }
     owned.push(...disposition.labels);
@@ -263,17 +270,20 @@ export async function evaluateTriagePolicy(release: BoundTriagePolicy, input: un
     if (!['high', 'medium'].includes(assessment.confidence)
       || !strings(assessment.blockingAssessmentUnknowns) || assessment.blockingAssessmentUnknowns.length
       || !strings(assessment.implementationUnknowns)) reasons.push('unresolved_assessment_uncertainty');
-    // .github#48: effort history is not a trigger. A second assessment is required only by the
-    // disposition or a consumer-established `requiresQualifiedAssessment`; a receipt supplied
-    // voluntarily is checked exactly like a required one, so a recorded second opinion is never decorative.
-    const needsQualified = spec.qualifiedAssessment || snapshot.requiresQualifiedAssessment;
+    // .github#48: effort history is not a trigger. A second assessment is required only by a
+    // disposition whose second opinion is not merely encouraged, or by a consumer-established
+    // `requiresQualifiedAssessment`; a receipt supplied voluntarily is checked exactly like a
+    // required one, so a recorded second opinion is never decorative.
+    const encouragedOnly = spec.secondOpinion === 'encouraged';
+    const needsQualified = (spec.qualifiedAssessment && !encouragedOnly) || snapshot.requiresQualifiedAssessment;
     const assessor = needsQualified || nonempty(assessment.assessorReceiptId)
       ? qualified(snapshot, assessment.assessorReceiptId, 'scope-assessment', assessment.assessmentFingerprint, reasons) : null;
     if (spec.independentConfirmation) {
       for (const field of policy.evidence.atomicFields) {
         if (!nonempty((assessment as unknown as Record<string, unknown>)[field])) reasons.push(`missing_atomic_field:${field}`);
       }
-      const confirmer = qualified(snapshot, assessment.confirmationReceiptId, 'atomic-confirmation', assessment.assessmentFingerprint, reasons);
+      const confirmer = !encouragedOnly || nonempty(assessment.confirmationReceiptId)
+        ? qualified(snapshot, assessment.confirmationReceiptId, 'atomic-confirmation', assessment.assessmentFingerprint, reasons) : null;
       if (assessor && confirmer && (assessor.id === confirmer.id
         || assessor.served.provider === confirmer.served.provider
         || assessor.served.modelFamily === confirmer.served.modelFamily)) reasons.push('atomic_confirmation_not_independent');
