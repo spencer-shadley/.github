@@ -137,18 +137,30 @@ digest and byteLength from the tree and fails, naming the file, when the manifes
 A release change must also be admitted by Code's deployed GitHub MCP Worker
 ([code#8013](https://github.com/spencer-shadley/code/issues/8013)). Its worker pins one identity
 per revision and refuses anything else (`commit_mismatch`, `digest_mismatch`, `corrupt_file`).
-Before merging a pull request that touches the release, run
-`npm run consumer-pin:check -- --pr <this PR number>`. It reads Code `master`'s worker pins at one
-exact commit and runs the candidate through the worker's own resolution, vendored in
-`contracts/governed-intake-worker-admission.ts`. It fails closed if the worker's rules changed
-since vendoring. It passes when Code already admits the release, or when the manifest is unchanged
-and the refusal is pre-existing. Otherwise it passes only when the PR body names a ready consumer PR
-on its own line as `Consumer-Pin-Pair: spencer-shadley/code#<number>` and that PR's head pins admit
-this exact release. The check then prints the merge order: the Code PR first. A new revision lands
+This is enforced automatically before every merge
+([code#8036](https://github.com/spencer-shadley/code/issues/8036)); nobody runs a check by hand.
+`local-ci.json` command `consumer-pin-gate` (`contracts/governed-intake-consumer-pin.gate.ts`)
+runs in the merge path at the exact PR head: `fleet-cli gh pr-merge` runs it with this repository's
+gate, and Code's native lander runs the base branch's copy against the same head. A PR that changes
+none of `contracts/generated/governed-intake/**`, `contracts/governed-intake-body.v1.json` or
+`.github/ISSUE_TEMPLATE/task.yml` passes offline with no reads. A release-touching PR passes only
+when its release goes through the worker's own resolution (vendored in
+`contracts/governed-intake-worker-admission.ts`) and is admitted twice: by Code `master`'s worker pins and by
+the Code commit the live worker reports as `deployed_commit`. A manifest that is byte-identical to
+the base, with only a pre-existing identity refusal, passes with a warning. It refuses (exit 1) on
+any other refusal, or if the worker's rules changed since vendoring (`DRIFT … re-vendor`). Exit 2
+means an input could not be read, and that refuses too. Every run prints one
+`consumer-pin-gate-receipt:` line binding the PR head, both Code commits and the verdict lines.
+
+When Code does not admit the release yet, open the Code PR that admits exactly this release and
+name it on its own line in this PR's body as `Consumer-Pin-Pair: spencer-shadley/code#<number>`.
+The gate then reports `paired-consumer-not-landed` with the order: merge the Code PR at the printed
+head, wait for its worker deploy, and the gate passes on its own. A new revision lands
 in the worker's prepared slot with no outage. A same-revision republish has a short paired window.
-`--consumer-git <code clone>` reads over git instead of the REST quota.
-`test/consumer-pin-admission.test.ts` replays recorded snapshots offline in the gate, including
-the .github#40 and .github#43 outages, which must stay refused.
+`npm run consumer-pin:check -- --pr <n>` is the diagnostic form of the same check; with `--pr` it
+refuses unless the checkout is PR n's current head. `--consumer-git <code clone>` reads over git
+instead of the REST quota. `test/consumer-pin-admission.test.ts` and `test/consumer-pin-gate.test.ts`
+replay recorded snapshots offline, including the .github#40 and .github#43 outages, which must stay refused.
 
 A new semantic revision requires current-revision triage evidence, not automatic re-execution of
 all prior reasoning. The implementation tracked by
