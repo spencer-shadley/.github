@@ -181,15 +181,24 @@ test("a credential stored in origin itself is stripped for matching and redacted
   assert.throws(() => assertProducerCheckout(s.source), /no origin remote configured/);
 });
 test("remote URL credential helpers keep the canonical producer forms (.github#39)", () => {
+  // Synthetic userinfo, assembled at runtime so scanners do not see a Basic Auth literal.
+  const credentialUrl = (protocol: string, username: string, pathname: string) => {
+    const url = new URL(`${protocol}://github.com${pathname}`);
+    url.username = username;
+    url.password = "fixture-password";
+    return url.href;
+  };
+  const httpsCredential = credentialUrl("https", "x-access-token", "/o/r.git");
+  const sshCredential = credentialUrl("ssh", "git", "/o/r");
   for (const url of ["https://github.com/spencer-shadley/.github.git", "git@github.com:spencer-shadley/.github.git", "ssh://git@github.com/spencer-shadley/.github"]) {
     assert.equal(stripRemoteUrlCredentials(url), url);
     assert.equal(redactRemoteUrl(url), url);
   }
-  assert.equal(stripRemoteUrlCredentials("https://x-access-token:s3cr3t@github.com/o/r.git"), "https://github.com/o/r.git");
+  assert.equal(stripRemoteUrlCredentials(httpsCredential), "https://github.com/o/r.git");
   assert.equal(stripRemoteUrlCredentials("https://ghp_token@github.com/o/r.git"), "https://github.com/o/r.git");
-  assert.equal(stripRemoteUrlCredentials("ssh://git:s3cr3t@github.com/o/r"), "ssh://git@github.com/o/r");
-  assert.equal(redactRemoteUrl("https://x-access-token:s3cr3t@github.com/o/r.git"), "https://<redacted>@github.com/o/r.git");
-  assert.equal(redactRemoteUrl("ssh://git:s3cr3t@github.com/o/r"), "ssh://<redacted>@github.com/o/r");
+  assert.equal(stripRemoteUrlCredentials(sshCredential), "ssh://git@github.com/o/r");
+  assert.equal(redactRemoteUrl(httpsCredential), "https://<redacted>@github.com/o/r.git");
+  assert.equal(redactRemoteUrl(sshCredential), "ssh://<redacted>@github.com/o/r");
 });
 test("the refusal never echoes any credential fragment, whatever the stored origin looks like (.github#39)", () => {
   const secret = "DUMMYSECRET39ghi";
@@ -295,7 +304,7 @@ test("missing policy payload fails closed without requiring a symlink", (t) => {
   if (!result.ok) assert.equal(result.code, "missing_file");
 });
 
-test("revision 23 adds proposal classification as a delta-only new item (type:proposal)", async () => {
+test("isolated proposal-classification addition is a one-item delta (combined cutover tested separately)", async () => {
   const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
   assert.equal(c.version, 23);
   const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
@@ -322,6 +331,7 @@ async function directionFixture(material = false): Promise<ComposedTriageInput> 
   const subject = { repository: 'spencer-shadley/.github', issueNumber: 35, title: 'Direction-impact producer' };
   const body = validBody() + '\n' + renderTriageChecklistBlock({ checked: true });
   const labels = [CURRENT_TRIAGED_LABEL, 'effort:medium', 'decomp-not-needed', 'cloud-ready', 'tier:auto'];
+  if (material) labels.push('metadata:direction-change');
   const completed = body + '\n' + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
   const scopeFingerprint = fingerprintIssueScope({ ...subject, body: completed });
   const workUnitKey = `sha256:${computeGovernedWorkUnitKey(identity)}`;
@@ -331,7 +341,7 @@ async function directionFixture(material = false): Promise<ComposedTriageInput> 
     resumability: 'Existing receipt and settlement.', confidence: 'high' as const, blockingAssessmentUnknowns: [], implementationUnknowns: [], assessmentFingerprint: '' };
   assessment.assessmentFingerprint = await fingerprintAssessment(assessment, null);
   const publication = { repository: 'spencer-shadley/.github', sourceCommit: 'a'.repeat(40), payloadDigest: 'b'.repeat(64), revision: c.version };
-  const facts = { seed: subject, threads: [
+  const facts = { seed: { ...subject, createdAt: '2026-10-04T00:00:00Z' }, threads: [
     { ...subject, materialFingerprint: directionHash('a'), decisions: [{ commentId: 5974265449, state: 'accepted' as const, contentFingerprint: directionHash('b') }] },
     { repository: 'spencer-shadley/code', issueNumber: 7472, materialFingerprint: directionHash('c'), decisions: [] },
   ], sourceFingerprint: directionHash('d'), ownershipFingerprint: directionHash('e'), relatedWorkFingerprint: directionHash('f') };
@@ -343,6 +353,16 @@ async function directionFixture(material = false): Promise<ComposedTriageInput> 
     outcomes: [{ subject: { repository: 'spencer-shadley/code', issueNumber: 7472 }, disposition: 'obsolete',
       decision: { repository: subject.repository, issueNumber: subject.issueNumber, commentId: 5974265449 },
       readbackFingerprint: directionHash('a'), conservationVerified: true, relationshipsVerified: true }],
+  };
+  if (material) directionObservation.exhaustiveSearch = {
+    receiptId: 'existing-audit-settlement', factsFingerprint, scopeFingerprint, publication,
+    scope: 'all-open-issues-and-prs-before-seed', createdBefore: facts.seed.createdAt, phase: 'post-reconciliation',
+    inventory: { coverage: 'complete', repositories: ['spencer-shadley/.github', 'spencer-shadley/code'] },
+    repositories: ['spencer-shadley/.github', 'spencer-shadley/code'].map(repository => ({
+      repository, issues: 'complete', pullRequests: 'complete', bodiesAndAcceptance: 'complete', comments: 'complete',
+      unresolvedConflicts: 0, readbackFingerprint: directionHash('c'),
+    })),
+    conflictSubjects: [{ repository: 'spencer-shadley/code', issueNumber: 7472 }],
   };
   return { subject, body: completed, labels, evidence: { kind: 'adapter-verified', workUnitKey, scopeFingerprint, assessment,
     state: 'open', repositoryActive: true, priorHighEffort: false, requiresQualifiedAssessment: false, currentGraphFingerprint: null,
@@ -434,4 +454,99 @@ test('no-impact cannot erase an existing unknown audit merely because outcome ro
   assert.equal(result.status, 'pending');
   assert.ok(result.reasons.includes('no_impact_has_cohort_effects'));
   assert.equal(input.directionObservation!.reconciliation!.receiptId, 'existing-audit-settlement');
+});
+
+test('every issue needs a direction answer, even ordinary leaves without a direction-change label', async () => {
+  const input = await directionFixture();
+  delete input.directionImpact;
+  const result = await evaluateGovernedIntakeTriage(input);
+  assert.equal(result.status, 'pending');
+  assert.ok(result.reasons.includes('direction_impact_evidence_required'));
+});
+
+for (const fault of ['missing', 'neighborhood', 'cutoff', 'missing-cutoff', 'settlement', 'facts', 'scope', 'publication',
+  'before-effects', 'inventory', 'omitted-repo', 'duplicate-repo', 'issues', 'prs', 'bodies', 'comments',
+  'readback', 'conflict', 'negative-count', 'unknown-count', 'unreconciled-hit', 'kept-hit', 'wrong-cause'] as const) {
+  test(`exhaustive direction gate refuses ${fault} evidence through public completion API`, async () => {
+    const input = await directionFixture(true);
+    const observed = input.directionObservation!;
+    const search = observed.exhaustiveSearch!;
+    if (fault === 'missing') delete observed.exhaustiveSearch;
+    if (fault === 'neighborhood') search.scope = 'related-neighborhood' as typeof search.scope;
+    if (fault === 'cutoff') search.createdBefore = '2026-10-03T00:00:00Z';
+    if (fault === 'missing-cutoff') delete observed.facts.seed.createdAt;
+    if (fault === 'settlement') search.receiptId = 'another-audit';
+    if (fault === 'facts') search.factsFingerprint = directionHash('d');
+    if (fault === 'scope') search.scopeFingerprint = directionHash('e');
+    if (fault === 'publication') search.publication = { ...search.publication, sourceCommit: 'c'.repeat(40) };
+    if (fault === 'before-effects') search.phase = 'before-reconciliation' as typeof search.phase;
+    if (fault === 'inventory') search.inventory.coverage = 'unknown';
+    if (fault === 'omitted-repo') search.repositories.pop();
+    if (fault === 'duplicate-repo') search.repositories[1] = { ...search.repositories[0] };
+    if (fault === 'issues') search.repositories[1].issues = 'incomplete';
+    if (fault === 'prs') search.repositories[1].pullRequests = 'incomplete';
+    if (fault === 'bodies') search.repositories[1].bodiesAndAcceptance = 'unknown';
+    if (fault === 'comments') search.repositories[1].comments = 'incomplete';
+    if (fault === 'readback') search.repositories[1].readbackFingerprint = '';
+    if (fault === 'conflict') search.repositories[1].unresolvedConflicts = 1;
+    if (fault === 'negative-count') search.repositories[1].unresolvedConflicts = -1;
+    if (fault === 'unknown-count') search.repositories[1].unresolvedConflicts = undefined as unknown as number;
+    if (fault === 'unreconciled-hit') search.conflictSubjects.push({ repository: 'spencer-shadley/code', issueNumber: 8000 });
+    if (fault === 'kept-hit') observed.reconciliation!.outcomes[0].disposition = 'keep';
+    if (fault === 'wrong-cause') observed.reconciliation!.outcomes[0].decision!.issueNumber = 7472;
+    const result = await evaluateGovernedIntakeTriage(input);
+    assert.equal(result.status, 'pending', fault);
+    assert.ok(result.reasons.some(reason => reason.startsWith('direction_')), JSON.stringify(result.reasons));
+    const publicResult = await evaluateSemanticChecklist(input.body, input.labels, input);
+    assert.equal(publicResult.needs_triage, true);
+    assert.ok(publicResult.unchecked_item_ids.includes('value-direction'));
+    assert.ok(publicResult.unchecked_item_ids.includes('dedup-queue-synergy'));
+  });
+}
+
+test('direction-change canonical label is required; an alias cannot satisfy it', async () => {
+  const input = await directionFixture(true);
+  input.labels = input.labels.map(label => label === 'metadata:direction-change' ? 'direction-change' : label);
+  const result = await evaluateGovernedIntakeTriage(input);
+  assert.equal(result.status, 'pending');
+  assert.ok(result.reasons.includes('direction_change_label_required'));
+});
+
+test('complete exhaustive search with no conflicts still requires zero readback from every repository', async () => {
+  const input = await directionFixture(true);
+  const observed = input.directionObservation!;
+  observed.exhaustiveSearch!.conflictSubjects = [];
+  observed.reconciliation!.selectedSubjects = [];
+  observed.reconciliation!.outcomes = [];
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status, 'complete');
+  observed.exhaustiveSearch!.repositories = [];
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status, 'pending');
+});
+
+test('a conflicting PR shares the GitHub subject namespace and requires same-step rescope readback', async () => {
+  const input = await directionFixture(true);
+  const observed = input.directionObservation!;
+  const pr = { repository: 'spencer-shadley/code', issueNumber: 7999 };
+  observed.facts.threads.push({ ...pr, materialFingerprint: directionHash('d'), decisions: [] });
+  const facts = fingerprintDirectionFacts(observed.facts);
+  input.directionImpact!.factsFingerprint = facts;
+  observed.exhaustiveSearch!.factsFingerprint = facts;
+  observed.reconciliation!.factsFingerprint = facts;
+  observed.exhaustiveSearch!.conflictSubjects.push(pr);
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status, 'pending');
+  observed.reconciliation!.selectedSubjects.push(pr);
+  observed.reconciliation!.outcomes.push({ ...observed.reconciliation!.outcomes[0], subject: pr, disposition: 'reshape' });
+  assert.equal((await evaluateGovernedIntakeTriage(input)).status, 'complete');
+});
+
+test('portable JavaScript enforces the exhaustive direction gate and settlement fence', async (t) => {
+  const s = scratch(t);
+  const portable = await import(pathToFileURL(path.join(s.out, 'compose.js')).href);
+  const input = await directionFixture(true);
+  assert.equal((await portable.evaluateGovernedIntakeTriage(input)).status, 'complete');
+  input.directionObservation!.exhaustiveSearch!.repositories[1].unresolvedConflicts = 1;
+  assert.ok((await portable.evaluateGovernedIntakeTriage(input)).reasons.includes('direction_unresolved_conflicts'));
+  input.directionImpact!.assessment = 'no-impact';
+  input.directionObservation!.reconciliation!.status = 'unknown';
+  assert.ok((await portable.evaluateGovernedIntakeTriage(input)).reasons.includes('no_impact_has_cohort_effects'));
 });

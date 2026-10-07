@@ -9,6 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadContract, generateTaskYaml, generateTaskMarkdown } from "../contracts/governed-intake-body.generate.ts";
 import { isTriagedChecklistLabel, CURRENT_TRIAGE_REVISION, GOVERNED_TRIAGE_CHECKLIST } from "../contracts/governed-intake-triage-state.evaluate.ts";
+import { planChecklistDelta } from "../contracts/governed-intake-triage-state.migrate.ts";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = loadContract();
@@ -72,4 +73,37 @@ test("the live task form projects the combined revision", () => {
   assert.match(live, /- progress:triage/);
   assert.match(live, /agent_unattested/);
   assert.equal(readFileSync(path.join(REPO, "contracts/generated/governed-intake/task.md"), "utf8"), generateTaskMarkdown(contract));
+});
+
+test("combined r22 to r23 delta preserves unchanged evidence, including after the #35 rescope", () => {
+  // Immutable r22 contract already captured by the consumer-pin incident replay.
+  const fixture = JSON.parse(readFileSync(path.join(REPO, "test/fixtures/consumer-pin/dotgithub-55-paired-with-code-8014.case.json"), "utf8"));
+  const blob = fixture.candidate.files["contracts/governed-intake-body.v1.json"];
+  const prior = JSON.parse(readFileSync(path.join(REPO, "test/fixtures/consumer-pin/blobs", blob), "utf8"));
+  assert.equal(prior.version, 22);
+  const delta = planChecklistDelta({ revision: prior.version, items: prior.triageChecklist.items },
+    { revision: contract.version, items }, {
+      completionVerified: true, completedItemIds: prior.triageChecklist.items.map((i: Item) => i.id),
+      staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [],
+    });
+  assert.deepEqual(delta.reevaluatedItems.map(i => i.id).sort(), [
+    "value-direction", "dedup-queue-synergy", "scope-decomposition", "higher-intelligence-handoff",
+    "confirm-receipt", "proposal-classification",
+  ].sort());
+  assert.equal(delta.reusedItemIds.length, items.length - 6);
+  assert.ok(delta.reusedItemIds.includes("priority-work-dimensions"));
+});
+
+test("#35 every-issue exhaustive gate is semantic source and appears in both task projections", () => {
+  const source = contract.triageChecklist.items.find(i => i.id === "value-direction")!;
+  assert.equal(source.semantics.questionScope, "every-triaged-issue");
+  assert.equal(source.semantics.directionChangeLabel, "metadata:direction-change");
+  assert.equal(source.semantics.materialImpactCompletion, "exhaustive-zero-unresolved-conflicts");
+  for (const text of [generateTaskYaml(contract), generateTaskMarkdown(contract)]) {
+    assert.match(text, /EVERY triaged issue/);
+    assert.match(text, /ALL open issues and PRs created before the causing issue/);
+    assert.match(text, /across EVERY repository/);
+    assert.match(text, /zero unresolved conflicts/);
+    assert.match(text, /metadata:direction-change/);
+  }
 });

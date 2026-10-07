@@ -224,7 +224,7 @@ block on "did it differently from the hint" alone.
 
 ## Proposal classification (revision 23)
 
-`type:proposal` is a standard type label (defined in Code's work-spine type taxonomy, `tools/work-spine/work-spine-contract.v1.json`). Triage applies it, in addition to any other type label, when an issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision, and removes it once that decision is recorded. It is descriptive only: it never blocks other work, creates a human gate, or changes priority. Revision 23 adds this as the `proposal-classification` checklist item, so delta re-triage of revision 22 issues evaluates only that new item.
+`type:proposal` is a standard type label (defined in Code's work-spine type taxonomy, `tools/work-spine/work-spine-contract.v1.json`). Triage applies it, in addition to any other type label, when an issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision, and removes it once that decision is recorded. It is descriptive only: it never blocks other work, creates a human gate, or changes priority. Revision 23 adds the `proposal-classification` checklist item alongside other changed obligations in the combined cutover. The producer's `planChecklistDelta` is authoritative for revision 22 → 23: re-evaluate added or changed items, independently stale evidence and observed changed-result dependents; carry forward unchanged valid evidence. A revision bump alone never requires full backlog re-triage.
 
 ## Revision 23: accepted taxonomy
 
@@ -251,7 +251,7 @@ Under [.github#32](https://github.com/spencer-shadley/.github/issues/32) and [co
 The `value-direction` and `dedup-queue-synergy` stable obligations consume direction-impact evidence
 through `evaluateGovernedIntakeTriage`, also exposed by the public completion API. The current
 contract's revision remains the only completion revision. See Code's [reusable audit](https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md)
-for neighborhood judgment and governed reconciliation.
+for exhaustive search judgment and governed reconciliation.
 
 Consumer adapters provide a `directionImpact` assessment and a separate `directionObservation`
 from actual server-fetched seed/thread identities, complete material decision evidence, source,
@@ -261,9 +261,24 @@ independently of the assessed receipt, adjudicate accepted/proposed/reversed dec
 the authoritative release before effects; this pure producer cannot authenticate arbitrary caller
 objects or fetch GitHub. Unsupported adapters and missing evidence stay pending.
 
-No-impact requires reasoned assessment and no cohort effects. Potential material impact requires
-the existing audit's exact frozen selection and verified readbacks, current publication identity,
-accepted causal decisions for changed dispositions, and conservation/relationship evidence.
+Every triaged issue answers the open-ended question: "Could this issue materially change direction,
+i.e. invalidate earlier issues?" No-impact requires reasoned assessment and no cohort effects.
+Yes/potential material impact requires the canonical `metadata:direction-change` label (no alias or
+dual write), and an exhaustive search of all open issues and PRs created before the causing issue
+across every repository, including bodies, acceptance criteria and all comments. This overrides
+ordinary progressive dedupe stopping rules. Rescope or close every conflict in the same audit step,
+citing the causing issue and its accepted decision; completion requires zero unresolved conflicts
+in exhaustive post-reconciliation readback.
+
+The adapter supplies `directionObservation.exhaustiveSearch` independently of the assessment:
+complete repository inventory and one complete issue/PR/body/comment readback per repository,
+initial conflict subjects, and zero unresolved counts after reconciliation. The search binds the
+server-fetched seed creation cutoff (`facts.seed.createdAt`), material facts, scope, publication,
+and the existing audit's exact settlement ID. Missing repositories, pagination gaps, inaccessible
+repositories, partial comments or unknown readbacks cannot certify completion. Every initial
+conflict must have a reconciled outcome in that same audit's frozen selection, with an accepted
+causal decision and conservation/relationship evidence. The pure evaluator validates this evidence
+contract; the consumer adapter owns exhaustive GitHub enumeration and semantic conflict judgment.
 Superseded valid outcomes require an independently read-back destination. Failed, launched,
 incomplete, unsupported and unknown results remain pending under the existing settlement identity.
 No label rename or checked box satisfies those obligations. The public completion API exposes
