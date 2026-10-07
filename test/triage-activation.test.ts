@@ -698,3 +698,16 @@ for (const surface of ["canonical", "portable"] as const) {
     assert.equal(fresh.implementationCandidate, true);
   });
 }
+
+test("public checklist API accepts lifecycle observation and exposes pending taxonomy obligations", async () => {
+  const { evaluateTriageChecklistState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
+  const current = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const semanticInput = { subject: actualIssue, ...observedNoImpact(), evidence: await verifiedEvidence("ordinary") };
+  const valid = await evaluateTriageChecklistState(current.body, current.labels, semanticInput);
+  assert.equal(valid.needs_triage, false);
+  const invalid = await completedBodyAndLabels([...dispositionLabels("ordinary"), "progress:verified"]);
+  const pending = await evaluateTriageChecklistState(invalid.body, invalid.labels, semanticInput);
+  assert.equal(pending.needs_triage, true);
+  assert.ok(pending.semantic_reasons!.includes("taxonomy_progress_cardinality"));
+  assert.ok(pending.unchecked_item_ids.includes("priority-work-dimensions"));
+});

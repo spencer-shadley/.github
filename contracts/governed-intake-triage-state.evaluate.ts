@@ -355,7 +355,7 @@ export function triageProjectionErrorMessage(state: TriageChecklistState): strin
 export async function evaluateTriageChecklistState(
   body: string,
   labels: readonly string[] = [],
-  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId" | "directionImpact" | "directionObservation">,
+  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId" | "directionImpact" | "directionObservation" | "taxonomyObservation">,
 ): Promise<TriageChecklistState & { semantic_reasons?: string[]; scope_resolved?: boolean }> {
   const structure = await evaluateTriageChecklistStructure(body, labels);
   if (!semanticInput) return { ...structure, needs_triage: true,
@@ -365,11 +365,13 @@ export async function evaluateTriageChecklistState(
   const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.ts");
   const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
   const directionPending = result.reasons.some(reason => reason.startsWith("direction_") || reason === "no_impact_has_cohort_effects");
+  const taxonomyPending = result.reasons.some(reason => reason.startsWith("taxonomy_"));
   const executionPending = result.reasons.some(reason => reason.startsWith("execution_"));
   return { ...structure, needs_triage: result.needsTriage,
     unchecked_item_ids: [...new Set([...structure.unchecked_item_ids,
       ...(result.scopeResolved ? [] : ["scope-decomposition"]),
       ...(executionPending ? ["cloud-runnable"] : []),
+      ...(taxonomyPending ? ["priority-work-dimensions"] : []),
       ...(directionPending ? ["value-direction", "dedup-queue-synergy"] : [])])],
     reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending" as const])] : structure.reasons,
     semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };
