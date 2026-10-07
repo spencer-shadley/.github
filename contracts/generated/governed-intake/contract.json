@@ -240,11 +240,30 @@
         ],
         "evidenceKeys": [
           "scope",
-          "rubric-meaning"
+          "rubric-meaning",
+          "taxonomy",
+          "lifecycle"
         ],
         "resultDependencies": [
           "scope-decomposition"
-        ]
+        ],
+        "semantics": {
+          "completionAuthority": "producer-taxonomy-validation-v1",
+          "subjectBinding": "server-fetched-issue-and-lifecycle-v1",
+          "requiredDimensions": [
+            "type",
+            "source",
+            "effort",
+            "priority:repo",
+            "priority:fleet",
+            "progress"
+          ],
+          "singleProgress": true,
+          "openResolutionCount": 0,
+          "resolvedResolutionCount": 1,
+          "deliveredRequires": "verified-acceptance",
+          "reopenInvalidatesAssessment": true
+        }
       },
       {
         "id": "verify-human-required",
@@ -420,7 +439,157 @@
     "retiredExecutionSubstrateLabels": [
       "cloud-ready",
       "local-required"
-    ]
+    ],
+    "taxonomy": {
+      "dimensions": {
+        "delivers": {
+          "labels": [
+            "delivers:agent-efficiency",
+            "delivers:human-efficiency",
+            "delivers:reliability",
+            "delivers:cost-efficiency",
+            "delivers:capability"
+          ],
+          "minimum": 0,
+          "maximum": null,
+          "meaning": "intended_benefits_not_measured_outcomes"
+        },
+        "type": {
+          "labels": [
+            "type:feature",
+            "type:bug",
+            "type:regression",
+            "type:migration",
+            "type:deletion",
+            "type:research",
+            "type:maintenance",
+            "type:proposal"
+          ],
+          "minimumAfterTriage": 1,
+          "maximum": null,
+          "regressionRequires": "prior_behavior_or_still_valid_decision_reference",
+          "researchConclusions": [
+            "positive",
+            "negative",
+            "inconclusive"
+          ]
+        },
+        "source": {
+          "labels": [
+            "source:human",
+            "source:runtime-signal",
+            "source:retro-skill",
+            "source:retro-bot",
+            "source:scheduled-task"
+          ],
+          "minimumAfterTriage": 1,
+          "maximum": null,
+          "dynamicPatterns": [
+            "^source:retro-skill:[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "^source:scheduled-task:[a-z0-9]+(?:-[a-z0-9]+)*$"
+          ],
+          "suffixAuthority": "governed_skill_or_stable_task_identity",
+          "meaning": "substantive_origin_or_contributing_evidence_not_routine_comments",
+          "exactRunsAndActors": "structured_evidence"
+        },
+        "effort": {
+          "labels": [
+            "effort:low",
+            "effort:medium",
+            "effort:high"
+          ],
+          "minimumAfterTriage": 1,
+          "maximum": 1
+        },
+        "priority:repo": {
+          "labels": [
+            "priority:repo:p0",
+            "priority:repo:p1",
+            "priority:repo:p2",
+            "priority:repo:p3",
+            "priority:repo:p4",
+            "priority:repo:p5"
+          ],
+          "minimumAfterTriage": 1,
+          "maximum": 1
+        },
+        "priority:fleet": {
+          "labels": [
+            "priority:fleet:p0",
+            "priority:fleet:p1",
+            "priority:fleet:p2",
+            "priority:fleet:p3",
+            "priority:fleet:p4",
+            "priority:fleet:p5"
+          ],
+          "minimumAfterTriage": 1,
+          "maximum": 1
+        },
+        "blocked": {
+          "labels": [
+            "blocked:time",
+            "blocked:human-required",
+            "blocked:issue"
+          ],
+          "minimum": 0,
+          "maximum": null,
+          "evidence": "active_condition_with_exact_release_predicate"
+        },
+        "environment": {
+          "labels": [
+            "environment:fleet-local"
+          ],
+          "minimum": 0,
+          "maximum": null,
+          "dynamicPatterns": [
+            "^environment:host:[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "^environment:hardware:[a-z0-9]+(?:-[a-z0-9]+)*$"
+          ],
+          "hostAuthority": "verified_FleetRegistryReleaseV1_host_id",
+          "hardwareAuthority": "governed_requirement_slug",
+          "meaning": "hard_execution_requirements_not_blockers_or_permission",
+          "andOrRequirements": "structured_execution_contract"
+        },
+        "progress": {
+          "labels": [
+            "progress:triage",
+            "progress:planned",
+            "progress:implementing",
+            "progress:reviewing",
+            "progress:implemented",
+            "progress:verified"
+          ],
+          "minimum": 1,
+          "maximum": 1
+        },
+        "decomp": {
+          "labels": [
+            "decomp:required",
+            "decomp:in-progress",
+            "decomp:complete",
+            "decomp:unnecessary"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "resolution": {
+          "labels": [
+            "resolution:delivered",
+            "resolution:duplicate",
+            "resolution:superseded",
+            "resolution:declined",
+            "resolution:obsolete"
+          ],
+          "minimumWhileOpen": 0,
+          "maximumWhileOpen": 0,
+          "minimumWhenResolved": 1,
+          "maximum": 1
+        }
+      },
+      "deliveredProgress": "progress:verified",
+      "nonDeliveryPreservesProgress": true,
+      "reopenInvalidatesAssessment": true
+    }
   },
   "taxonomyRanks": [
     "Subspecies",

@@ -64,7 +64,7 @@ for (const surface of ["canonical", "portable"] as const) {
     assert.ok(invalid.includes("taxonomy_delivered_requires_verified_progress"));
     replace(input, "progress:planned", "progress:verified");
     assert.ok((await evaluate(input)).includes("taxonomy_verified_acceptance_required"));
-    input.evidence.acceptance = acceptance;
+    input.evidence.acceptance = structuredClone(acceptance);
     assert.ok((await evaluate(input)).includes("taxonomy_resolution_cardinality"), "verified delivery is still invalid while open");
     input.labels = input.labels.filter(label => !label.startsWith("resolution:"));
     assert.deepEqual(await evaluate(input), [], "verified open work is allowed with real acceptance");

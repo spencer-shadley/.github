@@ -4,24 +4,24 @@
   "revision": 23,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "8345cc93730f3310c1315470364064e69f73e1d5"
+    "commit": "c1ce798e9d0bb2308aeb242166df0a34befe95a7"
   },
-  "payloadDigest": "bdc013e681c41b1b3884e448e12441c1805e6c86a97a5c8273a4544ac29637b0",
+  "payloadDigest": "fc513693d13e8aa9bb95ede6e255e0130903037be9ce6db9bfa37ecda0564827",
   "files": {
     "compose.js": {
       "path": "compose.js",
-      "sha256": "776ab27d5e8593d53c2393a597199e136e0a51827a185823966639dbd1649407",
-      "byteLength": 27135
+      "sha256": "a2f3d410aeb6a70df45d6699e3cf18f4912cbc2b87a210013550600a32a16a5e",
+      "byteLength": 27670
     },
     "compose.ts": {
       "path": "compose.ts",
-      "sha256": "61fe1fc415f93cd85815583efa28ef83085d0d9a733dd98c856ef151a0c26d44",
-      "byteLength": 27135
+      "sha256": "9addb23c59998d4b2bd0ab8f7ebef0b19bf01387e0ea6e3b10cfb4d4c556850d",
+      "byteLength": 27670
     },
     "contract.json": {
       "path": "contract.json",
-      "sha256": "9e473722e388d9de8991cbbfe032a26fd59fe5a5d0d858ac5af48a9331ce507e",
-      "byteLength": 31650
+      "sha256": "b499ad7960b3f5ae2a66e781bbbbc81d54f41dd8c3502e0a07808be3acada241",
+      "byteLength": 36739
     },
     "delta-planner.js": {
       "path": "delta-planner.js",
@@ -75,8 +75,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "9e473722e388d9de8991cbbfe032a26fd59fe5a5d0d858ac5af48a9331ce507e",
-      "byteLength": 31650
+      "sha256": "b499ad7960b3f5ae2a66e781bbbbc81d54f41dd8c3502e0a07808be3acada241",
+      "byteLength": 36739
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -102,6 +102,16 @@
       "path": "governed-intake-task-profile.v1.json",
       "sha256": "ab05f35b94e44548dbfeff42820668bb1bea9816d5d7e23301e7e93a2644bacb",
       "byteLength": 6169
+    },
+    "governed-intake-taxonomy.evaluate.js": {
+      "path": "governed-intake-taxonomy.evaluate.js",
+      "sha256": "bb341d58cf64345cbf78aaff6f3b997b07be3263d6e619b412652c6566278160",
+      "byteLength": 7298
+    },
+    "governed-intake-taxonomy.evaluate.ts": {
+      "path": "governed-intake-taxonomy.evaluate.ts",
+      "sha256": "f48a3bd50351df117f035d943f5248b7b4b2943cc3f8746873bfd87f4590d641",
+      "byteLength": 7298
     },
     "governed-intake-triage-policy.evaluate.js": {
       "path": "governed-intake-triage-policy.evaluate.js",
@@ -140,13 +150,13 @@
     },
     "governed-intake-triage.compose.js": {
       "path": "governed-intake-triage.compose.js",
-      "sha256": "776ab27d5e8593d53c2393a597199e136e0a51827a185823966639dbd1649407",
-      "byteLength": 27135
+      "sha256": "a2f3d410aeb6a70df45d6699e3cf18f4912cbc2b87a210013550600a32a16a5e",
+      "byteLength": 27670
     },
     "governed-intake-triage.compose.ts": {
       "path": "governed-intake-triage.compose.ts",
-      "sha256": "61fe1fc415f93cd85815583efa28ef83085d0d9a733dd98c856ef151a0c26d44",
-      "byteLength": 27135
+      "sha256": "9addb23c59998d4b2bd0ab8f7ebef0b19bf01387e0ea6e3b10cfb4d4c556850d",
+      "byteLength": 27670
     },
     "policy-binding.js": {
       "path": "policy-binding.js",
@@ -198,6 +208,16 @@
       "sha256": "3195107a86c317df3fa5a4e62efb8249f4403824fa29d6184ac1c5ac12a987b9",
       "byteLength": 23240
     },
+    "taxonomy-evaluator.js": {
+      "path": "taxonomy-evaluator.js",
+      "sha256": "bb341d58cf64345cbf78aaff6f3b997b07be3263d6e619b412652c6566278160",
+      "byteLength": 7298
+    },
+    "taxonomy-evaluator.ts": {
+      "path": "taxonomy-evaluator.ts",
+      "sha256": "f48a3bd50351df117f035d943f5248b7b4b2943cc3f8746873bfd87f4590d641",
+      "byteLength": 7298
+    },
     "triage-evaluator.js": {
       "path": "triage-evaluator.js",
       "sha256": "127c49a533959096f1dadc7c5bb789022b5be14441c49b1f46c82808cea2f951",
@@ -220,7 +240,7 @@
     }
   },
   "build": {
-    "runtime": "v24.19.0",
+    "runtime": "v24.21.0",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }

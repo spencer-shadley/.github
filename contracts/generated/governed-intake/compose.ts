@@ -12,6 +12,7 @@
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
 import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson, type DirectionFacts, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
+import { evaluateTaxonomy, type TaxonomyEvidence, type TaxonomyObservation } from "./governed-intake-taxonomy.evaluate.ts";
 export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.ts";
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
 import {
@@ -167,6 +168,7 @@ export type SemanticEvidenceInput =
       trusted: PolicySnapshot["trusted"];
       /** Required for revision-23 completion. Missing/older adapters remain typed pending. */
       execution?: ExecutionEvidence;
+      taxonomy?: TaxonomyEvidence;
     };
 
 /**
@@ -187,6 +189,8 @@ export interface ComposedTriageInput {
   directionImpact?: DirectionImpactReceipt;
   /** Fetched independently by the authoritative consumer adapter, never from directionImpact. */
   directionObservation?: DirectionObservation;
+  /** Independently fetched current issue state and latest lifecycle transition. */
+  taxonomyObservation?: TaxonomyObservation;
 }
 
 export interface ComposedTaskProfileResult {
@@ -319,6 +323,10 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   } catch { reasons.push("missing_or_invalid_subject_identity"); }
   if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
   if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
+
+  reasons.push(...evaluateTaxonomy({ labels: input.labels, subject: input.subject, state: evidence.state,
+    workUnitKey: actualKey.key, scopeFingerprint: actualScope,
+    observation: input.taxonomyObservation, evidence: evidence.taxonomy }));
 
   const execution = evidence.execution;
   if (!execution) reasons.push("execution_evidence_required");

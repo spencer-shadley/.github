@@ -12,6 +12,7 @@
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
 import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson,                                            } from "./governed-intake-policy-binding.js";
+import { evaluateTaxonomy,                                                 } from "./governed-intake-taxonomy.evaluate.js";
 export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.js";
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey,                             } from "./governed-intake-body.evaluate.js";
 import {
@@ -167,6 +168,7 @@ export function currentChecklistRelease()                   {
                                          
                                                                                               
                                     
+                                  
       
 
 /**
@@ -187,6 +189,8 @@ export function currentChecklistRelease()                   {
                                            
                                                                                                  
                                               
+                                                                                   
+                                            
  
 
                                             
@@ -319,6 +323,10 @@ export async function evaluateGovernedIntakeTriage(input                     )  
   } catch { reasons.push("missing_or_invalid_subject_identity"); }
   if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
   if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
+
+  reasons.push(...evaluateTaxonomy({ labels: input.labels, subject: input.subject, state: evidence.state,
+    workUnitKey: actualKey.key, scopeFingerprint: actualScope,
+    observation: input.taxonomyObservation, evidence: evidence.taxonomy }));
 
   const execution = evidence.execution;
   if (!execution) reasons.push("execution_evidence_required");
