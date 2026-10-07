@@ -18,6 +18,22 @@
     "default"
   ],
   "commands": {
+    "consumer-pin-gate": {
+      "name": "consumer-pin-gate",
+      "executable": "node",
+      "args": [
+        "--experimental-strip-types",
+        "contracts/governed-intake-consumer-pin.gate.ts"
+      ],
+      "shell": "none",
+      "cwd": ".",
+      "timeoutSeconds": 300,
+      "expectedExitCode": 0,
+      "failureDisposition": "fail-gate",
+      "detectionProof": {
+        "exempt": "Runs at the exact PR head before any merge effect (spencer-shadley/code#8036). A PR that changes none of contracts/generated/governed-intake/**, contracts/governed-intake-body.v1.json or .github/ISSUE_TEMPLATE/task.yml passes offline with no reads. A release-touching PR exits 0 only when Code master and the deployed github-mcp-worker both admit its release; refusal exits 1 and an unreadable input exits 2. test/consumer-pin-gate.test.ts replays .github#40, #43 and #55 through this entrypoint."
+      }
+    },
     "authoritative-gate": {
       "name": "verify",
       "executable": "node",
@@ -32,7 +48,7 @@
       "expectedExitCode": 0,
       "failureDisposition": "fail-gate",
       "detectionProof": {
-        "exempt": "node --test exits non-zero when any test fails; test/published-release.test.ts fails when released payload bytes differ from the published manifest (.github#43)."
+        "exempt": "node --test exits non-zero when any test fails; test/published-release.test.ts fails when released payload bytes differ from the published manifest (.github#43); test/consumer-pin-admission.test.ts fails when recorded worker pins refuse a release (spencer-shadley/code#8013, replaying .github#40 and #43)."
       }
     }
   },
@@ -56,10 +72,10 @@
     ],
     "requiredEnvVars": [],
     "requiredCredentials": [],
-    "networkExpectation": "offline-only"
+    "networkExpectation": "outbound-allowed"
   },
   "effects": {
-    "credentialsAccess": false,
+    "credentialsAccess": true,
     "networkProviderAccess": false,
     "providerSpend": false,
     "externalMutation": false,
