@@ -9,6 +9,8 @@
     "test:task-profile": "node --experimental-strip-types --test test/task-profile.test.ts",
     "task-profile:generate": "node --experimental-strip-types contracts/governed-intake-task-profile.generate.ts",
     "task-profile:check": "node --experimental-strip-types contracts/governed-intake-task-profile.generate.ts --check",
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "release:check": "node --experimental-strip-types contracts/governed-intake-body.release.ts --check",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "verify": "npm test"
   }
 }
