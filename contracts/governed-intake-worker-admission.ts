@@ -2,7 +2,8 @@
  *
  * This is the consumer's own decision procedure, copied check-for-check from
  * spencer-shadley/code `tools/github-mcp-worker/src/triage-checklist-state.ts`
- * (`resolveGovernedIntakeRuntime`, `verifyLiveManifest`, `verifyProducerPayload`)
+ * (`resolveGovernedIntakeRuntime`, `verifyLiveManifest`, `verifyProducerPayload`, and the helpers
+ * they call: `decodeProducerContent`, `sha256Utf8`, `requireString`, plus the PRODUCER_* constants)
  * at the commit recorded in VENDORED_WORKER_RESOLUTION. It answers one question
  * offline and deterministically: would the deployed worker, built from a given
  * set of consumer pins and caches, refuse this producer release?
@@ -37,14 +38,24 @@ export const PRODUCER_TASK_FORM_PATH = ".github/ISSUE_TEMPLATE/task.yml" as cons
 export const VENDORED_WORKER_RESOLUTION = {
   repository: "spencer-shadley/code",
   path: "tools/github-mcp-worker/src/triage-checklist-state.ts",
-  commit: "b6ecfbf7cab9fdfbdf71af7e7ac912d3dc6af338",
+  commit: "2a1f411b7cadfbb57d38c59100238fb76abe0d76",
   blobSha: "653aa1f3602f447586f0ca8f33603091e7eb2e1e",
+  /** Every worker function the resolution path runs, helpers included (.github#57 review). */
   functions: {
+    requireString: "9e1c4f5927bdb40a4f1de4c56ff5d5ce86339be2f22cf53a6271fb0aac88c8d9",
+    sha256Utf8: "ea4476dec1b3d1a989ce48ef38925bfbadfde1e9dbc043757bb9cb424652a5f0",
+    decodeProducerContent: "21a9ece172e0daf76f53feffff553da039f451e9208d322eedb057ab34e2be22",
     verifyProducerPayload: "8fc590015083635920b514371ff8b826ffb2691fd76069a6e21c61295ad67fb4",
     verifyLiveManifest: "d012432ffe78317dc43659d79696b4fdd992308f3f2d1a4f539122302b0b0d9a",
     resolveGovernedIntakeRuntime: "96b96c683342b04d482d00a0c7877687b2d7f9433268367ea8154fb76e3be98b",
   },
+  /** Module constants those functions compare against, fingerprinted by their declaration line. */
+  declarations: {
+    PRODUCER_REPOSITORY: "4a7a284d07c0a100f7bbeadd4cf64bc12d992b9af46b043571eff59fc96f5f07",
+    PRODUCER_SOURCE_PATH: "ed7f389e5d71a2dbe159cf9faab5497e3778fa3c9043a04cc0726d8c00e74f7c",
+  },
 } as const;
+export type VendoredWorkerResolution = { functions: Readonly<Record<string, string>>; declarations: Readonly<Record<string, string>> };
 
 export type WorkerPin = {
   schema: string;
@@ -209,11 +220,30 @@ export function extractWorkerFunction(source: string, name: string): string | nu
   return lines.slice(start, end + 1).map((line) => line.trimEnd()).join("\n");
 }
 
-/** Mirrored functions whose current worker text differs from the vendored fingerprint. */
-export function workerResolutionDrift(source: string): Array<{ function: string; expected: string; actual: string | null }> {
-  return Object.entries(VENDORED_WORKER_RESOLUTION.functions).flatMap(([name, expected]) => {
-    const text = extractWorkerFunction(source, name);
+/** One top-level `const NAME` declaration line in the worker source, normalized for fingerprinting. */
+export function extractWorkerDeclaration(source: string, name: string): string | null {
+  const line = source.replace(/\r\n/g, "\n").split("\n").find((candidate) => new RegExp(`^(export )?const ${name}\\b`).test(candidate));
+  return line === undefined ? null : line.trimEnd();
+}
+
+/** Every fingerprint in `VENDORED_WORKER_RESOLUTION.functions` and `.declarations` as a source would produce it. */
+export function fingerprintWorkerSource(source: string, names: VendoredWorkerResolution = VENDORED_WORKER_RESOLUTION): VendoredWorkerResolution {
+  const hash = (text: string | null) => (text === null ? "missing" : sha256Hex(text));
+  return {
+    functions: Object.fromEntries(Object.keys(names.functions).map((name) => [name, hash(extractWorkerFunction(source, name))])),
+    declarations: Object.fromEntries(Object.keys(names.declarations).map((name) => [name, hash(extractWorkerDeclaration(source, name))])),
+  };
+}
+
+/** Mirrored functions and constants whose current worker text differs from the vendored fingerprint. */
+export function workerResolutionDrift(source: string, vendored: VendoredWorkerResolution = VENDORED_WORKER_RESOLUTION): Array<{ function: string; expected: string; actual: string | null }> {
+  const drift = (extract: (name: string) => string | null, table: Readonly<Record<string, string>>) => Object.entries(table).flatMap(([name, expected]) => {
+    const text = extract(name);
     const actual = text === null ? null : sha256Hex(text);
     return actual === expected ? [] : [{ function: name, expected, actual }];
   });
+  return [
+    ...drift((name) => extractWorkerFunction(source, name), vendored.functions),
+    ...drift((name) => extractWorkerDeclaration(source, name), vendored.declarations),
+  ];
 }

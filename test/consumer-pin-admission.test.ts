@@ -12,7 +12,7 @@ import {
   CONSUMER_FILES, evaluateConsumerPinGate, loadRecordedCase, main, parsePairingTrailer, type GateInput,
 } from "../contracts/governed-intake-consumer-pin.check.ts";
 import {
-  VENDORED_WORKER_RESOLUTION, extractWorkerFunction, gitBlobSha, resolveWorkerAdmission, sha256Hex, workerResolutionDrift,
+  VENDORED_WORKER_RESOLUTION, extractWorkerDeclaration, extractWorkerFunction, fingerprintWorkerSource, gitBlobSha, resolveWorkerAdmission, sha256Hex, workerResolutionDrift,
 } from "../contracts/governed-intake-worker-admission.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -160,7 +160,8 @@ test("worker-rule drift detection flags a changed or missing mirrored function",
   const text = extractWorkerFunction(source, "verifyLiveManifest");
   assert.equal(text, "function verifyLiveManifest(value) {\n  return value;\n}");
   const drift = workerResolutionDrift(source);
-  assert.deepEqual(drift.map((entry) => entry.function).sort(), Object.keys(VENDORED_WORKER_RESOLUTION.functions).sort());
+  assert.deepEqual(drift.map((entry) => entry.function).sort(),
+    [...Object.keys(VENDORED_WORKER_RESOLUTION.functions), ...Object.keys(VENDORED_WORKER_RESOLUTION.declarations)].sort());
   assert.equal(drift.find((entry) => entry.function === "verifyLiveManifest")?.actual, sha256Hex(text!));
   assert.equal(drift.find((entry) => entry.function === "verifyProducerPayload")?.actual, null);
 });
@@ -178,4 +179,27 @@ test("the CLI replays recorded cases with gate exit codes", () => {
   }
   assert.match(lines.join(""), /verdict: refused/);
   assert.match(lines.join(""), /verdict: admitted/);
+});
+
+test("fingerprints cover every helper the resolution path copies, and a mutated helper or constant is drift (.github#57 review)", () => {
+  assert.deepEqual(Object.keys(VENDORED_WORKER_RESOLUTION.functions).sort(),
+    ["decodeProducerContent", "requireString", "resolveGovernedIntakeRuntime", "sha256Utf8", "verifyLiveManifest", "verifyProducerPayload"]);
+  assert.deepEqual(Object.keys(VENDORED_WORKER_RESOLUTION.declarations).sort(), ["PRODUCER_REPOSITORY", "PRODUCER_SOURCE_PATH"]);
+  // A worker-shaped source: every mirrored function and constant, so only a mutation can differ.
+  const source = [
+    'const PRODUCER_REPOSITORY = "spencer-shadley/.github" as const;',
+    'const PRODUCER_SOURCE_PATH = "contracts/governed-intake-body.v1.json" as const;',
+    ...Object.keys(VENDORED_WORKER_RESOLUTION.functions).map((name) => `export function ${name}(value: string): string {\n  return value;\n}`),
+  ].join("\n");
+  const recorded = fingerprintWorkerSource(source);
+  assert.deepEqual(workerResolutionDrift(source, recorded), []);
+  assert.equal(extractWorkerDeclaration(source, "PRODUCER_REPOSITORY"), 'const PRODUCER_REPOSITORY = "spencer-shadley/.github" as const;');
+  assert.equal(recorded.declarations.PRODUCER_REPOSITORY, VENDORED_WORKER_RESOLUTION.declarations.PRODUCER_REPOSITORY, "the constant line is the worker's");
+  assert.equal(recorded.declarations.PRODUCER_SOURCE_PATH, VENDORED_WORKER_RESOLUTION.declarations.PRODUCER_SOURCE_PATH);
+  const helper = source.replace("export function decodeProducerContent(value: string): string {\n  return value;", "export function decodeProducerContent(value: string): string {\n  return value.trim();");
+  assert.deepEqual(workerResolutionDrift(helper, recorded).map((entry) => entry.function), ["decodeProducerContent"]);
+  const removed = source.replace("export function requireString(", "export function requireStringOrEmpty(");
+  assert.deepEqual(workerResolutionDrift(removed, recorded).map((entry) => [entry.function, entry.actual]), [["requireString", null]]);
+  const constant = source.replace('"spencer-shadley/.github" as const', '"spencer-shadley/github" as const');
+  assert.deepEqual(workerResolutionDrift(constant, recorded).map((entry) => entry.function), ["PRODUCER_REPOSITORY"]);
 });
