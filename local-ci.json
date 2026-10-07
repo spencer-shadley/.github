@@ -32,7 +32,7 @@
       "expectedExitCode": 0,
       "failureDisposition": "fail-gate",
       "detectionProof": {
-        "exempt": "node --test exits non-zero when any test fails; test/published-release.test.ts fails when released payload bytes differ from the published manifest (.github#43)."
+        "exempt": "node --test exits non-zero when any test fails; test/published-release.test.ts fails when released payload bytes differ from the published manifest (.github#43); test/consumer-pin-admission.test.ts fails when recorded worker pins refuse a release (spencer-shadley/code#8013, replaying .github#40 and #43)."
       }
     }
   },

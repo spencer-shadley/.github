@@ -134,6 +134,22 @@ The manifest's `producer.commit` then names the pre-squash branch commit; that i
 not compared. `npm run release:check` (also part of `test/*.test.ts`) recomputes every payload
 digest and byteLength from the tree and fails, naming the file, when the manifest was not republished.
 
+A release change must also be admitted by Code's deployed GitHub MCP Worker
+([code#8013](https://github.com/spencer-shadley/code/issues/8013)). Its worker pins one identity
+per revision and refuses anything else (`commit_mismatch`, `digest_mismatch`, `corrupt_file`).
+Before merging a pull request that touches the release, run
+`npm run consumer-pin:check -- --pr <this PR number>`. It reads Code `master`'s worker pins at one
+exact commit and runs the candidate through the worker's own resolution, vendored in
+`contracts/governed-intake-worker-admission.ts`. It fails closed if the worker's rules changed
+since vendoring. It passes when Code already admits the release, or when the manifest is unchanged
+and the refusal is pre-existing. Otherwise it passes only when the PR body names a ready consumer PR
+on its own line as `Consumer-Pin-Pair: spencer-shadley/code#<number>` and that PR's head pins admit
+this exact release. The check then prints the merge order: the Code PR first. A new revision lands
+in the worker's prepared slot with no outage. A same-revision republish has a short paired window.
+`--consumer-git <code clone>` reads over git instead of the REST quota.
+`test/consumer-pin-admission.test.ts` replays recorded snapshots offline in the gate, including
+the .github#40 and .github#43 outages, which must stay refused.
+
 A new semantic revision requires current-revision triage evidence, not automatic re-execution of
 all prior reasoning. The implementation tracked by
 [code#6449](https://github.com/spencer-shadley/code/issues/6449) must carry forward unchanged valid
