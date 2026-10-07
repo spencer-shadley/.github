@@ -116,9 +116,9 @@ test("governed key preserves canonical identity case and length-framed Unicode n
   assert.equal(a, b);
   assert.notEqual(a, computeGovernedWorkUnitKey({ ...identity, canonicalWorkUnitIdentity: "café" }));
 });
-test("current checklist still requires fingerprint, completed items and exactly one substrate", async () => {
+test("current checklist requires fingerprint and completed items and rejects retired substrate labels", async () => {
   const body = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
-  const labels = [CURRENT_TRIAGED_LABEL, "cloud-ready", "effort:medium", "tier:auto"];
+  const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
   const completed = body + "\n" + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
   assert.equal((await evaluateTriageChecklistState(completed, labels)).needs_triage, false);
   assert.equal((await evaluateTriageChecklistState(completed, [...labels, "local-required"])).needs_triage, true);
@@ -330,7 +330,7 @@ const directionHash = (letter: string) => `sha256:${letter.repeat(64)}`;
 async function directionFixture(material = false): Promise<ComposedTriageInput> {
   const subject = { repository: 'spencer-shadley/.github', issueNumber: 35, title: 'Direction-impact producer' };
   const body = validBody() + '\n' + renderTriageChecklistBlock({ checked: true });
-  const labels = [CURRENT_TRIAGED_LABEL, 'effort:medium', 'decomp-not-needed', 'cloud-ready', 'tier:auto'];
+  const labels = [CURRENT_TRIAGED_LABEL, 'effort:medium', 'decomp:unnecessary'];
   if (material) labels.push('metadata:direction-change');
   const completed = body + '\n' + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
   const scopeFingerprint = fingerprintIssueScope({ ...subject, body: completed });
@@ -364,7 +364,7 @@ async function directionFixture(material = false): Promise<ComposedTriageInput> 
     })),
     conflictSubjects: [{ repository: 'spencer-shadley/code', issueNumber: 7472 }],
   };
-  return { subject, body: completed, labels, evidence: { kind: 'adapter-verified', workUnitKey, scopeFingerprint, assessment,
+  return { subject, body: completed, labels, evidence: { kind: 'adapter-verified', execution: { workUnitKey, scopeFingerprint, revision: c.version, stage: 'implement', cloudReadiness: { status: 'ready', reason: 'Versioned source and test fixtures.', localVerificationRequired: false }, environment: { allOf: [] } }, workUnitKey, scopeFingerprint, assessment,
     state: 'open', repositoryActive: true, priorHighEffort: false, requiresQualifiedAssessment: false, currentGraphFingerprint: null,
     hasExecutableChildGraph: false, finalAttributesScopeFingerprint: scopeFingerprint, directionEvidenceFresh: true,
     trusted: { admissions: [], graphs: [], requiredCapabilities: { 'scope-assessment': 'floor', 'atomic-confirmation': 'floor', implementation: 'floor' } } },

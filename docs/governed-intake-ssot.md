@@ -248,6 +248,33 @@ Under [.github#32](https://github.com/spencer-shadley/.github/issues/32) and [co
 
 ## Direction-impact semantic completion
 
+### Revision-23 work shape and execution evidence
+
+The producer projects ordinary and atomic-high leaves to `decomp:unnecessary`, and a validated
+tracking parent to `decomp:complete`. The adapter-verified assessment distinguishes these shapes;
+shared label spelling never replaces the effort rubric, atomic invariant, qualified parent
+assessment or current child-graph receipt. `decomp:required` and `decomp:in-progress` cannot complete
+triage. The second-opinion encouragement and validation rules remain unchanged.
+
+Revision 23 has no execution-substrate label pair (`executionSubstrateLabels` is empty). Consumers
+provide `evidence.execution` to the public composition API, bound to the actual work-unit key,
+scope fingerprint and current revision, with `stage: "implement"`. Its `cloudReadiness` preserves
+the existing `ready` / `not-ready` / `unknown` assessment, a reason, and an explicit
+`localVerificationRequired` boolean; when true it also requires a concrete `localFollowUp` reference.
+Its `environment` carries `allOf` requirements and optional `anyOf` alternative groups using the
+accepted `environment:fleet-local`, `environment:host:<verified-host-id>` and
+`environment:hardware:<governed-slug>` vocabulary. Adapters verify current facts and provenance.
+Only unconditional `allOf` requirements project to labels; alternatives stay structured. A local
+implementation requires `environment:fleet-local` in `allOf`; cloud implementation carries no local
+implementation requirements but may have a separate local verification stage. A parent assesses its
+own scope, without inheriting its children's requirements. These facts never grant effects.
+
+Missing, unsupported, stale or unknown evidence remains pending; the public checklist API exposes
+`cloud-runnable` as pending for execution-evidence failures. Retired substrate labels are refused,
+with no alias or label-based fallback. Historical revision-22 release bytes remain unchanged until
+coordinated publication. Consumers must prepare and read back the corrected immutable candidate;
+an earlier candidate identity does not establish parity with this interface.
+
 The `value-direction` and `dedup-queue-synergy` stable obligations consume direction-impact evidence
 through `evaluateGovernedIntakeTriage`, also exposed by the public completion API. The current
 contract's revision remains the only completion revision. See Code's [reusable audit](https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md)

@@ -56,7 +56,9 @@ const reason = (actual: { reasons: string[] }, expected: string) => assert.ok(ac
 test('source contract has one coherent vocabulary, ordinary/atomic/parent outcomes and no progress state', () => {
   assertTriagePolicy(policy);
   assert.deepEqual(policy.dispositions['atomic-high'].efforts, ['high']);
-  assert.deepEqual(policy.dispositions['atomic-high'].labels, ['decomp-atomic']);
+  assert.deepEqual(policy.dispositions['atomic-high'].labels, ['decomp:unnecessary']);
+  assert.deepEqual(policy.dispositions.ordinary.labels, ['decomp:unnecessary']);
+  assert.deepEqual(policy.dispositions.parent.labels, ['decomp:complete']);
   assert.equal(policy.dispositions.parent.trackingOnly, true);
   assert.ok(!Object.values(policy.dispositions).flatMap(item => item.labels).includes('decomp-in-progress'));
 });
@@ -93,7 +95,7 @@ test('cleanup removes only the retired projection, never children/provenance/eff
 });
 for (const kind of ['ordinary', 'atomic-high', 'parent'] as const) {
   test(`${kind} pending obligation cannot be stamped complete`, async () => {
-    const s = await snapshot(kind); s.labels.push('decomp-needed');
+    const s = await snapshot(kind); s.labels.push('decomp:required');
     const result = await evaluateTriagePolicy(release, s);
     assert.equal(result.needsTriage, true); reason(result, 'unresolved_decomposition_obligation');
   });
@@ -144,7 +146,7 @@ for (const labels of [['decomp-not-needed', 'effort:high'], ['decomp-atomic', 'e
     reason(await evaluateTriagePolicy(release, s), 'effort_disposition_mismatch');
   });
 }
-for (const label of ['decomp', 'epic', 'decomp-not-needed']) {
+for (const label of ['decomp:complete', 'decomp:unnecessary']) {
   test(`atomic cannot coexist with ${label}`, async () => {
     const s = await snapshot('atomic-high'); s.labels.push(label);
     reason(await evaluateTriagePolicy(release, s), 'conflicting_or_missing_disposition_labels');
@@ -385,7 +387,7 @@ test('new unlabeled issue can resolve scope before publishing final effort/shape
   reason(result, 'effort_not_exactly_one');
 });
 test('validated replacement evidence can resolve shape while old labels still require reconciliation', async () => {
-  const s = await snapshot('atomic-high'); s.labels = ['decomp-not-needed', 'effort:high', 'decomp-needed'];
+  const s = await snapshot('atomic-high'); s.labels = ['decomp:complete', 'effort:high', 'decomp:required'];
   const result = await evaluateTriagePolicy(release, s);
   assert.equal(result.scopeResolved, true); assert.equal(result.needsTriage, true);
   reason(result, 'conflicting_or_missing_disposition_labels');

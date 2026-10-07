@@ -88,9 +88,9 @@ test("combined r22 to r23 delta preserves unchanged evidence, including after th
     });
   assert.deepEqual(delta.reevaluatedItems.map(i => i.id).sort(), [
     "value-direction", "dedup-queue-synergy", "scope-decomposition", "higher-intelligence-handoff",
-    "confirm-receipt", "proposal-classification",
+    "confirm-receipt", "proposal-classification", "cloud-runnable",
   ].sort());
-  assert.equal(delta.reusedItemIds.length, items.length - 6);
+  assert.equal(delta.reusedItemIds.length, items.length - 7);
   assert.ok(delta.reusedItemIds.includes("priority-work-dimensions"));
 });
 

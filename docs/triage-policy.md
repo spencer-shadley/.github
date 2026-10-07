@@ -2,7 +2,7 @@
 # Adopted triage policy
 
 Source: [governed-intake-triage-policy.v1.json](../contracts/governed-intake-triage-policy.v1.json), policy version 1, rubric version 1.
-Source bytes: `sha256:877957b3ef9372b98aac6df8f334a4f80b055048d78549447f793d31b94d6b77`. This is a source digest, not a deployment receipt.
+Source bytes: `sha256:4de4014c236f20ec10c5d4dffd772e68d51e65ceee3db1053a0ae05554d01c39`. This is a source digest, not a deployment receipt.
 
 **Activation boundary:** this is a governed-intake source constituent. The producer release
 packages this policy with `evaluateGovernedIntakeTriage`, but checked boxes are not completed
@@ -25,15 +25,15 @@ Child triage does not require a parent completion stamp. Implementation admissio
 
 | Disposition | Label projection | Effort | Tracking only | Qualified assessment | Independent confirmation | Second opinion |
 |---|---|---|---|---|---|---|
-| ordinary | `decomp-not-needed` | low, medium | false | false | false | n/a |
-| atomic-high | `decomp-atomic` | high | false | true | true | encouraged |
-| parent | `decomp` + `epic` | low, medium, high | true | true | false | required |
+| ordinary | `decomp:unnecessary` | low, medium | false | false | false | n/a |
+| atomic-high | `decomp:unnecessary` | high | false | true | true | encouraged |
+| parent | `decomp:complete` | low, medium, high | true | true | false | required |
 
 The two receipt columns name which second-opinion receipts apply to a disposition. They gate completion only where the last column says required; where it says encouraged, an absent receipt does not block and a supplied one is checked in full.
 
-Pending assessment is `decomp-needed`; missing labels do not make unresolved evidence disappear.
+Pending assessment is `decomp:required`; missing labels do not make unresolved evidence disappear.
 Retired progress labels: `decomp-in-progress`.
-Unsupported terminal synonyms: `decomp-not-possible`, `cannot-decomp`, `decomp-complete`.
+Unsupported terminal synonyms: `decomp-not-possible`, `cannot-decomp`, `decomp-complete`, `decomp-not-needed`, `decomp-atomic`, `decomp`, `epic`, `decomp-needed`, `decomp:in-progress`.
 
 ## Effort rubric
 

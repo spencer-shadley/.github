@@ -156,12 +156,13 @@ async function verifiedEvidence(disposition: Assessment["disposition"]): Promise
     finalAttributesScopeFingerprint: subject.scopeFingerprint,
     directionEvidenceFresh: true,
     trusted,
+    execution: { ...subject, revision: contract.version, stage: "implement", cloudReadiness: { status: "ready", reason: "Versioned source and fixtures are available remotely.", localVerificationRequired: false }, environment: { allOf: [] } },
   };
 }
 
 function dispositionLabels(disposition: Assessment["disposition"]): string[] {
   const effort = disposition === "ordinary" ? "medium" : "high";
-  return [...bound.policy.dispositions[disposition].labels, bound.policy.effortRubric.labels[effort], "cloud-ready", "tier:auto"];
+  return [...bound.policy.dispositions[disposition].labels, bound.policy.effortRubric.labels[effort]];
 }
 
 test("current semantic revision binds scope before final attributes", () => {
@@ -255,7 +256,7 @@ test("feature projection drops cadence, combined discovery, and registry/shed ch
 });
 
 test("checked boxes without semantic evidence cannot report completed triage", async () => {
-  const { body, labels } = await completedBodyAndLabels(["cloud-ready", "effort:medium", "tier:auto", "decomp-not-needed"]);
+  const { body, labels } = await completedBodyAndLabels(["effort:medium", "decomp:unnecessary"]);
   assert.equal((await evaluateTriageChecklistState(body, labels)).needs_triage, false);
   assert.deepEqual(validateGovernedIntakeBody(body), { ok: true, schemaVersion: "governed-intake-body-v1" });
   const result = await evaluateGovernedIntakeTriage({ body, labels, evidence: { kind: "missing" } });
@@ -268,7 +269,7 @@ test("checked boxes without semantic evidence cannot report completed triage", a
 });
 
 test("unsupported consumers fail closed instead of completing from local boxes", async () => {
-  const { body, labels } = await completedBodyAndLabels(["cloud-ready", "effort:medium", "tier:auto"]);
+  const { body, labels } = await completedBodyAndLabels(["effort:medium"]);
   const result = await evaluateGovernedIntakeTriage({
     body, labels, evidence: { kind: "unsupported", consumer: "legacy-v17-cache", reason: "stale_release_pin" },
   });
@@ -575,4 +576,51 @@ test("revision-less and unknown checklist-shaped regions never hide scope", () =
     const changed = body + "\n<!-- governed-triage-checklist: " + marker + " -->\nNew actual work\n<!-- /governed-triage-checklist -->";
     assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: changed }), before);
   }
+});
+
+// Real revision-23 producer parity: no rewritten policy or invented cloud label.
+for (const kind of ["ordinary", "atomic-high", "parent"] as const) {
+  for (const local of [false, true]) {
+    test(`candidate taxonomy parity: ${kind} / ${local ? "local" : "cloud"}`, async () => {
+      const environment = local ? ["environment:fleet-local", "environment:hardware:camera"] : [];
+      const { body, labels } = await completedBodyAndLabels([...dispositionLabels(kind), ...environment]);
+      const evidence = await verifiedEvidence(kind);
+      evidence.execution!.cloudReadiness = { status: local ? "not-ready" : "ready", reason: local ? "Implementation needs the camera device." : "Versioned sources and isolated tests.", localVerificationRequired: !local, ...(!local ? { localFollowUp: "spencer-shadley/code#7625 device acceptance" } : {}) };
+      evidence.execution!.environment = { allOf: environment };
+      const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+      assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+      assert.equal(result.disposition, kind);
+      assert.equal(result.implementationCandidate, kind !== "parent");
+      assert.equal(labels.some(label => /^(?:decomp-|decomp$|epic$|cloud-ready$|local-required$)/.test(label)), false);
+    });
+  }
+}
+
+for (const [name, mutate, expected] of [
+  ["missing", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { delete e.execution; }, "execution_evidence_required"],
+  ["unknown", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { e.execution!.cloudReadiness.status = "unknown"; }, "execution_evidence_invalid_or_unknown"],
+  ["stale scope", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { e.execution!.scopeFingerprint = "stale"; }, "execution_evidence_subject_or_revision_mismatch"],
+  ["stale revision", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { e.execution!.revision = 22; }, "execution_evidence_subject_or_revision_mismatch"],
+  ["missing local follow-up", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { e.execution!.cloudReadiness.localVerificationRequired = true; }, "execution_local_follow_up_required"],
+  ["local with no requirements", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { e.execution!.cloudReadiness.status = "not-ready"; }, "execution_substrate_environment_mismatch"],
+  ["unsupported environment", (e: Awaited<ReturnType<typeof verifiedEvidence>>) => { e.execution!.environment.allOf = ["environment:cloud"]; }, "execution_environment_invalid"],
+] as const) {
+  test(`candidate structured execution rejects ${name}`, async () => {
+    const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+    const evidence = await verifiedEvidence("ordinary"); mutate(evidence);
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.equal(result.status, "pending"); assert.ok(result.reasons.includes(expected), JSON.stringify(result.reasons));
+    assert.equal(result.implementationEligible, false);
+  });
+}
+
+test("environment alternatives stay structured rather than becoming conjunctive labels", async () => {
+  const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary"), "environment:fleet-local"]);
+  const evidence = await verifiedEvidence("ordinary");
+  evidence.execution!.cloudReadiness.status = "not-ready";
+  evidence.execution!.environment = { allOf: ["environment:fleet-local"], anyOf: [["environment:host:mangekyo", "environment:host:rinnegan"]] };
+  assert.equal((await evaluateGovernedIntakeTriage({ body, labels, evidence })).status, "complete");
+  const extra = await completedBodyAndLabels([...labels, "environment:host:mangekyo"]);
+  const result = await evaluateGovernedIntakeTriage({ ...extra, evidence });
+  assert.ok(result.reasons.includes("execution_environment_projection_mismatch"));
 });

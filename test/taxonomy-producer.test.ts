@@ -113,7 +113,7 @@ test("triage label recognizer handles current metadata:triage-v and legacy triag
 
 test("triage evaluator distinguishes valid current stamp from stale legacy or forged stamps", async () => {
   const base = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
-  const labels = [CURRENT_TRIAGED_LABEL, "cloud-ready", "effort:medium", "tier:auto"];
+  const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
   const fingerprint = await computeTriageStateFingerprint(base, labels);
   const body = base + "\n" + renderTriageCompletionMarker(fingerprint);
 
@@ -123,27 +123,27 @@ test("triage evaluator distinguishes valid current stamp from stale legacy or fo
   assert.deepEqual(validState.reasons, []);
 
   // Stale legacy triaged:v22 stamp flags stale_triaged_stamp
-  const staleLegacy = await evaluateTriageChecklistStructure(body, ["triaged:v22", "cloud-ready", "effort:medium", "tier:auto"]);
+  const staleLegacy = await evaluateTriageChecklistStructure(body, ["triaged:v22", "effort:medium"]);
   assert.equal(staleLegacy.needs_triage, true);
   assert.ok(staleLegacy.reasons.includes("stale_triaged_stamp"));
 
   // Stale metadata:triage-v22 flags stale_triaged_stamp
-  const staleCandidate = await evaluateTriageChecklistStructure(body, ["metadata:triage-v22", "cloud-ready", "effort:medium", "tier:auto"]);
+  const staleCandidate = await evaluateTriageChecklistStructure(body, ["metadata:triage-v22", "effort:medium"]);
   assert.equal(staleCandidate.needs_triage, true);
   assert.ok(staleCandidate.reasons.includes("stale_triaged_stamp"));
 
   // Wrong prefix triaged:v23 flags stale_triaged_stamp
-  const wrongPrefix = await evaluateTriageChecklistStructure(body, ["triaged:v23", "cloud-ready", "effort:medium", "tier:auto"]);
+  const wrongPrefix = await evaluateTriageChecklistStructure(body, ["triaged:v23", "effort:medium"]);
   assert.equal(wrongPrefix.needs_triage, true);
   assert.ok(wrongPrefix.reasons.includes("stale_triaged_stamp"));
 
   // Missing stamp flags missing_triaged_stamp
-  const missingStamp = await evaluateTriageChecklistStructure(body, ["cloud-ready", "effort:medium", "tier:auto"]);
+  const missingStamp = await evaluateTriageChecklistStructure(body, ["effort:medium"]);
   assert.equal(missingStamp.needs_triage, true);
   assert.ok(missingStamp.reasons.includes("missing_triaged_stamp"));
 
   // Duplicate stamps flag duplicate_triaged_stamp
-  const duplicate = await evaluateTriageChecklistStructure(body, [CURRENT_TRIAGED_LABEL, "triaged:v22", "cloud-ready", "effort:medium", "tier:auto"]);
+  const duplicate = await evaluateTriageChecklistStructure(body, [CURRENT_TRIAGED_LABEL, "triaged:v22", "effort:medium"]);
   assert.equal(duplicate.needs_triage, true);
   assert.ok(duplicate.reasons.includes("duplicate_triaged_stamp"));
   assert.ok(duplicate.reasons.includes("stale_triaged_stamp"));
@@ -151,7 +151,7 @@ test("triage evaluator distinguishes valid current stamp from stale legacy or fo
 
 test("triage fingerprint excludes triage stamps and includes accepted taxonomy labels", async () => {
   const base = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
-  const baseLabels = ["cloud-ready", "effort:medium", "tier:auto"];
+  const baseLabels = ["effort:medium"];
 
   const fpWithCurrentStamp = await computeTriageStateFingerprint(base, [...baseLabels, CURRENT_TRIAGED_LABEL]);
   const fpWithLegacyStamp = await computeTriageStateFingerprint(base, [...baseLabels, "triaged:v22"]);
