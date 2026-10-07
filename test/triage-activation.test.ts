@@ -37,6 +37,7 @@ import {
 import { bindTaskProfileContract, type TaskProfileContract, type TaskProfileRecord } from "../contracts/governed-intake-task-profile.evaluate.ts";
 import taskProfileContractJson from "../contracts/governed-intake-task-profile.v1.json" with { type: "json" };
 import { fingerprintDirectionFacts } from "../contracts/governed-intake-policy-binding.ts";
+import { admitGovernedIntakeRelease } from "../contracts/governed-intake-release.verify.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const contract = loadContract(root);
@@ -592,6 +593,13 @@ for (const kind of ["ordinary", "atomic-high", "parent"] as const) {
       assert.equal(result.disposition, kind);
       assert.equal(result.implementationCandidate, kind !== "parent");
       assert.equal(labels.some(label => /^(?:decomp-|decomp$|epic$|cloud-ready$|local-required$)/.test(label)), false);
+      const releaseDir = path.join(root, "contracts/generated/governed-intake");
+      const manifest = JSON.parse(readFileSync(path.join(releaseDir, "manifest.json"), "utf8"));
+      assert.equal(admitGovernedIntakeRelease(releaseDir, { repository: "spencer-shadley/.github",
+        commit: manifest.producer.commit, revision: contract.version, payloadDigest: manifest.payloadDigest }).ok, true);
+      const portable = await import("../contracts/generated/governed-intake/compose.js");
+      const portableResult = await portable.evaluateGovernedIntakeTriage({ subject: actualIssue, ...observedNoImpact(), body, labels, evidence });
+      assert.deepEqual(portableResult, result, "verified unmodified release and canonical source must agree");
     });
   }
 }

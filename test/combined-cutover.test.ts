@@ -81,6 +81,8 @@ test("combined r22 to r23 delta preserves unchanged evidence, including after th
   const blob = fixture.candidate.files["contracts/governed-intake-body.v1.json"];
   const prior = JSON.parse(readFileSync(path.join(REPO, "test/fixtures/consumer-pin/blobs", blob), "utf8"));
   assert.equal(prior.version, 22);
+  assert.deepEqual(prior.triageChecklist.executionSubstrateLabels, ["cloud-ready", "local-required"],
+    "the historical r22 contract retains its published behavior until activation");
   const delta = planChecklistDelta({ revision: prior.version, items: prior.triageChecklist.items },
     { revision: contract.version, items }, {
       completionVerified: true, completedItemIds: prior.triageChecklist.items.map((i: Item) => i.id),
