@@ -739,11 +739,20 @@ export function stripRemoteUrlCredentials(url: string): string {
     .replace(/^([a-z][a-z0-9+.-]*:\/\/[^/@:\s]*):[^/@\s]*@/i, "$1@");
 }
 
-/** Remote URL safe to print: any credential is replaced, never echoed (.github#39). */
+/** Credential-free GitHub forms the refusal may show; anything else prints a constant (.github#39). */
+const DISPLAYABLE_ORIGIN = /^(?:https?:\/\/(?:<redacted>@)?github\.com\/|git@github\.com:|ssh:\/\/(?:git|<redacted>)@github\.com\/)[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
+export const UNDISPLAYABLE_ORIGIN = "<origin not shown: not a recognized credential-free GitHub URL>";
+
+/**
+ * Remote URL safe to print (.github#39). All userinfo up to the LAST `@` of the authority is replaced
+ * (a raw `@` in a password included; `ssh://git@` is kept), and the result is shown only when it is an
+ * allowlisted credential-free GitHub form. Every other input (query tokens, malformed URLs, unknown
+ * schemes) prints a constant, so no credential fragment can be echoed.
+ */
 export function redactRemoteUrl(url: string): string {
-  return url
-    .replace(/^(https?:\/\/)[^/@\s]+@/i, "$1<redacted>@")
-    .replace(/^([a-z][a-z0-9+.-]*:\/\/[^/@:\s]*):[^/@\s]*@/i, "$1:<redacted>@");
+  const m = /^([a-z][a-z0-9+.-]*:\/\/)(?:([^/?#]*)@)?([^/?#]*)(.*)$/is.exec(url);
+  const shown = m ? `${m[1]}${m[2] === undefined ? "" : m[2] === "git" ? "git@" : "<redacted>@"}${m[3]}${m[4]}` : url;
+  return DISPLAYABLE_ORIGIN.test(shown) ? shown : UNDISPLAYABLE_ORIGIN;
 }
 
 /**
