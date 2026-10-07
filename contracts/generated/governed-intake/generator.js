@@ -730,54 +730,12 @@ export function projectionPaths(root = REPO_ROOT) {
   };
 }
 
-const PRODUCER_ORIGIN = /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)spencer-shadley\/\.github(?:\.git)?$/;
-
-/** Drop credentials (`https://user[:secret]@`, `scheme://user:secret@`) from a remote URL (.github#39). */
-export function stripRemoteUrlCredentials(url        )         {
-  return url
-    .replace(/^(https?:\/\/)[^/@\s]*@/i, "$1")
-    .replace(/^([a-z][a-z0-9+.-]*:\/\/[^/@:\s]*):[^/@\s]*@/i, "$1@");
-}
-
-/** Credential-free GitHub forms the refusal may show; anything else prints a constant (.github#39). */
-const DISPLAYABLE_ORIGIN = /^(?:https?:\/\/(?:<redacted>@)?github\.com\/|git@github\.com:|ssh:\/\/(?:git|<redacted>)@github\.com\/)[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/;
-export const UNDISPLAYABLE_ORIGIN = "<origin not shown: not a recognized credential-free GitHub URL>";
-
-/**
- * Remote URL safe to print (.github#39). All userinfo up to the LAST `@` of the authority is replaced
- * (a raw `@` in a password included; `ssh://git@` is kept), and the result is shown only when it is an
- * allowlisted credential-free GitHub form. Every other input (query tokens, malformed URLs, unknown
- * schemes) prints a constant, so no credential fragment can be echoed.
- */
-export function redactRemoteUrl(url        )         {
-  const m = /^([a-z][a-z0-9+.-]*:\/\/)(?:([^/?#]*)@)?([^/?#]*)(.*)$/is.exec(url);
-  const shown = m ? `${m[1]}${m[2] === undefined ? "" : m[2] === "git" ? "git@" : "<redacted>@"}${m[3]}${m[4]}` : url;
-  return DISPLAYABLE_ORIGIN.test(shown) ? shown : UNDISPLAYABLE_ORIGIN;
-}
-
-/**
- * Refuse projection writes outside the producer checkout. Identity is the origin URL as stored
- * in the repository's config, not `git remote get-url`: that returns the `url.<base>.insteadOf`
- * rewrite, which on a credentialed host carries a token and is not the repository's identity
- * (.github#39). Credentials are stripped before matching and never appear in the refusal.
- */
 export function assertProducerCheckout(root = REPO_ROOT)       {
-  let stored        ;
-  try {
-    stored = execFileSync("git", ["config", "--get", "remote.origin.url"], {
-      cwd: root, encoding: "utf8", windowsHide: true, stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
-  } catch {
-    throw new assert.AssertionError({
-      message: "projection writes belong only to the spencer-shadley/.github producer checkout (no origin remote configured)",
-    });
-  }
-  if (!PRODUCER_ORIGIN.test(stripRemoteUrlCredentials(stored))) {
-    // A hand-built AssertionError: assert.match would attach the raw URL as `actual`.
-    throw new assert.AssertionError({
-      message: `projection writes belong only to the spencer-shadley/.github producer checkout (origin: ${redactRemoteUrl(stored)})`,
-    });
-  }
+  const origin = execFileSync("git", ["remote", "get-url", "origin"], {
+    cwd: root, encoding: "utf8", windowsHide: true,
+  }).trim();
+  assert.match(origin, /^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)spencer-shadley\/\.github(?:\.git)?$/,
+    "projection writes belong only to the spencer-shadley/.github producer checkout");
   assert.equal(loadContract(root).owner, "spencer-shadley/.github");
 }
 
