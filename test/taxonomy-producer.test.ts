@@ -182,6 +182,14 @@ test("triage fingerprint excludes triage stamps and includes accepted taxonomy l
   }
 });
 
+test("canonical direction-change label participates in completion fingerprint without aliases", async () => {
+  const body = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
+  assert.equal(isTriageOwnedChecklistLabel("metadata:direction-change"), true);
+  assert.equal(isTriageOwnedChecklistLabel("direction-change"), false);
+  assert.notEqual(await computeTriageStateFingerprint(body, []),
+    await computeTriageStateFingerprint(body, ["metadata:direction-change"]));
+});
+
 test("delta planner handles migration from v22 to v23 without mutation", () => {
   const v22Items = contract.triageChecklist.items.map((item) => ({
     ...item,
