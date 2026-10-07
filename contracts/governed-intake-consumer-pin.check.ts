@@ -17,7 +17,8 @@
  * snapshots. The networked mode below reads the live consumer through `gh api`.
  *
  * Usage (repository root):
- *   node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts [--base origin/main] [--pr N | --paired-pr N] [--consumer-git <code clone>]
+ *   node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts [--base origin/main] [--pr N [--head <sha>] | --paired-pr N] [--consumer-git <code clone>]
+ *   (`--pr N` refuses, exit 2, unless the checkout HEAD is PR N's current head and equals `--head` when given.)
  *   node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts --case test/fixtures/consumer-pin/<name>.case.json
  * Exit codes: 0 pass, 1 refused (or worker rules drifted from the vendored copy), 2 indeterminate (read failure).
  */
@@ -26,7 +27,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  PRODUCER_MANIFEST_PATH, PRODUCER_SOURCE_PATH, PRODUCER_TASK_FORM_PATH, VENDORED_WORKER_RESOLUTION,
+  PRODUCER_MANIFEST_PATH, PRODUCER_REPOSITORY, PRODUCER_SOURCE_PATH, PRODUCER_TASK_FORM_PATH, VENDORED_WORKER_RESOLUTION,
   gitBlobSha, resolveWorkerAdmission, workerResolutionDrift,
   type ProducerRelease, type WorkerConsumerPins, type WorkerRefusal, type WorkerResolution,
 } from "./governed-intake-worker-admission.ts";
@@ -222,6 +223,34 @@ export function readPairedConsumer(reader: ConsumerReader, pullRequest: number):
   return { pullRequest, state: pr.state, merged: pr.merged, baseRef: pr.baseRef, consumer: readConsumerSnapshot(reader, pr.head) };
 }
 
+export type ProducerPullRequest = { number: number; head: string; body: string; state: string; baseRef: string };
+
+/** PR N of this repository: REST through `api`, or `gh pr view` (GraphQL) when `api` is null. */
+export function readProducerPullRequest(number: number, api: GithubJson | null): ProducerPullRequest {
+  if (api === null) {
+    const pr = JSON.parse(run("gh", ["pr", "view", String(number), "--repo", PRODUCER_REPOSITORY, "--json", "body,headRefOid,state,baseRefName"])) as {
+      body?: string | null; headRefOid?: string; state?: string; baseRefName?: string;
+    };
+    return { number, head: String(pr?.headRefOid ?? ""), body: pr?.body ?? "", state: String(pr?.state ?? "").toLowerCase(), baseRef: String(pr?.baseRefName ?? "") };
+  }
+  const pr = api(`/repos/${PRODUCER_REPOSITORY}/pulls/${number}`) as { body?: string | null; state?: string; head?: { sha?: string }; base?: { ref?: string } };
+  return { number, head: String(pr?.head?.sha ?? ""), body: pr?.body ?? "", state: String(pr?.state ?? ""), baseRef: String(pr?.base?.ref ?? "") };
+}
+
+/**
+ * Exact-head binding (.github#57 review): the checkout must be the commit the verdict is for.
+ * Returns a refusal reason, or null when the checkout HEAD equals `--head` and PR N's current head.
+ */
+export function checkoutHeadMismatch(checkoutHead: string, expectedHead: string | undefined, pr: { number: number; head: string } | null): string | null {
+  const full = /^[0-9a-f]{40}$/;
+  if (expectedHead !== undefined && !full.test(expectedHead)) return `--head must be a full 40-hex commit (got ${JSON.stringify(expectedHead)}).`;
+  if ((expectedHead !== undefined || pr) && !full.test(checkoutHead)) return `checkout HEAD is not a commit (${checkoutHead}); cannot bind the verdict to an exact head.`;
+  if (expectedHead !== undefined && checkoutHead !== expectedHead) return `checkout HEAD ${checkoutHead} is not the requested --head ${expectedHead}.`;
+  if (pr && !full.test(pr.head)) return `could not read the head commit of ${PRODUCER_REPOSITORY}#${pr.number}.`;
+  if (pr && checkoutHead !== pr.head) return `checkout HEAD ${checkoutHead} is not ${PRODUCER_REPOSITORY}#${pr.number}'s current head ${pr.head}; check out that exact head and re-run.`;
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Recorded cases (offline replay; test/fixtures/consumer-pin/*.case.json).
 
@@ -301,13 +330,23 @@ export function main(argv: string[], api: GithubJson = ghApi, root = process.cwd
       return 2;
     }
     const prNumber = option(argv, "--pr");
+    const expectedHead = option(argv, "--head");
+    const headMismatch = checkoutHeadMismatch(head, expectedHead, null);
+    if (headMismatch) {
+      out(`INDETERMINATE: ${headMismatch}`);
+      return 2;
+    }
     const explicitPair = option(argv, "--paired-pr");
     let pairedPullRequest: number | null = explicitPair ? Number(explicitPair) : null;
-    if (pairedPullRequest === null && prNumber) {
-      const pr = (consumerGit
-        ? JSON.parse(run("gh", ["pr", "view", String(Number(prNumber)), "--repo", "spencer-shadley/.github", "--json", "body"]))
-        : api(`/repos/spencer-shadley/.github/pulls/${Number(prNumber)}`)) as { body?: string | null };
-      pairedPullRequest = parsePairingTrailer(pr?.body);
+    if (prNumber) {
+      const pr = readProducerPullRequest(Number(prNumber), consumerGit ? null : api);
+      // The verdict is about one exact head: a checkout that is not PR N's current head says nothing about PR N.
+      const prMismatch = checkoutHeadMismatch(head, expectedHead, { number: Number(prNumber), head: pr.head });
+      if (prMismatch) {
+        out(`INDETERMINATE: ${prMismatch}`);
+        return 2;
+      }
+      if (pairedPullRequest === null) pairedPullRequest = parsePairingTrailer(pr.body);
     }
     const consumer = readConsumerSnapshot(reader, option(argv, "--consumer-ref") ?? CONSUMER_DEFAULT_BRANCH);
     out(`candidate: spencer-shadley/.github@${head} (base ${baseRef}); consumer: ${CONSUMER_REPOSITORY}@${consumer.commit}`);
