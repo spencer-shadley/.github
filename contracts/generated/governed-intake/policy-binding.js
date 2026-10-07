@@ -40,7 +40,7 @@ export function boundTriagePolicyFromProducer()                    {
  * A receipt's matching caller assertions are never a substitute for this observation.
  */
                                  
-                                                    
+                                                                                                                           
                                                                                   
                                                                                                                     
                             
@@ -68,7 +68,10 @@ export function fingerprintDirectionFacts(facts                )         {
   if (new Set(threads.map(t => t.issue)).size !== threads.length || !threads.some(t => t.issue === issue(facts.seed))) {
     throw new TypeError("missing seed or duplicate direction thread");
   }
-  return digest({ seed: issue(facts.seed), threads, source: sha(facts.sourceFingerprint),
+  if (facts.seed.createdAt !== undefined && !Number.isFinite(Date.parse(facts.seed.createdAt))) {
+    throw new TypeError("invalid direction seed creation time");
+  }
+  return digest({ seed: issue(facts.seed), ...(facts.seed.createdAt === undefined ? {} : { createdAt: facts.seed.createdAt }), threads, source: sha(facts.sourceFingerprint),
     ownership: sha(facts.ownershipFingerprint), relatedWork: sha(facts.relatedWorkFingerprint) });
 }
 

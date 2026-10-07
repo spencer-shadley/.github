@@ -72,13 +72,39 @@ export const COMPOSE_CONSUMER_CUTOVER = false         ;
                         
                                                   
                                                                                                      
+                                                                                      
+                                                                                       
+                                                                                    
+                                                                                        
+                                                                                           
+     
+                      
+                      
+                             
+                             
+                                                     
+                                                 
+                          
+                                 
+                                                                                           
+                   
+                         
+                                                    
+                                                          
+                                                                 
+                                                      
+                                  
+                                  
+        
+                                                                    
+    
                     
                       
                              
                              
                                                      
                                                                                           
-                                                                                                       
+                                                                                          
                                                                     
                
                                                            
@@ -297,8 +323,9 @@ export async function evaluateGovernedIntakeTriage(input                     )  
       if (direction.assessment === "no-impact") {
         // Empty outcome rows do not prove an existing unknown audit had no effects.
         // Settle that exact audit first; a no-impact shortcut cannot erase its ledger.
-        if (observed.reconciliation || direction.reconciliationReceiptId) reasons.push("no_impact_has_cohort_effects");
+        if (observed.reconciliation || observed.exhaustiveSearch || direction.reconciliationReceiptId) reasons.push("no_impact_has_cohort_effects");
       } else if (direction.assessment === "potential-impact") {
+        if (!input.labels.includes("metadata:direction-change")) reasons.push("direction_change_label_required");
         const audit = observed.reconciliation;
         if (!audit || audit.status !== "verified") reasons.push(`direction_reconciliation_${audit?.status ?? "missing"}`);
         else {
@@ -332,6 +359,44 @@ export async function evaluateGovernedIntakeTriage(input                     )  
           const selected = audit.selectedSubjects.map(s => `${s.repository.toLowerCase()}#${s.issueNumber}`);
           if (new Set(selected).size !== selected.length || selected.length !== identities.size
             || selected.some(id => !identities.has(id))) reasons.push("direction_reconciliation_selection_incomplete");
+          const search = observed.exhaustiveSearch;
+          if (!search) reasons.push("direction_exhaustive_search_required");
+          else {
+            if (search.scope !== "all-open-issues-and-prs-before-seed" || search.phase !== "post-reconciliation"
+              || !observed.facts.seed.createdAt || search.createdBefore !== observed.facts.seed.createdAt
+              || search.receiptId !== audit.receiptId || search.factsFingerprint !== factsFingerprint
+              || search.scopeFingerprint !== actualScope
+              || canonicalPolicyJson(search.publication) !== canonicalPolicyJson(publication)) {
+              reasons.push("direction_exhaustive_search_binding_mismatch");
+            }
+            const inventory = search.inventory.repositories.map(repo => repo.toLowerCase());
+            const searched = search.repositories.map(row => row.repository.toLowerCase());
+            if (search.inventory.coverage !== "complete" || inventory.length === 0
+              || inventory.some(repo => !/^[^/\s]+\/[^/\s]+$/.test(repo))
+              || !inventory.includes(observed.facts.seed.repository.toLowerCase())
+              || new Set(inventory).size !== inventory.length || new Set(searched).size !== searched.length
+              || inventory.length !== searched.length || inventory.some(repo => !searched.includes(repo))) {
+              reasons.push("direction_repository_coverage_incomplete");
+            }
+            for (const row of search.repositories) {
+              if ([row.issues, row.pullRequests, row.bodiesAndAcceptance, row.comments].some(state => state !== "complete")
+                || !/^sha256:[0-9a-f]{64}$/.test(row.readbackFingerprint)) {
+                reasons.push("direction_exhaustive_readback_incomplete");
+              }
+              // Missing, negative, fractional and string counts cannot stand in for zero.
+              if (row.unresolvedConflicts !== 0) reasons.push("direction_unresolved_conflicts");
+            }
+            const conflicts = search.conflictSubjects.map(s => `${s.repository.toLowerCase()}#${s.issueNumber}`);
+            if (new Set(conflicts).size !== conflicts.length || search.conflictSubjects.some(s =>
+              !inventory.includes(s.repository.toLowerCase()) || !Number.isSafeInteger(s.issueNumber) || s.issueNumber < 1)
+              || conflicts.some(id => !identities.has(id))
+              || audit.outcomes.some(outcome => conflicts.includes(`${outcome.subject.repository.toLowerCase()}#${outcome.subject.issueNumber}`)
+                && (outcome.disposition === "keep" || outcome.decision?.repository.toLowerCase() !== observed.facts.seed.repository.toLowerCase()
+                  || outcome.decision?.issueNumber !== observed.facts.seed.issueNumber))
+              || audit.selectedSubjects.some(s => !inventory.includes(s.repository.toLowerCase()))) {
+              reasons.push("direction_conflict_reconciliation_incomplete");
+            }
+          }
         }
       } else reasons.push("direction_impact_assessment_invalid");
     } catch { reasons.push("direction_impact_evidence_invalid"); }
