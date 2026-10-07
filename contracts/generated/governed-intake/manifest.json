@@ -4,9 +4,9 @@
   "revision": 23,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "53e7738948afc1d8907e670932741924f98d8a13"
+    "commit": "50d7a802889eaba2814bbf53d74b1f3b7e97e84f"
   },
-  "payloadDigest": "f35cf3a0f26e09543c27f2d01faeac4a383b044a73c905dd0c0b77746830ebe0",
+  "payloadDigest": "6ca0de6f3ecf3364ce7c2485670906171811543fecf79b7b7a29d3626a2c7d66",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -20,8 +20,8 @@
     },
     "contract.json": {
       "path": "contract.json",
-      "sha256": "230712df9111a4cef30e11250ca509bf06249bf723bb03a0a44c7272cc90f07c",
-      "byteLength": 30456
+      "sha256": "98e5d1a311a6f27c73ae9a21ae989bcade39acac192b849bc191e66ea2bf715f",
+      "byteLength": 30493
     },
     "delta-planner.js": {
       "path": "delta-planner.js",
@@ -75,8 +75,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "230712df9111a4cef30e11250ca509bf06249bf723bb03a0a44c7272cc90f07c",
-      "byteLength": 30456
+      "sha256": "98e5d1a311a6f27c73ae9a21ae989bcade39acac192b849bc191e66ea2bf715f",
+      "byteLength": 30493
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",

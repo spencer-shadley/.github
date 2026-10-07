@@ -117,7 +117,8 @@
       "^environment:",
       "^progress:",
       "^decomp:",
-      "^resolution:"
+      "^resolution:",
+      "^metadata:direction-change$"
     ],
     "items": [
       {
