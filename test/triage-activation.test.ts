@@ -44,12 +44,14 @@ const contract = loadContract(root);
 const bound = boundTriagePolicyFromProducer();
 const identity = { fixOwnerGitHubSlug: "Spencer-Shadley/.github", workType: "Task", canonicalWorkUnitIdentity: "policy activation" };
 const actualIssue = { repository: "spencer-shadley/.github", issueNumber: 19, title: "Activate policy" };
+const taxonomyObservation = { ...actualIssue, state: "open" as const, lifecycleId: "created-event-19" };
 const observedNoImpact = () => {
   const facts = { seed: actualIssue, threads: [{ ...actualIssue, materialFingerprint: `sha256:${"a".repeat(64)}`, decisions: [] }],
     sourceFingerprint: `sha256:${"b".repeat(64)}`, ownershipFingerprint: `sha256:${"c".repeat(64)}`, relatedWorkFingerprint: `sha256:${"d".repeat(64)}` };
   return {
     directionImpact: { ...subject, factsFingerprint: fingerprintDirectionFacts(facts), revision: contract.version,
       assessment: "no-impact" as const, rationale: "This synthetic leaf changes no related direction." },
+    taxonomyObservation,
     directionObservation: { facts, coverage: "complete" as const, publication: { repository: "spencer-shadley/.github",
       sourceCommit: "a".repeat(40), payloadDigest: "b".repeat(64), revision: contract.version } } };
 };
@@ -148,6 +150,7 @@ async function verifiedEvidence(disposition: Assessment["disposition"]): Promise
     workUnitKey: subject.workUnitKey,
     scopeFingerprint: subject.scopeFingerprint,
     state: "open",
+    taxonomy: { ...subject, revision: contract.version, lifecycleId: taxonomyObservation.lifecycleId },
     repositoryActive: true,
     priorHighEffort: effort === "high",
     requiresQualifiedAssessment: disposition !== "ordinary",
@@ -161,9 +164,11 @@ async function verifiedEvidence(disposition: Assessment["disposition"]): Promise
   };
 }
 
+const requiredTaxonomyLabels = ["type:maintenance", "source:human", "priority:repo:p2", "priority:fleet:p2", "progress:planned"];
+
 function dispositionLabels(disposition: Assessment["disposition"]): string[] {
   const effort = disposition === "ordinary" ? "medium" : "high";
-  return [...bound.policy.dispositions[disposition].labels, bound.policy.effortRubric.labels[effort]];
+  return [...bound.policy.dispositions[disposition].labels, bound.policy.effortRubric.labels[effort], ...requiredTaxonomyLabels];
 }
 
 test("current semantic revision binds scope before final attributes", () => {
@@ -632,3 +637,64 @@ test("environment alternatives stay structured rather than becoming conjunctive 
   const result = await evaluateGovernedIntakeTriage({ ...extra, evidence });
   assert.ok(result.reasons.includes("execution_environment_projection_mismatch"));
 });
+
+// Review B1: recompute the stamp so these cases exercise semantic taxonomy,
+// rather than merely discovering a stale completion fingerprint.
+for (const [name, extra] of [
+  ["missing required dimensions", []],
+  ["conflicting progress", ["type:maintenance", "source:human", "priority:repo:p2", "priority:fleet:p2", "progress:planned", "progress:verified"]],
+  ["open delivered resolution", ["type:maintenance", "source:human", "priority:repo:p2", "priority:fleet:p2", "progress:planned", "resolution:delivered"]],
+] as const) {
+  test(`taxonomy completion refuses ${name} even with a fresh stamp`, async () => {
+    const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary").filter(label => !requiredTaxonomyLabels.includes(label)), ...extra]);
+    const evidence = await verifiedEvidence("ordinary");
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.equal(result.status, "pending");
+    assert.equal(result.needsTriage, true);
+    assert.equal(result.implementationCandidate, false);
+    assert.equal(result.implementationEligible, false);
+    assert.ok(result.reasons.some(reason => reason.startsWith("taxonomy_")));
+  });
+}
+
+for (const surface of ["canonical", "portable"] as const) {
+  const evaluate = async (input: Parameters<typeof evaluateProducerTriage>[0]) => surface === "canonical"
+    ? evaluateGovernedIntakeTriage(input)
+    : (await import("../contracts/generated/governed-intake/compose.js")).evaluateGovernedIntakeTriage({ subject: actualIssue, ...observedNoImpact(), ...input });
+  for (const dimension of ["type", "source", "priority:repo", "priority:fleet", "progress"]) {
+    test(`${surface} composed taxonomy refuses missing ${dimension} with a recomputed stamp`, async () => {
+      const current = await completedBodyAndLabels(dispositionLabels("ordinary").filter(label => !label.startsWith(`${dimension}:`)));
+      const result = await evaluate({ ...current, evidence: await verifiedEvidence("ordinary") });
+      assert.equal(result.status, "pending");
+      assert.ok(result.reasons.includes(`taxonomy_${dimension}_cardinality`));
+      assert.equal(result.needsTriage, true);
+      assert.equal(result.implementationCandidate, false);
+      assert.equal(result.implementationEligible, false);
+    });
+  }
+  for (const extra of [["progress:verified"], ["resolution:delivered"]]) {
+    test(`${surface} composed taxonomy rejects ${extra[0]} on planned open work`, async () => {
+      const current = await completedBodyAndLabels([...dispositionLabels("ordinary"), ...extra]);
+      const result = await evaluate({ ...current, evidence: await verifiedEvidence("ordinary") });
+      assert.equal(result.status, "pending");
+      assert.equal(result.implementationEligible, false);
+      assert.equal(result.implementationCandidate, false);
+      assert.ok(result.reasons.some(reason => reason.startsWith("taxonomy_")));
+    });
+  }
+  test(`${surface} composed taxonomy rejects missing observation and old pre-reopen assessment`, async () => {
+    const current = await completedBodyAndLabels(dispositionLabels("ordinary"));
+    const evidence = await verifiedEvidence("ordinary");
+    const missing = await evaluate({ ...current, evidence, taxonomyObservation: undefined });
+    assert.equal(missing.status, "pending");
+    assert.ok(missing.reasons.includes("taxonomy_observation_missing_or_subject_mismatch"));
+    const reopened = { ...taxonomyObservation, lifecycleId: "reopened-event-19" };
+    const old = await evaluate({ ...current, evidence, taxonomyObservation: reopened });
+    assert.equal(old.status, "pending"); assert.equal(old.implementationEligible, false);
+    assert.ok(old.reasons.includes("taxonomy_evidence_missing_or_stale"));
+    evidence.taxonomy!.lifecycleId = reopened.lifecycleId;
+    const fresh = await evaluate({ ...current, evidence, taxonomyObservation: reopened });
+    assert.equal(fresh.status, "complete", JSON.stringify(fresh.reasons));
+    assert.equal(fresh.implementationCandidate, true);
+  });
+}

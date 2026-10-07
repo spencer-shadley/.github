@@ -224,3 +224,15 @@ test("code#8013 dual accept: a same-revision republish staged in the prepared sl
   });
   assert.ok(stillPinned.ok && stillPinned.slot === "published");
 });
+
+test("landed Worker PR8115 source fingerprints preserve gate parity", () => {
+  const bytes = readFileSync(path.join(fixtures, "blobs", VENDORED_WORKER_RESOLUTION.blobSha));
+  assert.equal(gitBlobSha(bytes), "289332c58c526e95dcfe3a00827cf0233f4ec3ba");
+  assert.equal(VENDORED_WORKER_RESOLUTION.commit, "3b2495a79ec7857922337f8b1e20f0a89c0049c9");
+  const source = bytes.toString("utf8");
+  assert.deepEqual(workerResolutionDrift(source), []);
+  const runtime = extractWorkerFunction(source, "resolveGovernedIntakeRuntime")!;
+  assert.match(runtime, /selectAdmittedRelease<ReleaseBundle>/);
+  const mutated = source.replace("selectAdmittedRelease<ReleaseBundle>(", "selectAdmittedRelease(");
+  assert.deepEqual(workerResolutionDrift(mutated).map(entry => entry.function), ["resolveGovernedIntakeRuntime"]);
+});

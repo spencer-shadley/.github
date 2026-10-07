@@ -227,7 +227,7 @@ test("delta planner handles migration from v22 to v23 without mutation", () => {
   assert.deepEqual(v23Release, v23Snapshot);
 });
 
-test("accepted taxonomy dimensions and lifecycle rules validation", () => {
+test("accepted taxonomy dimensions participate in completion fingerprint", () => {
   const delivers = [
     "delivers:agent-efficiency",
     "delivers:human-efficiency",

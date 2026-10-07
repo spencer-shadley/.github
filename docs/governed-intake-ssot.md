@@ -316,3 +316,26 @@ invalidate the declared stable obligations. Only observed changed results propag
 unchanged valid facts reuse evidence without semantic reruns, comments or recursive triggers.
 Consumer preparation must prove current and candidate compatibility before actual publication;
 Code #7476 owns adoption and live invocation; revision 23 publication stays gated on the .github#32 consumer readiness (Code #7625).
+
+### Producer taxonomy completion and lifecycle binding
+
+`triageChecklist.taxonomy` in the body contract is the producer's adopted intake vocabulary and
+cardinalities from the accepted Code work-spine contract (including supplemental `type:proposal`).
+The released `governed-intake-taxonomy.evaluate.ts` validates those dimensions before the composition
+can report completion or implementation eligibility. Fingerprint membership alone is insufficient:
+unsupported labels, missing required dimensions, multiple progress states and open resolutions
+remain pending even with a freshly computed completion marker.
+
+Adapters supply independently fetched `taxonomyObservation` (repository, issue number, state and
+latest GitHub state-transition `lifecycleId`, using creation initially) plus `evidence.taxonomy`
+bound to the current work-unit key, scope, revision and that lifecycle identity. Reopening produces
+a new transition identity; an assessment from the previous lifecycle cannot complete unchanged body
+and label bytes. Missing observations, stale identities and unsupported old adapters remain pending.
+This adds no GitHub effect authority or closed-stock rewrite: closed/inactive subjects remain outside
+implementation scope. A fresh current assessment and stamp are required after reopening.
+
+The same validator checks regression references, closed research conclusions, verified acceptance
+for verified progress/delivery, conserved non-delivery progress, supersession destinations, accepted
+obsolete decisions/backlinks, and independent blocker release predicates (including the actual human
+input for `blocked:human-required`). Adapter authentication of those observations remains the consumer's
+responsibility. Environment requirements retain the separate structured execution-evidence checks.
