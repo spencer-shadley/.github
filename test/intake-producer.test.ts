@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, sy
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials } from "../contracts/governed-intake-body.generate.ts";
+import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials, UNDISPLAYABLE_ORIGIN } from "../contracts/governed-intake-body.generate.ts";
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
 import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
@@ -189,7 +189,27 @@ test("remote URL credential helpers keep the canonical producer forms (.github#3
   assert.equal(stripRemoteUrlCredentials("https://ghp_token@github.com/o/r.git"), "https://github.com/o/r.git");
   assert.equal(stripRemoteUrlCredentials("ssh://git:s3cr3t@github.com/o/r"), "ssh://git@github.com/o/r");
   assert.equal(redactRemoteUrl("https://x-access-token:s3cr3t@github.com/o/r.git"), "https://<redacted>@github.com/o/r.git");
-  assert.equal(redactRemoteUrl("ssh://git:s3cr3t@github.com/o/r"), "ssh://git:<redacted>@github.com/o/r");
+  assert.equal(redactRemoteUrl("ssh://git:s3cr3t@github.com/o/r"), "ssh://<redacted>@github.com/o/r");
+});
+test("the refusal never echoes any credential fragment, whatever the stored origin looks like (.github#39)", () => {
+  const secret = "DUMMYSECRET39ghi";
+  const inputs = [
+    `https://user:pa@${secret}@github.com/o/r.git`, // raw "@" inside the password
+    `https://user:${secret}/x@github.com/o/r.git`, // "/" inside the password
+    `https://user:${secret} x@github.com/o/r.git`, // whitespace inside the password
+    `ssh://${secret}@github.com/o/r`,
+    `https://github.com/o/r.git?access_token=${secret}`,
+    `https:/user:${secret}@github.com/o/r.git`,
+    `user:${secret}@github.com:o/r.git`,
+    `git+https://user:${secret}@github.com/o/r.git`,
+    `https://x-access-token:${secret}@github.com/o/r.git`,
+  ];
+  for (const url of inputs) {
+    const shown = redactRemoteUrl(url);
+    assert.ok(!shown.includes(secret) && !shown.includes(secret.slice(4)), `credential fragment echoed for input #${inputs.indexOf(url)}`);
+  }
+  assert.equal(redactRemoteUrl(`https://user:pa@${secret}@github.com/o/r.git`), "https://<redacted>@github.com/o/r.git");
+  assert.equal(redactRemoteUrl(`https://github.com/o/r.git?access_token=${secret}`), UNDISPLAYABLE_ORIGIN);
 });
 test("published JavaScript actually executes the same body and checklist evaluators", async (t) => {
   const s = scratch(t);
