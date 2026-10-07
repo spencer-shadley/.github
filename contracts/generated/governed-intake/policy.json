@@ -19,7 +19,7 @@
   "dispositions": {
     "ordinary": {
       "labels": [
-        "decomp-not-needed"
+        "decomp:unnecessary"
       ],
       "efforts": [
         "low",
@@ -31,7 +31,7 @@
     },
     "atomic-high": {
       "labels": [
-        "decomp-atomic"
+        "decomp:unnecessary"
       ],
       "efforts": [
         "high"
@@ -43,8 +43,7 @@
     },
     "parent": {
       "labels": [
-        "decomp",
-        "epic"
+        "decomp:complete"
       ],
       "efforts": [
         "low",
@@ -56,14 +55,20 @@
       "independentConfirmation": false
     }
   },
-  "pendingLabel": "decomp-needed",
+  "pendingLabel": "decomp:required",
   "retiredProgressLabels": [
     "decomp-in-progress"
   ],
   "unsupportedTerminalAliases": [
     "decomp-not-possible",
     "cannot-decomp",
-    "decomp-complete"
+    "decomp-complete",
+    "decomp-not-needed",
+    "decomp-atomic",
+    "decomp",
+    "epic",
+    "decomp-needed",
+    "decomp:in-progress"
   ],
   "evidence": {
     "requiredAssessmentFields": [

@@ -177,12 +177,16 @@ export function assertTriagePolicy(policy              )       {
       || !(disposition.secondOpinion === undefined || ['required', 'encouraged'].includes(disposition.secondOpinion))) {
       throw new Error('invalid_disposition_contract');
     }
+    if (unique(disposition.labels).length !== disposition.labels.length) throw new Error('conflicting_policy_labels');
     owned.push(...disposition.labels);
   }
-  if (unique(owned).length !== owned.length || !nonempty(policy.pendingLabel)
+  // Labels describe decomposition state; ordinary and atomic-high may share a projection.
+  // The bound assessment, effort and evidence establish the disposition, never label uniqueness.
+  const projected = unique(owned);
+  if (!nonempty(policy.pendingLabel)
     || !strings(policy.retiredProgressLabels) || !strings(policy.unsupportedTerminalAliases)
-    || new Set([...owned, policy.pendingLabel, ...policy.retiredProgressLabels, ...policy.unsupportedTerminalAliases]).size
-      !== owned.length + 1 + policy.retiredProgressLabels.length + policy.unsupportedTerminalAliases.length) {
+    || new Set([...projected, policy.pendingLabel, ...policy.retiredProgressLabels, ...policy.unsupportedTerminalAliases]).size
+      !== projected.length + 1 + policy.retiredProgressLabels.length + policy.unsupportedTerminalAliases.length) {
     throw new Error('conflicting_policy_labels');
   }
   if (!object(policy.evidence) || !strings(policy.evidence.requiredAssessmentFields) || !strings(policy.evidence.atomicFields)

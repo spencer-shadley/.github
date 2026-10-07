@@ -118,8 +118,10 @@ function assertTriageChecklistContract(raw                               ) {
   assert.deepEqual(checklist.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
   assert.ok(Array.isArray(checklist.pendingLabels));
   assert.ok(Array.isArray(checklist.triageOwnedLabelPatterns));
-  assert.deepEqual(checklist.executionSubstrateLabels, ["cloud-ready", "local-required"]);
-  for (const label of checklist.executionSubstrateLabels) assert.ok(checklist.triageOwnedLabelPatterns.includes(`^${label}$`));
+  assert.deepEqual(checklist.executionSubstrateLabels, []);
+  assert.deepEqual(checklist.retiredExecutionSubstrateLabels, ["cloud-ready", "local-required"]);
+  assert.equal(checklist.executionSubstrateEvidence.field, "evidence.execution");
+  assert.equal(checklist.executionSubstrateEvidence.stage, "implement");
   assert.ok(Array.isArray(checklist.items) && checklist.items.length > 0);
   const ids           = checklist.items.map((item               ) => item.id);
   assert.equal(new Set(ids).size, ids.length, "triage checklist item ids must be unique");

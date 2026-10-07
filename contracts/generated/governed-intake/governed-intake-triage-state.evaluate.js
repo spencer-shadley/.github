@@ -23,6 +23,7 @@ import governedIntakeContractJson from "./governed-intake-body.v1.json" with { t
                              
                                      
                                      
+                                            
                                
   
 
@@ -54,7 +55,6 @@ import governedIntakeContractJson from "./governed-intake-body.v1.json" with { t
                              
                             
                                        
-                                            
                                 
                                   
 
@@ -92,10 +92,9 @@ function assertContract()                          {
     throw new Error("invalid governed triage checklist contract");
   }
   if (!Array.isArray(checklist.executionSubstrateLabels)
-    || checklist.executionSubstrateLabels.length !== 2
-    || new Set(checklist.executionSubstrateLabels).size !== 2
-    || checklist.executionSubstrateLabels.some((label) => typeof label !== "string" || label.trim().length === 0)) {
-    throw new Error("governed triage checklist requires exactly two distinct execution-substrate labels");
+    || checklist.executionSubstrateLabels.length !== 0
+    || !Array.isArray(checklist.retiredExecutionSubstrateLabels)) {
+    throw new Error("governed triage checklist requires structured execution evidence, not substrate labels");
   }
   if (!Array.isArray(checklist.items) || checklist.items.length === 0) {
     throw new Error("governed triage checklist requires at least one item");
@@ -308,11 +307,9 @@ export async function evaluateTriageChecklistStructure(
   const pendingLabels = GOVERNED_TRIAGE_CHECKLIST.pendingLabels.filter((label) => labels.includes(label));
   if (pendingLabels.length > 0) reasons.push("pending_marker_present");
 
-  const executionSubstrateLabels = [...new Set(
-    labels.filter((label) => GOVERNED_TRIAGE_CHECKLIST.executionSubstrateLabels.includes(label)),
-  )];
-  if (executionSubstrateLabels.length === 0) reasons.push("missing_execution_substrate_label");
-  if (executionSubstrateLabels.length > 1) reasons.push("conflicting_execution_substrate_labels");
+  const executionSubstrateLabels = labels.filter((label) =>
+    GOVERNED_TRIAGE_CHECKLIST.retiredExecutionSubstrateLabels.includes(label));
+  if (executionSubstrateLabels.length) reasons.push("retired_execution_substrate_label");
 
   let expectedFingerprint                = null;
   const structurallyComplete = Boolean(
@@ -368,9 +365,11 @@ export async function evaluateTriageChecklistState(
   const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.js");
   const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
   const directionPending = result.reasons.some(reason => reason.startsWith("direction_") || reason === "no_impact_has_cohort_effects");
+  const executionPending = result.reasons.some(reason => reason.startsWith("execution_"));
   return { ...structure, needs_triage: result.needsTriage,
     unchecked_item_ids: [...new Set([...structure.unchecked_item_ids,
       ...(result.scopeResolved ? [] : ["scope-decomposition"]),
+      ...(executionPending ? ["cloud-runnable"] : []),
       ...(directionPending ? ["value-direction", "dedup-queue-synergy"] : [])])],
     reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending"         ])] : structure.reasons,
     semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };

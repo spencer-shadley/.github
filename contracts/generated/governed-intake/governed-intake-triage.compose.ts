@@ -128,6 +128,24 @@ export function currentChecklistRelease(): ChecklistRelease {
   return release;
 }
 
+/** Existing cloud-readiness facts plus structured environment requirements, not an effect grant.
+ * Adapters verify provenance, current environment/access facts, host IDs and hardware slugs.
+ * The producer validates subject/revision binding and coherence; it cannot authenticate callers.
+ */
+export interface ExecutionEvidence {
+  workUnitKey: string;
+  scopeFingerprint: string;
+  revision: number;
+  stage: "implement";
+  cloudReadiness: {
+    status: "ready" | "not-ready" | "unknown";
+    reason: string;
+    localVerificationRequired: boolean;
+    localFollowUp?: string;
+  };
+  environment: { allOf: string[]; anyOf?: string[][] };
+}
+
 /** Adapter-verified semantic input. There is no `eligible` or `servingVerified` shortcut. */
 export type SemanticEvidenceInput =
   | { kind: "missing" }
@@ -147,6 +165,8 @@ export type SemanticEvidenceInput =
       finalAttributesScopeFingerprint: string | null;
       directionEvidenceFresh: boolean;
       trusted: PolicySnapshot["trusted"];
+      /** Required for revision-23 completion. Missing/older adapters remain typed pending. */
+      execution?: ExecutionEvidence;
     };
 
 /**
@@ -299,6 +319,43 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   } catch { reasons.push("missing_or_invalid_subject_identity"); }
   if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
   if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
+
+  const execution = evidence.execution;
+  if (!execution) reasons.push("execution_evidence_required");
+  else {
+    if (execution.workUnitKey !== actualKey.key || execution.scopeFingerprint !== actualScope
+      || execution.revision !== CURRENT_TRIAGE_REVISION) reasons.push("execution_evidence_subject_or_revision_mismatch");
+    const cloud = execution.cloudReadiness;
+    const environment = execution.environment;
+    const spec = bodyContract.triageChecklist.executionSubstrateEvidence;
+    const validRequirement = (value: unknown): value is string => typeof value === "string"
+      && (value === spec.environment.localLabel
+        || [spec.environment.hostPrefix, spec.environment.hardwarePrefix].some(prefix =>
+          value.startsWith(prefix) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slice(prefix.length))));
+    const validRequirements = (values: unknown): values is string[] => Array.isArray(values)
+      && values.every(validRequirement) && new Set(values).size === values.length;
+    if (execution.stage !== spec.stage || !cloud || !nonempty(cloud.reason)
+      || !["ready", "not-ready"].includes(cloud.status)
+      || typeof cloud.localVerificationRequired !== "boolean") reasons.push("execution_evidence_invalid_or_unknown");
+    if (cloud?.localVerificationRequired && !nonempty(cloud.localFollowUp)) reasons.push("execution_local_follow_up_required");
+    if (!environment || !validRequirements(environment.allOf)
+      || (environment.anyOf !== undefined && (!Array.isArray(environment.anyOf)
+        || environment.anyOf.some(group => !validRequirements(group) || group.length === 0)))) {
+      reasons.push("execution_environment_invalid");
+    } else {
+      const requirements = unique([...environment.allOf, ...(environment.anyOf ?? []).flat()]);
+      const labels = input.labels.filter(label => label.startsWith("environment:"));
+      // Only unconditional facts are labels. Projecting every anyOf alternative would turn
+      // an OR into an AND in consumers that combine labels with structured requirements.
+      if (labels.length !== new Set(labels).size || labels.some(label => !environment.allOf.includes(label))
+        || environment.allOf.some(requirement => !labels.includes(requirement))) reasons.push("execution_environment_projection_mismatch");
+      const needsLocal = requirements.length > 0;
+      if ((cloud?.status === "ready" && needsLocal)
+        || (cloud?.status === "not-ready" && !environment.allOf.includes(spec.environment.localLabel))) {
+        reasons.push("execution_substrate_environment_mismatch");
+      }
+    }
+  }
 
   // Existing semantic composition consumes audit evidence; it does not add an audit evaluator
   // or a second journal. Unknown effects stay with the caller's existing settlement identity.
