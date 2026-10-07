@@ -10,6 +10,7 @@
     "task-profile:generate": "node --experimental-strip-types contracts/governed-intake-task-profile.generate.ts",
     "task-profile:check": "node --experimental-strip-types contracts/governed-intake-task-profile.generate.ts --check",
     "release:check": "node --experimental-strip-types contracts/governed-intake-body.release.ts --check",
+    "consumer-pin:check": "node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts",
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "verify": "npm test"
   }

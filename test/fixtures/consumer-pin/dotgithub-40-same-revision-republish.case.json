@@ -1,0 +1,28 @@
+{
+  "schema": "GovernedIntakeConsumerPinCaseV1",
+  "case": ".github#40 (da6d48bf) republished r22 from f2257602 while the deployed worker pinned d2ee7995: commit_mismatch outage 2026-10-06",
+  "candidate": {
+    "commit": "da6d48bfa53ea435ba93877a992be7a7022886d9",
+    "files": {
+      "contracts/generated/governed-intake/manifest.json": "6051df3ce47c3bf7d3c58e08ae13839ea83448db",
+      "contracts/governed-intake-body.v1.json": "6cf18690001cefb6e1480d69bc783e0a4c8e7e82",
+      ".github/ISSUE_TEMPLATE/task.yml": "24e9534038dda1ab847648a69cdea877d0c8d9d6"
+    }
+  },
+  "base": {
+    "commit": "f99470f4664a9471ef776c7d2fa37ec1a8e69b9c",
+    "files": {
+      "contracts/generated/governed-intake/manifest.json": "8d0a229f6d2bb67c87c163a2df418fbf0a34038e"
+    }
+  },
+  "consumer": {
+    "repository": "spencer-shadley/code",
+    "commit": "c144fbd12ab67c046e9f5fafff5859113397347e",
+    "files": {
+      "tools/work-spine/governed-intake-worker-published-release.pin.json": "b9adc2ebd9f64627c34bb5912df11817eda3635a",
+      "contracts/generated/governed-intake-worker-published/manifest.json": "8d0a229f6d2bb67c87c163a2df418fbf0a34038e",
+      "tools/work-spine/governed-intake-candidate-release.pin.json": "ef5ab9904c1a5f0ceaaeb1f32b8eb1552a4ca010",
+      "contracts/generated/governed-intake-candidate/manifest.json": "ce438b86be42e01df561a1023945a59105511d1c"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "GovernedIntakeCurrentReleasePinV1",
+  "producer": {
+    "repository": "spencer-shadley/.github",
+    "defaultBranch": "main",
+    "releaseCommit": "c0b3cbe3a28a2047c28bb4942f4f3a90659fa792",
+    "producerCommit": "d2ee7995026cfceba4ecb1d459a19dd893a28948",
+    "sourcePath": "contracts/governed-intake-body.v1.json",
+    "sourceBlobSha": "6cf18690001cefb6e1480d69bc783e0a4c8e7e82",
+    "releaseManifestPath": "contracts/generated/governed-intake/manifest.json",
+    "releaseManifestBlobSha": "8d0a229f6d2bb67c87c163a2df418fbf0a34038e"
+  },
+  "revision": 22,
+  "payloadDigest": "sha256:94c8c124d34b3fb303ea7b337f6bad1a6a1142efff3c2994df510f0dc746c244"
+}

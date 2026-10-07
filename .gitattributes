@@ -1,0 +1,2 @@
+# Byte-exact git blobs recorded for test/consumer-pin-admission.test.ts; never normalize line endings.
+test/fixtures/consumer-pin/blobs/** -text
