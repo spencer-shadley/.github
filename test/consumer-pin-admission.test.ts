@@ -183,7 +183,7 @@ test("the CLI replays recorded cases with gate exit codes", () => {
 
 test("fingerprints cover every helper the resolution path copies, and a mutated helper or constant is drift (.github#57 review)", () => {
   assert.deepEqual(Object.keys(VENDORED_WORKER_RESOLUTION.functions).sort(),
-    ["decodeProducerContent", "requireString", "resolveGovernedIntakeRuntime", "sha256Utf8", "verifyLiveManifest", "verifyProducerPayload"]);
+    ["decodeProducerContent", "requireString", "resolveGovernedIntakeRuntime", "selectAdmittedRelease", "sha256Utf8", "verifyLiveManifest", "verifyProducerPayload"]);
   assert.deepEqual(Object.keys(VENDORED_WORKER_RESOLUTION.declarations).sort(), ["PRODUCER_REPOSITORY", "PRODUCER_SOURCE_PATH"]);
   // A worker-shaped source: every mirrored function and constant, so only a mutation can differ.
   const source = [
@@ -202,4 +202,25 @@ test("fingerprints cover every helper the resolution path copies, and a mutated 
   assert.deepEqual(workerResolutionDrift(removed, recorded).map((entry) => [entry.function, entry.actual]), [["requireString", null]]);
   const constant = source.replace('"spencer-shadley/.github" as const', '"spencer-shadley/github" as const');
   assert.deepEqual(workerResolutionDrift(constant, recorded).map((entry) => entry.function), ["PRODUCER_REPOSITORY"]);
+});
+
+test("code#8013 dual accept: a same-revision republish staged in the prepared slot is admitted there; the pinned identity still is too", () => {
+  // .github#55 (r22 republished from 69809c20) against code c144fbd1, whose published slot pins d2ee7995.
+  const { input } = load("dotgithub-55-paired-with-code-8014");
+  const staged = input.paired!.consumer.files;
+  const consumer = { ...input.consumer, files: { ...input.consumer.files,
+    [CONSUMER_FILES.preparedPin]: staged[CONSUMER_FILES.publishedPin],
+    [CONSUMER_FILES.preparedManifest]: staged[CONSUMER_FILES.publishedManifest] } };
+  const verdict = evaluateConsumerPinGate({ ...input, consumer, pairedPullRequest: null, paired: null });
+  assert.equal(verdict.outcome, "admitted");
+  assert.ok(verdict.master.ok && verdict.master.slot === "prepared" && verdict.master.identity.revision === 22);
+  assert.equal(verdict.master.ok && verdict.master.identity.producerCommit, "69809c201a9650fbc6d9129b2c7be03738bc83de");
+  // Before the producer flip, main's old release (d2ee7995) still resolves through the published slot.
+  const before = load("dotgithub-40-same-revision-republish").input;
+  assert.equal(before.consumer.commit, input.consumer.commit);
+  const stillPinned = resolveWorkerAdmission(input.candidate, {
+    published: { pin: decode(staged[CONSUMER_FILES.publishedPin]), manifest: decode(staged[CONSUMER_FILES.publishedManifest]) },
+    prepared: { pin: decode(input.consumer.files[CONSUMER_FILES.preparedPin]), manifest: decode(input.consumer.files[CONSUMER_FILES.preparedManifest]) },
+  });
+  assert.ok(stillPinned.ok && stillPinned.slot === "published");
 });

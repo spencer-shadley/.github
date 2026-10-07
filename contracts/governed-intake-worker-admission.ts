@@ -2,7 +2,7 @@
  *
  * This is the consumer's own decision procedure, copied check-for-check from
  * spencer-shadley/code `tools/github-mcp-worker/src/triage-checklist-state.ts`
- * (`resolveGovernedIntakeRuntime`, `verifyLiveManifest`, `verifyProducerPayload`, and the helpers
+ * (`resolveGovernedIntakeRuntime`, `selectAdmittedRelease`, `verifyLiveManifest`, `verifyProducerPayload`, and the helpers
  * they call: `decodeProducerContent`, `sha256Utf8`, `requireString`, plus the PRODUCER_* constants)
  * at the commit recorded in VENDORED_WORKER_RESOLUTION. It answers one question
  * offline and deterministically: would the deployed worker, built from a given
@@ -38,8 +38,8 @@ export const PRODUCER_TASK_FORM_PATH = ".github/ISSUE_TEMPLATE/task.yml" as cons
 export const VENDORED_WORKER_RESOLUTION = {
   repository: "spencer-shadley/code",
   path: "tools/github-mcp-worker/src/triage-checklist-state.ts",
-  commit: "2a1f411b7cadfbb57d38c59100238fb76abe0d76",
-  blobSha: "653aa1f3602f447586f0ca8f33603091e7eb2e1e",
+  commit: "889fcb2f99bc58cf0f1a13789e9852556fa2e079",
+  blobSha: "107cd132af27cd215a42c4bc1a1011c5edd4a24c",
   /** Every worker function the resolution path runs, helpers included (.github#57 review). */
   functions: {
     requireString: "9e1c4f5927bdb40a4f1de4c56ff5d5ce86339be2f22cf53a6271fb0aac88c8d9",
@@ -47,7 +47,8 @@ export const VENDORED_WORKER_RESOLUTION = {
     decodeProducerContent: "21a9ece172e0daf76f53feffff553da039f451e9208d322eedb057ab34e2be22",
     verifyProducerPayload: "8fc590015083635920b514371ff8b826ffb2691fd76069a6e21c61295ad67fb4",
     verifyLiveManifest: "d012432ffe78317dc43659d79696b4fdd992308f3f2d1a4f539122302b0b0d9a",
-    resolveGovernedIntakeRuntime: "96b96c683342b04d482d00a0c7877687b2d7f9433268367ea8154fb76e3be98b",
+    selectAdmittedRelease: "24b80ca992aad9e6a9265954ffb8c46ab7962fe79c47787f941780fca6c59b12",
+    resolveGovernedIntakeRuntime: "4da7e663facd1f40e0cb1a028f1b55d597c5e64aeaea1db011124e6485ea3e1f",
   },
   /** Module constants those functions compare against, fingerprinted by their declaration line. */
   declarations: {
@@ -161,6 +162,17 @@ function verifyPayload(name: string, bytes: Uint8Array, bundle: WorkerReleaseBun
   }
 }
 
+/** Mirror of the worker's `selectAdmittedRelease`. */
+export function selectAdmittedSlot(liveManifest: unknown, pins: WorkerConsumerPins): WorkerSlot {
+  const live = liveManifest as { revision?: unknown; payloadDigest?: unknown; producer?: { commit?: unknown } } | null;
+  const carries = (bundle: WorkerReleaseBundle) => live?.revision === bundle.pin.revision && live.producer?.commit === bundle.pin.producer.producerCommit
+    && typeof live.payloadDigest === "string" && `sha256:${live.payloadDigest}` === bundle.pin.payloadDigest;
+  if (carries(pins.published)) return "published";
+  if (!pins.prepared) return "published";
+  if (carries(pins.prepared)) return "prepared";
+  return live?.revision === pins.prepared.pin.revision ? "prepared" : "published";
+}
+
 /**
  * Mirror of the worker's `resolveGovernedIntakeRuntime` (plus the `task.yml` read that
  * every create request performs), against the release the producer would publish.
@@ -182,9 +194,10 @@ export function resolveWorkerAdmission(release: ProducerRelease, pins: WorkerCon
     } catch (error) {
       throw new Refused({ code: "invalid_manifest", stage: "runtime", slot: "published", field: PRODUCER_MANIFEST_PATH, expected: "UTF-8 JSON", actual: String(error), message: `governed-intake invalid_manifest (${PRODUCER_REPOSITORY})` });
     }
-    // A candidate is selected only when the published manifest's revision matches it;
-    // a failed candidate never falls back to the published slot (worker semantics).
-    const slot: WorkerSlot = pins.prepared && (live as ReleaseManifest | null)?.revision === pins.prepared.pin.revision ? "prepared" : "published";
+    // The worker's selectAdmittedRelease (code#8013 dual accept): the slot whose pin carries the live
+    // producer commit + payload digest, pinned first, then staged next; otherwise the revision-keyed
+    // slot, so the refusal names its pin. A failed slot never falls back to the other one.
+    const slot: WorkerSlot = selectAdmittedSlot(live, pins);
     const bundle = slot === "prepared" ? pins.prepared! : published;
     verifyLiveManifest(live, bundle, slot);
     verifyPayload("governed-intake-body.v1.json", release.source, bundle, slot);
@@ -213,7 +226,7 @@ export function resolveWorkerAdmission(release: ProducerRelease, pins: WorkerCon
 /** Text of one top-level function in the worker source, normalized for fingerprinting. */
 export function extractWorkerFunction(source: string, name: string): string | null {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
-  const start = lines.findIndex((line) => new RegExp(`^(export )?(async )?function ${name}\\(`).test(line));
+  const start = lines.findIndex((line) => new RegExp(`^(export )?(async )?function ${name}[(<]`).test(line));
   if (start < 0) return null;
   const end = lines.findIndex((line, index) => index > start && line === "}");
   if (end < 0) return null;
