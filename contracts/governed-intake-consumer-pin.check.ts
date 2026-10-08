@@ -44,7 +44,10 @@ export function consumerPinsFromSnapshot(snapshot: ConsumerSnapshot): WorkerCons
   const json = (file: string) => {
     const bytes = snapshot.files[file];
     if (!bytes) throw new Error(`consumer snapshot ${snapshot.repository}@${commitValue(snapshot.commit)} is missing ${file}`);
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+    catch (error) {
+      throw new Error(`consumer snapshot ${snapshot.repository}@${snapshot.commit}:${file} invalid UTF-8 JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
   const hasPrepared = snapshot.files[CONSUMER_FILES.preparedPin] !== undefined;
   return {
@@ -284,7 +287,7 @@ export function main(argv: string[], api: GithubJson = ghApi, root = process.cwd
     const expectedHead = option(argv, "--head");
     const headMismatch = checkoutHeadMismatch(head, expectedHead, null);
     if (headMismatch) {
-      out(`WARNING diagnostic unavailable: ${headMismatch}`);
+      out(`WARNING diagnostic unavailable: ${headMismatch}; compatibility could not be assessed; admission proceeds.`);
       return 0;
     }
     if (prNumber) {
@@ -292,7 +295,7 @@ export function main(argv: string[], api: GithubJson = ghApi, root = process.cwd
       // The verdict is about one exact head: a checkout that is not PR N's current head says nothing about PR N.
       const prMismatch = checkoutHeadMismatch(head, expectedHead, { number: Number(prNumber), head: pr.head });
       if (prMismatch) {
-        out(`WARNING diagnostic unavailable: ${prMismatch}`);
+        out(`WARNING diagnostic unavailable: ${prMismatch}; compatibility could not be assessed; admission proceeds.`);
         return 0;
       }
     }
@@ -305,7 +308,7 @@ export function main(argv: string[], api: GithubJson = ghApi, root = process.cwd
     out(`verdict: ${verdict.outcome}${drift.length > 0 ? " (worker-rule drift warning)" : ""}; admission proceeds`);
     return 0;
   } catch (error) {
-    out(`WARNING diagnostic unavailable: ${(error as Error).message}`);
+    out(`WARNING diagnostic unavailable: ${(error as Error).message}; compatibility could not be assessed; admission proceeds.`);
     return 0;
   }
 }

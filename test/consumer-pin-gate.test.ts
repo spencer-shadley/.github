@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { checkoutHeadMismatch, loadRecordedCase, type ConsumerReader, type ConsumerSnapshot, type GateInput } from "../contracts/governed-intake-consumer-pin.check.ts";
+import { CONSUMER_FILES, checkoutHeadMismatch, loadRecordedCase, type ConsumerReader, type ConsumerSnapshot, type GateInput } from "../contracts/governed-intake-consumer-pin.check.ts";
 import {
   RECEIPT_PREFIX, formatReceipt, gateExitCode, main, redactCredentials, releaseTouchingPaths, runConsumerPinGate,
   type GateDeps, type GateReceipt,
@@ -237,4 +237,15 @@ test("local-ci runs consumer diagnostics only as a warning step", async () => {
   const { readFileSync } = await import("node:fs");
   const ci = JSON.parse(readFileSync(path.join(root, "local-ci.json"), "utf8"));
   assert.equal(ci.commands["consumer-pin-gate"].failureDisposition, "warning");
+});
+
+test("malformed consumer JSON warns with exact repository, commit and file; proceeds", async () => {
+  const input = load("main-0a9a6cbd-unchanged");
+  const malformed = { ...input.consumer, files: { ...input.consumer.files,
+    [CONSUMER_FILES.publishedPin]: new TextEncoder().encode("{") } };
+  const receipt = await run({ input, master: malformed });
+  assert.equal(receipt.ok, true);
+  assert.equal(gateExitCode(receipt), 0);
+  assert.ok(text(receipt).includes(`${input.consumer.repository}@${input.consumer.commit}:${CONSUMER_FILES.publishedPin}`));
+  assert.match(text(receipt), /invalid UTF-8 JSON.*admission proceeds/);
 });
