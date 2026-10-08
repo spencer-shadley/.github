@@ -134,33 +134,26 @@ The manifest's `producer.commit` then names the pre-squash branch commit; that i
 not compared. `npm run release:check` (also part of `test/*.test.ts`) recomputes every payload
 digest and byteLength from the tree and fails, naming the file, when the manifest was not republished.
 
-A release change must also be admitted by Code's deployed GitHub MCP Worker
-([code#8013](https://github.com/spencer-shadley/code/issues/8013)). Its worker pins one identity
-per revision and refuses anything else (`commit_mismatch`, `digest_mismatch`, `corrupt_file`).
-This is enforced automatically before every merge
-([code#8036](https://github.com/spencer-shadley/code/issues/8036)); nobody runs a check by hand.
-`local-ci.json` command `consumer-pin-gate` (`contracts/governed-intake-consumer-pin.gate.ts`)
-runs in the merge path at the exact PR head: `fleet-cli gh pr-merge` runs it with this repository's
-gate, and Code's native lander runs the base branch's copy against the same head. A PR that changes
-none of `contracts/generated/governed-intake/**`, `contracts/governed-intake-body.v1.json` or
-`.github/ISSUE_TEMPLATE/task.yml` passes offline with no reads. A release-touching PR passes only
-when its release goes through the worker's own resolution (vendored in
-`contracts/governed-intake-worker-admission.ts`) and is admitted twice: by Code `master`'s worker pins and by
-the Code commit the live worker reports as `deployed_commit`. A manifest that is byte-identical to
-the base, with only a pre-existing identity refusal, passes with a warning. It refuses (exit 1) on
-any other refusal, or if the worker's rules changed since vendoring (`DRIFT … re-vendor`). Exit 2
-means an input could not be read, and that refuses too. Every run prints one
-`consumer-pin-gate-receipt:` line binding the PR head, both Code commits and the verdict lines.
+Consumer compatibility is advisory ([code#8212](https://github.com/spencer-shadley/code/issues/8212),
+[code#7736](https://github.com/spencer-shadley/code/issues/7736)). The producer resolves the current
+release identity from its own manifest, never from a consumer pin. Existing consumer pin files and
+cached manifests are historical diagnostic inputs, not admission authority or a merge dependency.
+This change does not deploy a new Code worker; its observed behavior remains consumer-owned.
 
-When Code does not admit the release yet, open the Code PR that admits exactly this release and
-name it on its own line in this PR's body as `Consumer-Pin-Pair: spencer-shadley/code#<number>`.
-The gate then reports `paired-consumer-not-landed` with the order: merge the Code PR at the printed
-head, wait for its worker deploy, and the gate passes on its own. A new revision lands
-in the worker's prepared slot with no outage. A same-revision republish has a short paired window.
-`npm run consumer-pin:check -- --pr <n>` is the diagnostic form of the same check; with `--pr` it
-refuses unless the checkout is PR n's current head. `--consumer-git <code clone>` reads over git
-instead of the REST quota. `test/consumer-pin-admission.test.ts` and `test/consumer-pin-gate.test.ts`
-replay recorded snapshots offline, including the .github#40 and .github#43 outages, which must stay refused.
+`local-ci.json` keeps `consumer-pin-gate` (`contracts/governed-intake-consumer-pin.gate.ts`) as a
+warning step. It always exits 0. Release-touching runs compare Code `master` and the commit reported
+by worker health as `deployed_commit`. Drift warnings name the consumer repository, exact commit,
+file, field, pinned value and current producer value, state that admission proceeds, and identify
+compatibility as the operator's consideration. Historical worker-function fingerprint differences
+warn that the prediction may be stale. Unreadable inputs or a checkout/PR-head mismatch produce a
+specific diagnostic-unavailable warning; they do not assert compatibility or block progress.
+Every run prints one `consumer-pin-gate-receipt:` line with the available identities and findings.
+A paired consumer PR is no longer required and does not control admission or merge order.
+
+`npm run consumer-pin:check -- --pr <n>` is the diagnostic entrypoint; `--consumer-git <code clone>`
+uses Git reads instead of REST. `test/consumer-pin-admission.test.ts` and
+`test/consumer-pin-gate.test.ts` replay recorded snapshots offline and assert warning values and the
+proceed path. Producer payload integrity remains checked by `test/published-release.test.ts`.
 
 A new semantic revision requires current-revision triage evidence, not automatic re-execution of
 all prior reasoning. The implementation tracked by
