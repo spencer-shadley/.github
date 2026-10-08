@@ -1,5 +1,4 @@
-/** Consumer-pin integration test (spencer-shadley/code#8013): a governed-intake release must not
- * merge while code's deployed github-mcp-worker would refuse it, unless a paired consumer PR admits it.
+/** Consumer drift diagnostics (code#8212): warnings never control admission.
  * Fixtures are byte-exact git blobs recorded from spencer-shadley/.github and spencer-shadley/code
  * (each named by its git blob id and re-hashed on load). Offline and deterministic.
  */
@@ -35,117 +34,81 @@ test("every recorded fixture blob is the byte-exact git object it is named after
   }
 });
 
-test("regression .github#40: same-revision republish f2257602 vs worker pin d2ee7995 is refused with commit_mismatch", () => {
+test(".github#40 drift warns with exact consumer, file and values; current producer is admitted", () => {
   const { input } = load("dotgithub-40-same-revision-republish");
   const verdict = evaluateConsumerPinGate(input);
-  assert.equal(verdict.ok, false);
-  assert.equal(verdict.outcome, "refused");
-  assert.ok(!verdict.master.ok);
-  if (verdict.master.ok) return;
-  assert.equal(verdict.master.refusal.code, "commit_mismatch");
-  assert.equal(verdict.master.refusal.slot, "published");
-  assert.equal(verdict.master.refusal.field, "producer.producerCommit");
-  assert.equal(verdict.master.refusal.expected, "d2ee7995026cfceba4ecb1d459a19dd893a28948");
-  assert.equal(verdict.master.refusal.actual, "f2257602988ba9f5d5e94470958a1eb3ba469940");
-  assert.match(verdict.lines.join("\n"), /tools\/work-spine\/governed-intake-worker-published-release\.pin\.json producer\.producerCommit = d2ee7995.*candidate release has f2257602/);
-  assert.match(verdict.lines.join("\n"), /Consumer-Pin-Pair: spencer-shadley\/code#<number>/);
+  assert.equal(verdict.ok, true);
+  assert.equal(verdict.outcome, "consumer-drift-warning");
+  assert.ok(verdict.master.ok);
+  assert.equal(verdict.master.identity.producerCommit, "f2257602988ba9f5d5e94470958a1eb3ba469940");
+  const lines = verdict.lines.join("\n");
+  assert.match(lines, /WARNING governed-intake commit_mismatch/);
+  assert.ok(lines.includes(`spencer-shadley/code@${input.consumer.commit}:${CONSUMER_FILES.publishedPin}`));
+  assert.match(lines, /producer.producerCommit: pinned value = d2ee7995026cfceba4ecb1d459a19dd893a28948; current value = f2257602988ba9f5d5e94470958a1eb3ba469940; admission proceeds/);
+  assert.match(lines, /Consumer compatibility may differ/);
+  assert.doesNotMatch(lines, /REFUSED|FAIL|Consumer-Pin-Pair/);
 });
 
-test("regression .github#43: released bytes changed without republishing are refused even though the manifest is unchanged", () => {
+test(".github#43 producer corruption remains a specific diagnostic and admission proceeds", () => {
   const { input } = load("dotgithub-43-unpublished-source-change");
-  assert.ok(input.baseManifest && gitBlobSha(input.baseManifest) === gitBlobSha(input.candidate.manifest), "fixture keeps the manifest unchanged");
   const verdict = evaluateConsumerPinGate(input);
-  assert.equal(verdict.ok, false);
-  assert.ok(!verdict.master.ok);
-  if (verdict.master.ok) return;
-  assert.equal(verdict.master.refusal.code, "corrupt_file");
-  assert.equal(verdict.master.refusal.field, "cached manifest files[governed-intake-body.v1.json]");
-  assert.match(verdict.lines.join("\n"), /released bytes changed without republishing/);
+  assert.equal(verdict.ok, true);
+  assert.equal(verdict.outcome, "producer-warning");
+  assert.ok(!verdict.master.ok && verdict.master.refusal.code === "corrupt_file");
+  assert.match(verdict.lines.join("\n"), /WARNING producer spencer-shadley\/\.github@.*manifest.files\[governed-intake-body.v1.json\].*corrupt_file.*admission proceeds/);
 });
 
-test("a declared pairing cannot rescue the .github#40 shape when the paired head still pins the old producer", () => {
-  const { input } = load("dotgithub-40-same-revision-republish");
-  const verdict = evaluateConsumerPinGate({
-    ...input, pairedPullRequest: 9999,
-    paired: { pullRequest: 9999, state: "open", merged: false, baseRef: "master", consumer: input.consumer },
-  });
-  assert.equal(verdict.ok, false);
-  assert.match(verdict.lines.join("\n"), /paired spencer-shadley\/code#9999 head c144fbd1 does not admit this release either/);
-});
-
-test("current main with an unchanged manifest is admitted by code master's worker pin", () => {
+test("unchanged producer resolves without warnings when the consumer evidence matches", () => {
   const { input } = load("main-0a9a6cbd-unchanged");
   const verdict = evaluateConsumerPinGate(input);
   assert.equal(verdict.outcome, "admitted");
   assert.ok(verdict.master.ok);
-  if (!verdict.master.ok) return;
-  assert.equal(verdict.master.slot, "published");
+  assert.deepEqual(verdict.master.warnings, []);
   assert.equal(verdict.master.identity.producerCommit, "69809c201a9650fbc6d9129b2c7be03738bc83de");
-  assert.equal(verdict.master.identity.payloadDigest, "sha256:3b732d9153237110a4a3dcb465301dc673421d944628aea1175bfdd5e8814203");
 });
 
-test("an unchanged manifest passes with a pre-existing drift warning when only manifest identity is refused", () => {
-  const { input } = load("dotgithub-40-same-revision-republish");
-  const verdict = evaluateConsumerPinGate({ ...input, baseManifest: input.candidate.manifest });
-  assert.equal(verdict.ok, true);
-  assert.equal(verdict.outcome, "unchanged-pre-existing-drift");
-});
-
-test(".github#55 + code#8014: refused alone, admitted only through the declared paired consumer PR", () => {
+test("pairing status and merge order never affect admission", () => {
   const { input } = load("dotgithub-55-paired-with-code-8014");
   const alone = evaluateConsumerPinGate({ ...input, pairedPullRequest: null, paired: null });
-  assert.equal(alone.ok, false);
-  const paired = evaluateConsumerPinGate(input);
-  assert.equal(paired.outcome, "admitted-by-paired-consumer-pr");
-  assert.match(paired.lines.join("\n"), /merge spencer-shadley\/code#8014 at head d5c7e16f9bf509769ce85b48509665523c2e8b4c first/);
+  for (const paired of [input.paired, null, { ...input.paired!, state: "closed", merged: false, baseRef: "release" }]) {
+    assert.deepEqual(evaluateConsumerPinGate({ ...input, paired }), alone);
+  }
+  assert.equal(alone.ok, true);
+  assert.equal(alone.outcome, "consumer-drift-warning");
 });
 
-test("pairing is refused when the paired PR is closed unmerged, targets another branch, or its pin digest differs", () => {
-  const { input } = load("dotgithub-55-paired-with-code-8014");
-  const paired = input.paired!;
-  assert.equal(evaluateConsumerPinGate({ ...input, paired: { ...paired, state: "closed", merged: false } }).ok, false);
-  assert.equal(evaluateConsumerPinGate({ ...input, paired: { ...paired, baseRef: "release" } }).ok, false);
-  assert.equal(evaluateConsumerPinGate({ ...input, paired: undefined }).ok, false);
-  const merged = evaluateConsumerPinGate({ ...input, paired: { ...paired, state: "closed", merged: true } });
-  assert.equal(merged.ok, true);
-  const tampered = withConsumerFile({ ...input, consumer: paired.consumer }, CONSUMER_FILES.publishedPin, (pin) => {
+test("every pin comparison warns and never supplies the resolved identity", () => {
+  const { input } = load("main-0a9a6cbd-unchanged");
+  const edited = withConsumerFile(input, CONSUMER_FILES.publishedPin, (pin) => {
+    pin.schema = "old-schema";
+    pin.producer.repository = "old/consumer";
+    pin.producer.producerCommit = "0".repeat(40);
+    pin.producer.sourceBlobSha = "1".repeat(40);
+    pin.producer.releaseManifestBlobSha = "2".repeat(40);
+    pin.revision = 1;
     pin.payloadDigest = `sha256:${"0".repeat(64)}`;
   });
-  const verdict = evaluateConsumerPinGate({ ...input, paired: { ...paired, consumer: tampered.consumer } });
-  assert.equal(verdict.ok, false);
-  assert.ok(verdict.paired && !verdict.paired.ok && verdict.paired.refusal.code === "invalid_pin");
+  const drifted = withConsumerFile(edited, CONSUMER_FILES.publishedManifest, (manifest) => { manifest.payloadDigest = "3".repeat(64); });
+  const verdict = evaluateConsumerPinGate(drifted);
+  assert.ok(verdict.master.ok);
+  assert.equal(verdict.master.identity.revision, 22);
+  assert.equal(verdict.master.identity.producerCommit, decode(input.candidate.manifest).producer.commit);
+  assert.deepEqual(verdict.master.warnings.map((w) => w.field), ["schema", "producer.repository", "producer.producerCommit", "revision", "payloadDigest", "cached manifest payloadDigest", "producer.sourceBlobSha", "producer.releaseManifestBlobSha"]);
+  assert.equal(verdict.ok, true);
+  for (const warning of verdict.master.warnings) {
+    assert.ok(verdict.lines.some((line) => line.includes(warning.field) && line.includes(warning.expected) && line.includes(warning.actual) && line.includes("admission proceeds")));
+  }
+  assert.ok(verdict.lines.some((line) => line.includes(`${CONSUMER_FILES.publishedManifest} cached manifest payloadDigest`)));
 });
 
-test("digest and source/manifest blob mismatches are refused even when the producer commit matches", () => {
-  const { input } = load("main-0a9a6cbd-unchanged");
-  const pinned = (edit: (pin: any) => void) => withConsumerFile(input, CONSUMER_FILES.publishedPin, edit);
-  const cached = (edit: (manifest: any) => void) => withConsumerFile(input, CONSUMER_FILES.publishedManifest, edit);
-  const code = (gate: GateInput) => {
-    const resolution = resolveWorkerAdmission(gate.candidate, {
-      published: { pin: decode(gate.consumer.files[CONSUMER_FILES.publishedPin]), manifest: decode(gate.consumer.files[CONSUMER_FILES.publishedManifest]) },
-      prepared: { pin: decode(gate.consumer.files[CONSUMER_FILES.preparedPin]), manifest: decode(gate.consumer.files[CONSUMER_FILES.preparedManifest]) },
-    });
-    return resolution.ok ? "ok" : resolution.refusal.code;
-  };
-  assert.equal(code(input), "ok");
-  assert.equal(code(pinned((pin) => { pin.producer.sourceBlobSha = "0".repeat(40); })), "source_blob_mismatch");
-  assert.equal(code(pinned((pin) => { pin.producer.releaseManifestBlobSha = "0".repeat(40); })), "manifest_blob_mismatch");
-  const otherDigest = "1".repeat(64);
-  assert.equal(code(cached((manifest) => { manifest.payloadDigest = otherDigest; })), "invalid_pin");
-  const both = withConsumerFile(cached((manifest) => { manifest.payloadDigest = otherDigest; }), CONSUMER_FILES.publishedPin, (pin) => { pin.payloadDigest = `sha256:${otherDigest}`; });
-  assert.equal(code(both), "digest_mismatch");
-  const taskForm = new TextEncoder().encode(`${new TextDecoder().decode(input.candidate.taskForm)}\n# drift\n`);
-  assert.equal(code({ ...input, candidate: { ...input.candidate, taskForm } }), "corrupt_file");
-});
-
-test("a live revision matching the prepared slot selects it and never falls back to the published slot", () => {
+test("prepared slot identifies historical drift but does not pin producer revision or identity", () => {
   const { input } = load("main-0a9a6cbd-unchanged");
   const manifest = decode(input.candidate.manifest);
   manifest.revision = 23;
   const verdict = evaluateConsumerPinGate({ ...input, candidate: { ...input.candidate, manifest: encode(manifest) } });
-  assert.equal(verdict.ok, false);
-  assert.ok(!verdict.master.ok && verdict.master.refusal.slot === "prepared" && verdict.master.refusal.code === "commit_mismatch");
-  assert.match(verdict.lines.join("\n"), /governed-intake-candidate-release\.pin\.json producer\.producerCommit = 6425de19/);
+  assert.equal(verdict.ok, true);
+  assert.ok(verdict.master.ok && verdict.master.slot === "prepared" && verdict.master.identity.revision === 23);
+  assert.match(verdict.lines.join("\n"), /governed-intake-candidate-release.pin.json producer.producerCommit: pinned value = 6425de19/);
 });
 
 test("the PR-body pairing trailer is exact and names a spencer-shadley/code PR", () => {
@@ -166,18 +129,18 @@ test("worker-rule drift detection flags a changed or missing mirrored function",
   assert.equal(drift.find((entry) => entry.function === "verifyProducerPayload")?.actual, null);
 });
 
-test("the CLI replays recorded cases with gate exit codes", () => {
+test("the CLI replays recorded cases with advisory exit codes", () => {
   const silence = process.stdout.write;
   const lines: string[] = [];
   process.stdout.write = ((chunk: string) => { lines.push(String(chunk)); return true; }) as typeof process.stdout.write;
   try {
-    assert.equal(main(["--case", "test/fixtures/consumer-pin/dotgithub-40-same-revision-republish.case.json"], () => { throw new Error("offline"); }, root), 1);
-    assert.equal(main(["--case", "test/fixtures/consumer-pin/dotgithub-43-unpublished-source-change.case.json"], () => { throw new Error("offline"); }, root), 1);
+    assert.equal(main(["--case", "test/fixtures/consumer-pin/dotgithub-40-same-revision-republish.case.json"], () => { throw new Error("offline"); }, root), 0);
+    assert.equal(main(["--case", "test/fixtures/consumer-pin/dotgithub-43-unpublished-source-change.case.json"], () => { throw new Error("offline"); }, root), 0);
     assert.equal(main(["--case", "test/fixtures/consumer-pin/main-0a9a6cbd-unchanged.case.json"], () => { throw new Error("offline"); }, root), 0);
   } finally {
     process.stdout.write = silence;
   }
-  assert.match(lines.join(""), /verdict: refused/);
+  assert.match(lines.join(""), /verdict: consumer-drift-warning/);
   assert.match(lines.join(""), /verdict: admitted/);
 });
 

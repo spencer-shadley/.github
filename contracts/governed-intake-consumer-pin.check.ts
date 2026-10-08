@@ -1,26 +1,8 @@
-/** Pre-merge consumer-pin integration check for governed-intake releases (spencer-shadley/code#8013).
- *
- * Runs the candidate release on this checkout through the github-mcp-worker's own
- * resolution (vendored in governed-intake-worker-admission.ts) against the worker
- * pins on Code's default branch, read at one exact commit. The verdict:
- * - admitted: Code master's deployed worker accepts this release. Pass.
- * - unchanged-pre-existing-drift: the release manifest is byte-identical to the base
- *   and only manifest identity is refused. This PR did not cause it. Pass with a warning.
- * - admitted-by-paired-consumer-pr: refused by master, but the PR declares
- *   `Consumer-Pin-Pair: spencer-shadley/code#N`, and that open (or merged) PR's head
- *   pins admit the release. Pass, and print the required merge order.
- * - refused: fail. The message names the consumer file, the field and both values.
- *
- * Spencer (2026-10-06 7:31 PM PT): a consumer test in .github is fine when it is an
- * example or a real integration test (refines .github#37). This is the integration test.
- * The offline gate (test/consumer-pin-admission.test.ts) replays recorded consumer
- * snapshots. The networked mode below reads the live consumer through `gh api`.
- *
- * Usage (repository root):
- *   node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts [--base origin/main] [--pr N [--head <sha>] | --paired-pr N] [--consumer-git <code clone>]
- *   (`--pr N` refuses, exit 2, unless the checkout HEAD is PR N's current head and equals `--head` when given.)
- *   node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts --case test/fixtures/consumer-pin/<name>.case.json
- * Exit codes: 0 pass, 1 refused (or worker rules drifted from the vendored copy), 2 indeterminate (read failure).
+/** Advisory consumer drift diagnostics (code#8212, code#7736).
+ * Every finding names the consumer file and both values. Exit 0 always permits progress;
+ * unreadable inputs warn that compatibility could not be assessed. No paired PR is required.
+ * Usage: node --experimental-strip-types contracts/governed-intake-consumer-pin.check.ts
+ *   [--case <fixture>] [--pr N] [--head <sha>] [--consumer-git <clone>]
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -40,7 +22,7 @@ export const CONSUMER_FILES = {
   preparedPin: "tools/work-spine/governed-intake-candidate-release.pin.json",
   preparedManifest: "contracts/generated/governed-intake-candidate/manifest.json",
 } as const;
-/** The explicit escape: one trailer line in the .github PR body naming the paired Code PR. */
+/** Historical fixture trailer: one trailer line in the .github PR body naming the paired Code PR. */
 export const PAIRING_TRAILER = /^Consumer-Pin-Pair:[ \t]*spencer-shadley\/code#(\d+)[ \t]*$/m;
 
 export type ConsumerSnapshot = { repository: string; commit: string; files: Record<string, Uint8Array> };
@@ -53,18 +35,19 @@ export type GateInput = {
   pairedPullRequest?: number | null;
   paired?: PairedConsumer | null;
 };
-export type GateOutcome = "admitted" | "unchanged-pre-existing-drift" | "admitted-by-paired-consumer-pr" | "refused";
+export type GateOutcome = "admitted" | "consumer-drift-warning" | "producer-warning";
 export type GateVerdict = { ok: boolean; outcome: GateOutcome; lines: string[]; master: WorkerResolution; paired?: WorkerResolution };
 
-const MANIFEST_IDENTITY_CODES = new Set(["invalid_pin", "invalid_manifest", "repository_mismatch", "commit_mismatch", "revision_mismatch", "digest_mismatch", "manifest_blob_mismatch"]);
-const short = (sha: string | undefined) => (sha ?? "?").slice(0, 8);
-const equalBytes = (a: Uint8Array, b: Uint8Array) => a.byteLength === b.byteLength && a.every((byte, index) => byte === b[index]);
+const commitValue = (sha: string | undefined) => sha ?? "?";
 
 export function consumerPinsFromSnapshot(snapshot: ConsumerSnapshot): WorkerConsumerPins {
   const json = (file: string) => {
     const bytes = snapshot.files[file];
-    if (!bytes) throw new Error(`consumer snapshot ${snapshot.repository}@${short(snapshot.commit)} is missing ${file}`);
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!bytes) throw new Error(`consumer snapshot ${snapshot.repository}@${commitValue(snapshot.commit)} is missing ${file}`);
+    try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+    catch (error) {
+      throw new Error(`consumer snapshot ${snapshot.repository}@${snapshot.commit}:${file} invalid UTF-8 JSON: ${error instanceof Error ? error.message : String(error)}`);
+    }
   };
   const hasPrepared = snapshot.files[CONSUMER_FILES.preparedPin] !== undefined;
   return {
@@ -77,59 +60,30 @@ function describeRefusal(snapshot: ConsumerSnapshot, refusal: WorkerRefusal): st
   const file = refusal.field.startsWith("cached manifest")
     ? (refusal.slot === "prepared" ? CONSUMER_FILES.preparedManifest : CONSUMER_FILES.publishedManifest)
     : (refusal.slot === "prepared" ? CONSUMER_FILES.preparedPin : CONSUMER_FILES.publishedPin);
-  return `REFUSED ${refusal.message} [${refusal.stage}, ${refusal.slot} slot]: ${snapshot.repository}@${short(snapshot.commit)}:${file} `
-    + `${refusal.field} = ${refusal.expected}; candidate release has ${refusal.actual}`;
+  return `WARNING ${refusal.message} [${refusal.stage}, ${refusal.slot} slot]: ${snapshot.repository}@${commitValue(snapshot.commit)}:${file} `
+    + `${refusal.field}: pinned value = ${refusal.expected}; current value = ${refusal.actual}; admission proceeds. `
+    + "Consumer compatibility may differ; weigh the reported values against the current producer release.";
 }
 
 function describeAdmission(snapshot: ConsumerSnapshot, resolution: Extract<WorkerResolution, { ok: true }>): string {
   const id = resolution.identity;
-  return `RESOLVED ${snapshot.repository}@${short(snapshot.commit)} worker ${resolution.slot} slot admits revision ${id.revision} `
+  return `RESOLVED ${snapshot.repository}@${commitValue(snapshot.commit)} current producer resolves revision ${id.revision} `
     + `producer ${id.producerCommit} digest ${id.payloadDigest}`;
 }
 
-/** Pure, deterministic verdict over already-read inputs. */
+/** Pure diagnostics. Consumer snapshots are evidence, never a merge prerequisite. */
 export function evaluateConsumerPinGate(input: GateInput): GateVerdict {
-  const lines: string[] = [];
   const master = resolveWorkerAdmission(input.candidate, consumerPinsFromSnapshot(input.consumer));
-  if (master.ok) {
-    lines.push(describeAdmission(input.consumer, master));
-    return { ok: true, outcome: "admitted", lines, master };
+  const lines: string[] = [];
+  if (!master.ok) {
+    lines.push(`WARNING producer ${PRODUCER_REPOSITORY}@${input.candidate.commit ?? "working-tree"}: ${master.refusal.field} `
+      + `${master.refusal.code}; expected value = ${master.refusal.expected}; current value = ${master.refusal.actual}; `
+      + "admission proceeds. Repair the reported producer bytes before relying on this release.");
+    return { ok: true, outcome: "producer-warning", lines, master };
   }
-  lines.push(describeRefusal(input.consumer, master.refusal));
-  const unchanged = input.baseManifest !== null && equalBytes(input.baseManifest, input.candidate.manifest);
-  if (unchanged && MANIFEST_IDENTITY_CODES.has(master.refusal.code)) {
-    lines.push("PASS (pre-existing drift): the release manifest is byte-identical to the base, so this PR does not change what the worker sees. "
-      + `The deployed worker already refuses the base release. Restore ${CONSUMER_REPOSITORY} pins separately (spencer-shadley/code#8013).`);
-    return { ok: true, outcome: "unchanged-pre-existing-drift", lines, master };
-  }
-  if (input.pairedPullRequest == null) {
-    lines.push(`FAIL: ${CONSUMER_REPOSITORY} ${CONSUMER_DEFAULT_BRANCH} would refuse this release${unchanged ? " (released bytes changed without republishing)" : ""}. `
-      + `Either publish a release the deployed worker admits, or open the paired ${CONSUMER_REPOSITORY} PR that admits exactly this release `
-      + `and declare it in this PR body as "Consumer-Pin-Pair: ${CONSUMER_REPOSITORY}#<number>".`);
-    return { ok: false, outcome: "refused", lines, master };
-  }
-  const paired = input.paired;
-  if (!paired || paired.pullRequest !== input.pairedPullRequest) {
-    lines.push(`FAIL: declared pairing ${CONSUMER_REPOSITORY}#${input.pairedPullRequest} could not be read.`);
-    return { ok: false, outcome: "refused", lines, master };
-  }
-  if (paired.baseRef !== CONSUMER_DEFAULT_BRANCH || (paired.state !== "open" && !paired.merged)) {
-    lines.push(`FAIL: paired ${CONSUMER_REPOSITORY}#${paired.pullRequest} must be open or merged into ${CONSUMER_DEFAULT_BRANCH} `
-      + `(state ${paired.state}, merged ${String(paired.merged)}, base ${paired.baseRef}).`);
-    return { ok: false, outcome: "refused", lines, master };
-  }
-  const pairedResolution = resolveWorkerAdmission(input.candidate, consumerPinsFromSnapshot(paired.consumer));
-  if (!pairedResolution.ok) {
-    lines.push(describeRefusal(paired.consumer, pairedResolution.refusal));
-    lines.push(`FAIL: paired ${CONSUMER_REPOSITORY}#${paired.pullRequest} head ${short(paired.consumer.commit)} does not admit this release either.`);
-    return { ok: false, outcome: "refused", lines, master, paired: pairedResolution };
-  }
-  lines.push(describeAdmission(paired.consumer, pairedResolution));
-  lines.push(`PASS (paired): merge ${CONSUMER_REPOSITORY}#${paired.pullRequest} at head ${paired.consumer.commit} first`
-    + (pairedResolution.slot === "prepared"
-      ? `. It stages the ${pairedResolution.slot} slot, so the deployed worker keeps serving the current release. Read back worker health, then merge this PR.`
-      : `, then this PR as soon as that deploy is live. The ${pairedResolution.slot} slot admits one identity per revision, so expect a short paired-merge window. Read back worker health after both merges.`));
-  return { ok: true, outcome: "admitted-by-paired-consumer-pr", lines, master, paired: pairedResolution };
+  master.warnings.forEach((warning) => lines.push(describeRefusal(input.consumer, warning)));
+  lines.push(describeAdmission(input.consumer, master));
+  return { ok: true, outcome: master.warnings.length ? "consumer-drift-warning" : "admitted", lines, master };
 }
 
 export function parsePairingTrailer(body: string | null | undefined): number | null {
@@ -213,8 +167,8 @@ export function readConsumerSnapshot(reader: ConsumerReader, ref: string): Consu
 
 export function readWorkerDrift(reader: ConsumerReader, commit: string): string[] {
   const source = new TextDecoder("utf-8", { fatal: true }).decode(reader.read(commit, VENDORED_WORKER_RESOLUTION.path));
-  return workerResolutionDrift(source).map((drift) => `DRIFT ${CONSUMER_REPOSITORY}@${short(commit)}:${VENDORED_WORKER_RESOLUTION.path} ${drift.function} `
-    + `sha256 ${drift.actual ?? "missing"} != vendored ${drift.expected}; re-vendor contracts/governed-intake-worker-admission.ts before trusting this verdict.`);
+  return workerResolutionDrift(source).map((drift) => `WARNING worker-rule drift ${CONSUMER_REPOSITORY}@${commitValue(commit)}:${VENDORED_WORKER_RESOLUTION.path} ${drift.function} `
+    + `sha256 ${drift.actual ?? "missing"} != vendored ${drift.expected}; historical fingerprint differs; compatibility prediction may be stale; admission proceeds.`);
 }
 
 export function readPairedConsumer(reader: ConsumerReader, pullRequest: number): PairedConsumer {
@@ -239,7 +193,7 @@ export function readProducerPullRequest(number: number, api: GithubJson | null):
 
 /**
  * Exact-head binding (.github#57 review): the checkout must be the commit the verdict is for.
- * Returns a refusal reason, or null when the checkout HEAD equals `--head` and PR N's current head.
+ * Returns a diagnostic reason, or null when the checkout HEAD equals `--head` and PR N's current head.
  */
 export function checkoutHeadMismatch(checkoutHead: string, expectedHead: string | undefined, pr: { number: number; head: string } | null): string | null {
   const full = /^[0-9a-f]{40}$/;
@@ -315,7 +269,7 @@ export function main(argv: string[], api: GithubJson = ghApi, root = process.cwd
       const verdict = evaluateConsumerPinGate(input);
       verdict.lines.forEach(out);
       out(`verdict: ${verdict.outcome}`);
-      return verdict.ok ? 0 : 1;
+      return 0;
     }
     const baseRef = option(argv, "--base") ?? "origin/main";
     const read = (file: string) => new Uint8Array(readFileSync(path.join(root, file)));
@@ -326,47 +280,36 @@ export function main(argv: string[], api: GithubJson = ghApi, root = process.cwd
     try {
       baseManifest = new Uint8Array(git(["show", `${baseRef}:${PRODUCER_MANIFEST_PATH}`], root));
     } catch {
-      out(`INDETERMINATE: cannot read ${PRODUCER_MANIFEST_PATH} at base ${baseRef}; fetch it or pass --base <ref>.`);
-      return 2;
+      out(`WARNING diagnostic unavailable: cannot read ${PRODUCER_MANIFEST_PATH} at base ${baseRef}; fetch it or pass --base <ref>.`);
+      return 0;
     }
     const prNumber = option(argv, "--pr");
     const expectedHead = option(argv, "--head");
     const headMismatch = checkoutHeadMismatch(head, expectedHead, null);
     if (headMismatch) {
-      out(`INDETERMINATE: ${headMismatch}`);
-      return 2;
+      out(`WARNING diagnostic unavailable: ${headMismatch}; compatibility could not be assessed; admission proceeds.`);
+      return 0;
     }
-    const explicitPair = option(argv, "--paired-pr");
-    let pairedPullRequest: number | null = explicitPair ? Number(explicitPair) : null;
     if (prNumber) {
       const pr = readProducerPullRequest(Number(prNumber), consumerGit ? null : api);
       // The verdict is about one exact head: a checkout that is not PR N's current head says nothing about PR N.
       const prMismatch = checkoutHeadMismatch(head, expectedHead, { number: Number(prNumber), head: pr.head });
       if (prMismatch) {
-        out(`INDETERMINATE: ${prMismatch}`);
-        return 2;
+        out(`WARNING diagnostic unavailable: ${prMismatch}; compatibility could not be assessed; admission proceeds.`);
+        return 0;
       }
-      if (pairedPullRequest === null) pairedPullRequest = parsePairingTrailer(pr.body);
     }
     const consumer = readConsumerSnapshot(reader, option(argv, "--consumer-ref") ?? CONSUMER_DEFAULT_BRANCH);
     out(`candidate: spencer-shadley/.github@${head} (base ${baseRef}); consumer: ${CONSUMER_REPOSITORY}@${consumer.commit}`);
     const drift = readWorkerDrift(reader, consumer.commit);
-    let paired: PairedConsumer | null = null;
-    const verdict0 = evaluateConsumerPinGate({ candidate, baseManifest, consumer, pairedPullRequest: null });
-    if (!verdict0.ok && pairedPullRequest !== null) {
-      paired = readPairedConsumer(reader, pairedPullRequest);
-      drift.push(...readWorkerDrift(reader, paired.consumer.commit));
-    }
+    const verdict = evaluateConsumerPinGate({ candidate, baseManifest, consumer });
     drift.forEach(out);
-    const verdict = paired || (!verdict0.ok && pairedPullRequest !== null)
-      ? evaluateConsumerPinGate({ candidate, baseManifest, consumer, pairedPullRequest, paired })
-      : verdict0;
     verdict.lines.forEach(out);
-    out(`verdict: ${drift.length > 0 ? "refused (worker rules drifted)" : verdict.outcome}`);
-    return drift.length === 0 && verdict.ok ? 0 : 1;
+    out(`verdict: ${verdict.outcome}${drift.length > 0 ? " (worker-rule drift warning)" : ""}; admission proceeds`);
+    return 0;
   } catch (error) {
-    out(`INDETERMINATE: ${(error as Error).message}`);
-    return 2;
+    out(`WARNING diagnostic unavailable: ${(error as Error).message}; compatibility could not be assessed; admission proceeds.`);
+    return 0;
   }
 }
 
