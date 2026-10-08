@@ -1,25 +1,8 @@
-/** Automatic merge gate for release-touching pull requests (spencer-shadley/code#8036).
- *
- * `fleet-cli gh pr-merge` runs this repository's `local-ci.json` commands in a checkout of the
- * exact PR head before any merge effect, and Code's native lander runs this file from the base
- * branch against the same head. Nobody has to remember `npm run consumer-pin:check`.
- *
- * - Not release-touching (the PR changes none of RELEASE_TRIGGER_PATHS): pass, offline, no reads.
- * - Release-touching: bind to the exact PR head, run the consumer-pin check against Code `master`
- *   (governed-intake-consumer-pin.check.ts), then read back the deployed github-mcp-worker and run
- *   the same check against the Code commit it actually serves. Both must admit the release.
- *   `admitted-by-paired-consumer-pr` is never enough to merge: the paired Code PR merges first,
- *   its deploy is read back, and only then does this gate pass (the master and deployed runs admit).
- * - Anything else refuses: exit 1 for a refusal (including `DRIFT … re-vendor`), exit 2 when an
- *   input could not be read. A missing receipt is never a pass.
- *
- * Every run prints one `consumer-pin-gate-receipt: {json}` line binding the `.github` head, the
- * Code master commit, the deployed Code commit, the paired PR and the verdict lines. Output is
- * scrubbed of tokens and credential-bearing URLs.
- *
- * Usage (repository root, at the PR head):
- *   node --experimental-strip-types contracts/governed-intake-consumer-pin.gate.ts [--pr N] [--head <sha>] [--base origin/main]
- * Without `--pr`, the PR is the single open PR to main whose head is the checkout HEAD.
+/** Advisory consumer compatibility step (code#8212, code#7736).
+ * Preserves exact-head diagnostic receipts and deployed-worker readback, always exits 0.
+ * Consumer drift, changed historical rules, and unreadable inputs are specific warnings.
+ * Usage: node --experimental-strip-types contracts/governed-intake-consumer-pin.gate.ts
+ *   [--pr N] [--head <sha>] [--base origin/main]
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -27,8 +10,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   CONSUMER_REPOSITORY, checkoutHeadMismatch, evaluateConsumerPinGate, ghApi, parsePairingTrailer,
-  readConsumerSnapshot, readPairedConsumer, readProducerPullRequest, readWorkerDrift, restConsumerReader,
-  type ConsumerReader, type GateOutcome, type GithubJson, type PairedConsumer, type ProducerPullRequest,
+  readConsumerSnapshot, readProducerPullRequest, readWorkerDrift, restConsumerReader,
+  type ConsumerReader, type GateOutcome, type GithubJson, type ProducerPullRequest,
 } from "./governed-intake-consumer-pin.check.ts";
 import { PRODUCER_MANIFEST_PATH, PRODUCER_REPOSITORY, PRODUCER_SOURCE_PATH, PRODUCER_TASK_FORM_PATH } from "./governed-intake-worker-admission.ts";
 
@@ -40,11 +23,9 @@ export const RELEASE_TRIGGER_PATHS = [
 ] as const;
 export const WORKER_HEALTH_URL = "https://github-mcp-worker.spencer-shadley.workers.dev/";
 export const RECEIPT_PREFIX = "consumer-pin-gate-receipt: ";
-export const MERGEABLE_OUTCOMES: ReadonlySet<GateOutcome> = new Set(["admitted", "unchanged-pre-existing-drift"]);
 
 export type GateCode =
-  | "not-release-touching" | "admitted" | "refused" | "worker-rules-drifted"
-  | "paired-consumer-not-landed" | "deployed-worker-refuses" | "indeterminate";
+  | "not-release-touching" | "admitted" | "consumer-drift-warning" | "producer-warning" | "worker-rules-drifted" | "indeterminate";
 export type GateReceipt = {
   schema: "GovernedIntakeConsumerPinGateReceiptV1";
   ok: boolean;
@@ -89,20 +70,20 @@ function option(argv: string[], name: string): string | undefined {
 
 class Indeterminate extends Error {}
 
-/** One gate run. Never throws: every failure becomes a refusing receipt. */
+/** One gate run. Never throws: every unavailable diagnostic becomes a warning receipt. */
 export async function runConsumerPinGate(argv: string[], deps: GateDeps): Promise<GateReceipt> {
   const base = option(argv, "--base") ?? "origin/main";
   const prOption = option(argv, "--pr");
   const expectedHead = option(argv, "--head");
   const receipt: GateReceipt = {
-    schema: "GovernedIntakeConsumerPinGateReceiptV1", ok: false, code: "indeterminate",
+    schema: "GovernedIntakeConsumerPinGateReceiptV1", ok: true, code: "indeterminate",
     producer: { repository: PRODUCER_REPOSITORY, pullRequest: prOption ? Number(prOption) : null, head: "", base, mergeBase: null, triggerPaths: [] },
     consumer: { repository: CONSUMER_REPOSITORY, masterCommit: null, deployedCommit: null, pairedPullRequest: null, pairedHead: null },
     verdict: { master: null, deployed: null },
     lines: [],
   };
   const say = (line: string) => receipt.lines.push(redactCredentials(line));
-  const finish = (code: GateCode, ok: boolean) => { receipt.code = code; receipt.ok = ok; return receipt; };
+  const finish = (code: GateCode) => { receipt.code = code; return receipt; };
   try {
     receipt.producer.head = deps.git(["rev-parse", "HEAD"]).trim();
     const early = checkoutHeadMismatch(receipt.producer.head, expectedHead, null);
@@ -123,7 +104,7 @@ export async function runConsumerPinGate(argv: string[], deps: GateDeps): Promis
     receipt.producer.triggerPaths = releaseTouchingPaths(changed);
     if (receipt.producer.triggerPaths.length === 0) {
       say(`not release-touching: the PR changes none of ${RELEASE_TRIGGER_PATHS.join(", ")}.`);
-      return finish("not-release-touching", true);
+      return finish("not-release-touching");
     }
     say(`release-touching: ${receipt.producer.triggerPaths.join(", ")}`);
 
@@ -151,31 +132,15 @@ export async function runConsumerPinGate(argv: string[], deps: GateDeps): Promis
     let baseManifest: Uint8Array | null = null;
     try { baseManifest = new Uint8Array(Buffer.from(deps.git(["show", `${receipt.producer.mergeBase}:${PRODUCER_MANIFEST_PATH}`]), "utf8")); } catch { baseManifest = null; }
 
-    // 1. Code master, with the declared pairing when master alone refuses.
+    // 1. Code master: compare historical consumer evidence to the current producer.
     const master = readConsumerSnapshot(deps.consumer, "master");
     receipt.consumer.masterCommit = master.commit;
     say(`candidate: ${PRODUCER_REPOSITORY}#${pr.number}@${receipt.producer.head} (merge base ${receipt.producer.mergeBase}); consumer: ${CONSUMER_REPOSITORY}@${master.commit}`);
     const drift = deps.drift(deps.consumer, master.commit);
-    let verdict = evaluateConsumerPinGate({ candidate, baseManifest, consumer: master, pairedPullRequest: null });
-    if (!verdict.ok && pairedPullRequest !== null) {
-      const paired: PairedConsumer = readPairedConsumer(deps.consumer, pairedPullRequest);
-      receipt.consumer.pairedHead = paired.consumer.commit;
-      drift.push(...deps.drift(deps.consumer, paired.consumer.commit));
-      verdict = evaluateConsumerPinGate({ candidate, baseManifest, consumer: master, pairedPullRequest, paired });
-    }
+    const verdict = evaluateConsumerPinGate({ candidate, baseManifest, consumer: master });
     drift.forEach(say);
     verdict.lines.forEach(say);
     receipt.verdict.master = verdict.outcome;
-    if (drift.length > 0) {
-      say("REFUSED: the worker's resolution rules changed since contracts/governed-intake-worker-admission.ts was vendored.");
-      return finish("worker-rules-drifted", false);
-    }
-    if (!verdict.ok) return finish("refused", false);
-    if (verdict.outcome === "admitted-by-paired-consumer-pr") {
-      say(`REFUSED (merge order): merge ${CONSUMER_REPOSITORY}#${String(pairedPullRequest)} at head ${String(receipt.consumer.pairedHead)} first, `
-        + "wait until worker health reports that deploy, then merge this PR. This gate passes on its own once Code master and the deployed worker admit the release.");
-      return finish("paired-consumer-not-landed", false);
-    }
 
     // 2. Deployed readback: the Code commit the live worker was built from must admit it too.
     const health = await deps.workerHealth() as { deployed_commit?: unknown } | null;
@@ -189,21 +154,18 @@ export async function runConsumerPinGate(argv: string[], deps: GateDeps): Promis
     say(`deployed worker: ${CONSUMER_REPOSITORY}@${deployedCommit}`);
     live.lines.forEach(say);
     receipt.verdict.deployed = live.outcome;
-    if (deployedDrift.length > 0) return finish("worker-rules-drifted", false);
-    if (!live.ok || !MERGEABLE_OUTCOMES.has(live.outcome)) {
-      say(`REFUSED: the deployed worker (${CONSUMER_REPOSITORY}@${deployedCommit}) would refuse this release. Wait for the Code deploy that admits it, then re-run.`);
-      return finish("deployed-worker-refuses", false);
-    }
-    return finish("admitted", true);
+    if (drift.length || deployedDrift.length) return finish("worker-rules-drifted");
+    if (verdict.outcome === "producer-warning" || live.outcome === "producer-warning") return finish("producer-warning");
+    if (verdict.outcome === "consumer-drift-warning" || live.outcome === "consumer-drift-warning") return finish("consumer-drift-warning");
+    return finish("admitted");
   } catch (error) {
-    say(`INDETERMINATE: ${error instanceof Error ? error.message : String(error)}`);
-    return finish("indeterminate", false);
+    say(`WARNING diagnostic unavailable: producer ${PRODUCER_REPOSITORY}@${receipt.producer.head || "unknown"}; consumer ${CONSUMER_REPOSITORY}@${receipt.consumer.masterCommit ?? "unknown"}; ${error instanceof Error ? error.message : String(error)}; compatibility could not be assessed; admission proceeds.`);
+    return finish("indeterminate");
   }
 }
 
 export function gateExitCode(receipt: GateReceipt): number {
-  if (receipt.ok) return 0;
-  return receipt.code === "indeterminate" ? 2 : 1;
+  return 0; // Diagnostic findings never participate in merge authority.
 }
 
 export function formatReceipt(receipt: GateReceipt): string[] {

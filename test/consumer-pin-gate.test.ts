@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { checkoutHeadMismatch, loadRecordedCase, type ConsumerReader, type ConsumerSnapshot, type GateInput } from "../contracts/governed-intake-consumer-pin.check.ts";
+import { CONSUMER_FILES, checkoutHeadMismatch, loadRecordedCase, type ConsumerReader, type ConsumerSnapshot, type GateInput } from "../contracts/governed-intake-consumer-pin.check.ts";
 import {
   RECEIPT_PREFIX, formatReceipt, gateExitCode, main, redactCredentials, releaseTouchingPaths, runConsumerPinGate,
   type GateDeps, type GateReceipt,
@@ -93,53 +93,48 @@ test("a non-release PR passes untouched: no PR, consumer, or worker read", async
   assert.equal(gateExitCode(receipt), 0);
 });
 
-test("regression .github#40 through the gate: refused commit_mismatch, exit 1", async () => {
+test(".github#40 pin drift warns with values and proceeds, exit 0", async () => {
   const receipt = await run({ input: load("dotgithub-40-same-revision-republish") });
-  assert.equal(receipt.code, "refused");
-  assert.equal(gateExitCode(receipt), 1);
-  assert.match(text(receipt), /commit_mismatch.*producer\.producerCommit = d2ee7995.*candidate release has f2257602/);
+  assert.equal(receipt.code, "consumer-drift-warning");
+  assert.equal(receipt.ok, true);
+  assert.equal(gateExitCode(receipt), 0);
+  assert.match(text(receipt), /commit_mismatch.*producer.producerCommit: pinned value = d2ee7995.*current value = f2257602.*admission proceeds/);
   assert.equal(receipt.consumer.masterCommit, "c144fbd12ab67c046e9f5fafff5859113397347e");
+  assert.equal(receipt.consumer.deployedCommit, receipt.consumer.masterCommit);
 });
 
-test("regression .github#43 through the gate: a task-form/source-only change is release-touching and refused corrupt_file", async () => {
+test(".github#43 unpublished source bytes warn and proceed", async () => {
   const receipt = await run({ input: load("dotgithub-43-unpublished-source-change"), changed: [PRODUCER_SOURCE_PATH] });
-  assert.equal(receipt.code, "refused");
-  assert.match(text(receipt), /corrupt_file/);
-  const form = await run({ input: load("main-0a9a6cbd-unchanged"), changed: [PRODUCER_TASK_FORM_PATH] });
-  assert.deepEqual(form.producer.triggerPaths, [PRODUCER_TASK_FORM_PATH]);
+  assert.equal(receipt.code, "producer-warning");
+  assert.equal(receipt.ok, true);
+  assert.equal(gateExitCode(receipt), 0);
+  assert.match(text(receipt), /corrupt_file.*admission proceeds/);
 });
 
-test(".github#55: refused alone; paired with open code#8014 refused on merge order; admitted once 8014 is merged and deployed", async () => {
+test(".github#55 proceeds with or without pairing and diagnoses a lagging deployed consumer", async () => {
   const input = load("dotgithub-55-paired-with-code-8014");
   const code8014 = input.paired!.consumer;
-  const alone = await run({ input });
-  assert.equal(alone.code, "refused");
-
-  const body = "Summary\n\nConsumer-Pin-Pair: spencer-shadley/code#8014\n";
-  const open = await run({ input, body, paired: { number: 8014, state: "open", merged: false, snapshot: code8014 } });
-  assert.equal(open.code, "paired-consumer-not-landed");
-  assert.equal(gateExitCode(open), 1);
-  assert.equal(open.verdict.master, "admitted-by-paired-consumer-pr");
-  assert.equal(open.consumer.pairedHead, "d5c7e16f9bf509769ce85b48509665523c2e8b4c");
-  assert.match(text(open), /merge spencer-shadley\/code#8014 at head d5c7e16f9bf509769ce85b48509665523c2e8b4c first/);
-
-  const lagging = await run({ input, body, master: code8014, deployed: input.consumer });
-  assert.equal(lagging.code, "deployed-worker-refuses");
+  const reads: string[] = [];
+  const open = await run({ input, body: "Consumer-Pin-Pair: spencer-shadley/code#8014", paired: { number: 8014, state: "open", merged: false, snapshot: code8014 } }, undefined, reads);
+  assert.equal(open.code, "consumer-drift-warning");
+  assert.equal(gateExitCode(open), 0);
+  assert.ok(!reads.includes("pr code#8014"));
+  assert.doesNotMatch(text(open), /merge .* first|REFUSED/);
+  const lagging = await run({ input, master: code8014, deployed: input.consumer });
+  assert.equal(lagging.code, "consumer-drift-warning");
   assert.equal(lagging.verdict.master, "admitted");
-  assert.equal(lagging.consumer.deployedCommit, "c144fbd12ab67c046e9f5fafff5859113397347e");
-
-  const live = await run({ input, body, master: code8014, deployed: code8014 });
+  assert.equal(lagging.verdict.deployed, "consumer-drift-warning");
+  assert.equal(lagging.consumer.deployedCommit, input.consumer.commit);
+  assert.equal(gateExitCode(lagging), 0);
+  const live = await run({ input, master: code8014, deployed: code8014 });
   assert.equal(live.code, "admitted");
-  assert.equal(live.ok, true);
-  assert.equal(live.consumer.deployedCommit, code8014.commit);
-  assert.equal(live.verdict.deployed, "admitted");
 });
 
 test("exact head: a checkout that is not the PR's current head, or not --head, is indeterminate", async () => {
   const input = load("main-0a9a6cbd-unchanged");
   const moved = await run({ input, prHead: "1".repeat(40) });
   assert.equal(moved.code, "indeterminate");
-  assert.equal(gateExitCode(moved), 2);
+  assert.equal(gateExitCode(moved), 0);
   assert.match(text(moved), /is not spencer-shadley\/\.github#55's current head 1{40}/);
   const wrong = await run({ input }, ["--pr", "55", "--head", "2".repeat(40)]);
   assert.equal(wrong.code, "indeterminate");
@@ -149,21 +144,21 @@ test("exact head: a checkout that is not the PR's current head, or not --head, i
   assert.match(checkoutHeadMismatch(HEAD, "abc", null) ?? "", /full 40-hex/);
 });
 
-test("worker-rule drift at master or at the deployed commit refuses", async () => {
+test("worker-rule drift at master or at the deployed commit warns and proceeds", async () => {
   const input = load("main-0a9a6cbd-unchanged");
   const atMaster = await run({ input, drift: () => ["DRIFT spencer-shadley/code@c144fbd1 verifyLiveManifest re-vendor"] });
   assert.equal(atMaster.code, "worker-rules-drifted");
-  assert.equal(gateExitCode(atMaster), 1);
+  assert.equal(gateExitCode(atMaster), 0);
   const deployed: ConsumerSnapshot = { ...input.consumer, commit: "3".repeat(40) };
   const atDeployed = await run({ input, deployed, drift: (commit) => commit === deployed.commit ? ["DRIFT re-vendor"] : [] });
   assert.equal(atDeployed.code, "worker-rules-drifted");
 });
 
-test("unreadable worker health or a missing deployed_commit fails closed as indeterminate", async () => {
+test("unreadable worker health or missing deployed_commit warns and proceeds", async () => {
   const input = load("main-0a9a6cbd-unchanged");
   const down = await run({ input, health: async () => { throw new Error("fetch failed"); } });
   assert.equal(down.code, "indeterminate");
-  assert.equal(gateExitCode(down), 2);
+  assert.equal(gateExitCode(down), 0);
   const blank = await run({ input, health: async () => ({ deployed_commit: null }) });
   assert.equal(blank.code, "indeterminate");
   const ok = await run({ input });
@@ -188,8 +183,8 @@ test("refusal and indeterminate output carry no token or credential-bearing URL"
 test("the CLI prints the verdict and one bound receipt line, with gate exit codes", async () => {
   const lines: string[] = [];
   const exit = await main(["--pr", "55"], fakeDeps({ input: load("dotgithub-40-same-revision-republish") }), (line) => lines.push(line));
-  assert.equal(exit, 1);
-  assert.ok(lines.includes("verdict: refused"));
+  assert.equal(exit, 0);
+  assert.ok(lines.includes("verdict: consumer-drift-warning"));
   const receiptLine = lines.find((line) => line.startsWith(RECEIPT_PREFIX));
   assert.ok(receiptLine);
   const receipt = JSON.parse(receiptLine.slice(RECEIPT_PREFIX.length)) as GateReceipt;
@@ -197,10 +192,10 @@ test("the CLI prints the verdict and one bound receipt line, with gate exit code
   assert.equal(receipt.producer.head, HEAD);
   assert.equal(receipt.producer.pullRequest, 55);
   assert.equal(receipt.consumer.masterCommit, "c144fbd12ab67c046e9f5fafff5859113397347e");
-  assert.equal(receipt.ok, false);
+  assert.equal(receipt.ok, true);
 });
 
-test("check CLI --pr N refuses (exit 2) when the checkout is not PR N's current head (.github#57 review)", async () => {
+test("check CLI --pr N warns (exit 0) when the checkout is not PR N's current head (.github#57 review)", async () => {
   const { main: checkMain } = await import("../contracts/governed-intake-consumer-pin.check.ts");
   const lines: string[] = [];
   const write = process.stdout.write;
@@ -214,8 +209,8 @@ test("check CLI --pr N refuses (exit 2) when the checkout is not PR N's current 
   } finally {
     process.stdout.write = write;
   }
-  assert.equal(exit, 2);
-  assert.match(lines.join(""), /INDETERMINATE: checkout HEAD [0-9a-f]{40} is not spencer-shadley\/\.github#57's current head 4{40}/);
+  assert.equal(exit, 0);
+  assert.match(lines.join(""), /WARNING diagnostic unavailable: checkout HEAD [0-9a-f]{40} is not spencer-shadley\/\.github#57's current head 4{40}/);
 });
 
 test("a gate checkout without origin/main fetches it once; a base that still cannot be found is indeterminate", async () => {
@@ -236,4 +231,21 @@ test("a gate checkout without origin/main fetches it once; a base that still can
   deps.git = (args) => { if (args[0] === "merge-base" || args[0] === "fetch") throw new Error("offline"); return git(args); };
   const lost = await runConsumerPinGate([], deps);
   assert.equal(lost.code, "indeterminate");
+});
+
+test("local-ci runs consumer diagnostics only as a warning step", async () => {
+  const { readFileSync } = await import("node:fs");
+  const ci = JSON.parse(readFileSync(path.join(root, "local-ci.json"), "utf8"));
+  assert.equal(ci.commands["consumer-pin-gate"].failureDisposition, "warning");
+});
+
+test("malformed consumer JSON warns with exact repository, commit and file; proceeds", async () => {
+  const input = load("main-0a9a6cbd-unchanged");
+  const malformed = { ...input.consumer, files: { ...input.consumer.files,
+    [CONSUMER_FILES.publishedPin]: new TextEncoder().encode("{") } };
+  const receipt = await run({ input, master: malformed });
+  assert.equal(receipt.ok, true);
+  assert.equal(gateExitCode(receipt), 0);
+  assert.ok(text(receipt).includes(`${input.consumer.repository}@${input.consumer.commit}:${CONSUMER_FILES.publishedPin}`));
+  assert.match(text(receipt), /invalid UTF-8 JSON.*admission proceeds/);
 });

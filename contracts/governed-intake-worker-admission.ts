@@ -1,31 +1,6 @@
-/** Vendored github-mcp-worker release resolution (spencer-shadley/code#8013).
- *
- * This is the consumer's own decision procedure, copied check-for-check from
- * spencer-shadley/code `tools/github-mcp-worker/src/triage-checklist-state.ts`
- * (`resolveGovernedIntakeRuntime`, `selectAdmittedRelease`, `verifyLiveManifest`, `verifyProducerPayload`, and the helpers
- * they call: `decodeProducerContent`, `sha256Utf8`, `requireString`, plus the PRODUCER_* constants)
- * at the commit recorded in VENDORED_WORKER_RESOLUTION. It answers one question
- * offline and deterministically: would the deployed worker, built from a given
- * set of consumer pins and caches, refuse this producer release?
- *
- * Why vendored rather than imported: the worker functions are not exported, they
- * bind module-level JSON imports of Code's caches and Code-internal helpers, and
- * Code is a separate private repository that this repository does not depend on
- * or execute. A port with recorded per-function fingerprints keeps the verdict
- * faithful. `contracts/governed-intake-consumer-pin.check.ts` re-reads the worker
- * source at the exact consumer commit it checks against and fails closed when any
- * fingerprint differs, so a change to the worker's rules forces a re-vendor
- * instead of silently diverging.
- *
- * Differences from the worker, all deliberate:
- * - Bundles (pin + cached manifest) are parameters instead of module imports.
- * - Refusals are returned as typed values that name the field and both values,
- *   instead of thrown `Error`s. The first refusal wins, in the worker's order.
- * - `invalid_pin` omits the worker's `producer.CURRENT_TRIAGE_REVISION` term.
- *   Code's build admission already equates it with the cached manifest revision.
- * - One build-admission check runs after the runtime checks: the release manifest
- *   git blob must equal the pin's `releaseManifestBlobSha`. Code admits a
- *   byte-exact cache recorded by that blob.
+/** Producer-current release resolution with advisory consumer drift (code#8212, code#7736).
+ * Historical worker fingerprints and consumer snapshots are diagnostic evidence only.
+ * Admission uses the producer manifest; consumer pins never select release identity.
  */
 import { createHash } from "node:crypto";
 
@@ -34,7 +9,8 @@ export const PRODUCER_SOURCE_PATH = "contracts/governed-intake-body.v1.json" as 
 export const PRODUCER_MANIFEST_PATH = "contracts/generated/governed-intake/manifest.json" as const;
 export const PRODUCER_TASK_FORM_PATH = ".github/ISSUE_TEMPLATE/task.yml" as const;
 
-/** The worker source this file mirrors, with a sha256 per mirrored function body. */
+/** Historical function fixture at the recorded consumer commit. Current drift coverage
+ * uses the explicit full-byte inventory in governed-intake-worker-diagnostics.ts. */
 export const VENDORED_WORKER_RESOLUTION = {
   repository: "spencer-shadley/code",
   path: "tools/github-mcp-worker/src/triage-checklist-state.ts",
@@ -87,7 +63,7 @@ export type WorkerReleaseBundle = { pin: WorkerPin; manifest: ReleaseManifest };
 /** The worker's two slots: `published` (current) and the revision-keyed `prepared` candidate. */
 export type WorkerConsumerPins = { published: WorkerReleaseBundle; prepared: WorkerReleaseBundle | null };
 /** What the worker reads from the producer's default branch at one immutable commit. */
-export type ProducerRelease = { manifest: Uint8Array; source: Uint8Array; taskForm: Uint8Array };
+export type ProducerRelease = { manifest: Uint8Array; source: Uint8Array; taskForm: Uint8Array; commit?: string };
 
 export type WorkerRefusalCode = "invalid_pin" | "invalid_manifest" | "repository_mismatch" | "commit_mismatch"
   | "revision_mismatch" | "digest_mismatch" | "corrupt_file" | "source_blob_mismatch" | "manifest_blob_mismatch";
@@ -105,7 +81,7 @@ export type WorkerRefusal = {
   message: string;
 };
 export type WorkerResolution =
-  | { ok: true; slot: WorkerSlot; identity: { producerCommit: string; releaseCommit: string; revision: number; payloadDigest: string; sourceBlobSha: string } }
+  | { ok: true; slot: WorkerSlot; identity: { producerCommit: string; releaseCommit: string; revision: number; payloadDigest: string; sourceBlobSha: string }; warnings: WorkerRefusal[] }
   | { ok: false; refusal: WorkerRefusal };
 
 export const sha256Hex = (bytes: Uint8Array | string): string => createHash("sha256").update(bytes).digest("hex");
@@ -116,111 +92,65 @@ export function gitBlobSha(bytes: Uint8Array): string {
 const decodeUtf8 = (bytes: Uint8Array): string => new TextDecoder("utf-8", { fatal: true }).decode(bytes);
 const show = (value: unknown): string => (typeof value === "string" ? value : JSON.stringify(value) ?? "undefined");
 
-class Refused extends Error {
-  readonly refusal: WorkerRefusal;
-  constructor(refusal: WorkerRefusal) { super(refusal.message); this.refusal = refusal; }
-}
-
-/** The worker's `verifyLiveManifest`, check for check. */
-function verifyLiveManifest(value: unknown, bundle: WorkerReleaseBundle, slot: WorkerSlot): void {
-  const pin = bundle.pin;
-  const cached = bundle.manifest;
-  const refuse = (code: WorkerRefusalCode, field: string, expected: unknown, actual: unknown, detail: string): never => {
-    throw new Refused({ code, stage: "runtime", slot, field, expected: show(expected), actual: show(actual), message: `governed-intake ${code}${detail} (${PRODUCER_REPOSITORY})` });
-  };
-  const manifest = value as ReleaseManifest | null;
-  if (!manifest || manifest.schema !== "GovernedIntakeReleaseManifestV1"
-    || manifest.schemaFamily !== "GovernedIntakeBodyV1" || !manifest.files) refuse("invalid_manifest", "manifest.schema/schemaFamily/files", "GovernedIntakeReleaseManifestV1/GovernedIntakeBodyV1", `${show(manifest?.schema)}/${show(manifest?.schemaFamily)}`, "");
-  if (manifest!.producer?.repository !== PRODUCER_REPOSITORY) refuse("repository_mismatch", "producer.repository", PRODUCER_REPOSITORY, manifest!.producer?.repository, "");
-  if (manifest!.producer?.commit !== pin.producer.producerCommit) refuse("commit_mismatch", "producer.producerCommit", pin.producer.producerCommit, manifest!.producer?.commit, ": admit the new producer release before deployment");
-  if (manifest!.revision !== pin.revision) refuse("revision_mismatch", "revision", pin.revision, manifest!.revision, ": admit the new producer release before deployment");
-  const files = manifest!.files!;
-  const frame = Object.keys(files).sort().map((key) => {
-    const entry = files[key];
-    if (!entry || entry.path !== key || !/^[0-9a-f]{64}$/.test(entry.sha256)
-      || !Number.isSafeInteger(entry.byteLength) || entry.byteLength < 0) refuse("invalid_manifest", `manifest.files[${key}]`, "valid file entry", entry, " file table");
-    return `${entry.path}:${entry.sha256}:${String(entry.byteLength)}`;
-  }).join("\n");
-  const digest = sha256Hex(frame);
-  if (`sha256:${digest}` !== pin.payloadDigest) refuse("digest_mismatch", "payloadDigest", pin.payloadDigest, `sha256:${digest}`, "");
-  if (digest !== manifest!.payloadDigest) refuse("digest_mismatch", "manifest.payloadDigest (recomputed from file table)", digest, manifest!.payloadDigest, "");
-  if (digest !== cached.payloadDigest) refuse("digest_mismatch", "cached manifest payloadDigest", cached.payloadDigest, digest, "");
-}
-
-/** The worker's `verifyProducerPayload` for one released file against the selected slot. */
-function verifyPayload(name: string, bytes: Uint8Array, bundle: WorkerReleaseBundle, slot: WorkerSlot): void {
-  const entry = bundle.manifest.files?.[name];
-  const content = decodeUtf8(bytes);
-  const encoded = new TextEncoder().encode(content);
-  if (!entry || encoded.byteLength !== entry.byteLength || sha256Hex(encoded) !== entry.sha256) {
-    throw new Refused({
-      code: "corrupt_file", stage: "runtime", slot, field: `cached manifest files[${name}]`,
-      expected: entry ? `sha256:${entry.sha256} (${entry.byteLength} bytes)` : "entry present",
-      actual: `sha256:${sha256Hex(encoded)} (${encoded.byteLength} bytes)`,
-      message: `governed-intake corrupt_file: ${name}`,
-    });
-  }
-}
-
-/** Mirror of the worker's `selectAdmittedRelease`. */
+/** Legacy slot names identify the consumer file in diagnostics, never admission authority. */
 export function selectAdmittedSlot(liveManifest: unknown, pins: WorkerConsumerPins): WorkerSlot {
-  const live = liveManifest as { revision?: unknown; payloadDigest?: unknown; producer?: { commit?: unknown } } | null;
-  const carries = (bundle: WorkerReleaseBundle) => live?.revision === bundle.pin.revision && live.producer?.commit === bundle.pin.producer.producerCommit
-    && typeof live.payloadDigest === "string" && `sha256:${live.payloadDigest}` === bundle.pin.payloadDigest;
-  if (carries(pins.published)) return "published";
-  if (!pins.prepared) return "published";
-  if (carries(pins.prepared)) return "prepared";
-  return live?.revision === pins.prepared.pin.revision ? "prepared" : "published";
+  const live = liveManifest as ReleaseManifest | null;
+  return pins.prepared && live?.revision === pins.prepared.pin?.revision ? "prepared" : "published";
 }
 
-/**
- * Mirror of the worker's `resolveGovernedIntakeRuntime` (plus the `task.yml` read that
- * every create request performs), against the release the producer would publish.
- */
+/** Resolve the current producer identity and report every consumer comparison as a warning. */
 export function resolveWorkerAdmission(release: ProducerRelease, pins: WorkerConsumerPins): WorkerResolution {
-  const published = pins.published;
-  try {
-    const pin = published.pin;
-    if (pin?.schema !== "GovernedIntakeCurrentReleasePinV1" || pin.producer?.repository !== PRODUCER_REPOSITORY
-      || pin.revision !== published.manifest.revision
-      || pin.payloadDigest !== `sha256:${String(published.manifest.payloadDigest)}`) {
-      throw new Refused({ code: "invalid_pin", stage: "runtime", slot: "published", field: "published pin vs cached manifest",
-        expected: `revision ${show(published.manifest.revision)} sha256:${show(published.manifest.payloadDigest)}`,
-        actual: `revision ${show(pin?.revision)} ${show(pin?.payloadDigest)}`, message: `governed-intake invalid_pin (${PRODUCER_REPOSITORY})` });
-    }
-    let live: unknown;
-    try {
-      live = JSON.parse(decodeUtf8(release.manifest));
-    } catch (error) {
-      throw new Refused({ code: "invalid_manifest", stage: "runtime", slot: "published", field: PRODUCER_MANIFEST_PATH, expected: "UTF-8 JSON", actual: String(error), message: `governed-intake invalid_manifest (${PRODUCER_REPOSITORY})` });
-    }
-    // The worker's selectAdmittedRelease (code#8013 dual accept): the slot whose pin carries the live
-    // producer commit + payload digest, pinned first, then staged next; otherwise the revision-keyed
-    // slot, so the refusal names its pin. A failed slot never falls back to the other one.
-    const slot: WorkerSlot = selectAdmittedSlot(live, pins);
-    const bundle = slot === "prepared" ? pins.prepared! : published;
-    verifyLiveManifest(live, bundle, slot);
-    verifyPayload("governed-intake-body.v1.json", release.source, bundle, slot);
-    const sourceBlobSha = gitBlobSha(release.source);
-    if (sourceBlobSha !== bundle.pin.producer.sourceBlobSha) {
-      throw new Refused({ code: "source_blob_mismatch", stage: "runtime", slot, field: "producer.sourceBlobSha", expected: bundle.pin.producer.sourceBlobSha, actual: sourceBlobSha, message: `governed-intake source blob mismatch (${PRODUCER_REPOSITORY})` });
-    }
-    verifyPayload("task.yml", release.taskForm, bundle, slot);
-    const manifestBlobSha = gitBlobSha(release.manifest);
-    if (manifestBlobSha !== bundle.pin.producer.releaseManifestBlobSha) {
-      throw new Refused({ code: "manifest_blob_mismatch", stage: "admission", slot, field: "producer.releaseManifestBlobSha", expected: bundle.pin.producer.releaseManifestBlobSha, actual: manifestBlobSha, message: `governed-intake release manifest blob is not the admitted cache (${PRODUCER_REPOSITORY})` });
-    }
-    return { ok: true, slot, identity: {
-      producerCommit: bundle.pin.producer.producerCommit, releaseCommit: bundle.pin.producer.releaseCommit,
-      revision: bundle.pin.revision, payloadDigest: bundle.pin.payloadDigest, sourceBlobSha,
-    } };
-  } catch (error) {
-    if (error instanceof Refused) return { ok: false, refusal: error.refusal };
-    if (error instanceof TypeError) {
-      return { ok: false, refusal: { code: "corrupt_file", stage: "runtime", slot: "published", field: "UTF-8", expected: "valid UTF-8", actual: String(error), message: "governed-intake corrupt_file: invalid UTF-8" } };
-    }
-    throw error;
+  const warnings: WorkerRefusal[] = [];
+  let slot: WorkerSlot = "published";
+  const finding = (code: WorkerRefusalCode, field: string, expected: unknown, actual: unknown): WorkerRefusal => ({
+    code, stage: "runtime", slot, field, expected: show(expected), actual: show(actual),
+    message: `governed-intake ${code}`,
+  });
+  let live: ReleaseManifest;
+  try { live = JSON.parse(decodeUtf8(release.manifest)); }
+  catch (error) { return { ok: false, refusal: finding("invalid_manifest", PRODUCER_MANIFEST_PATH, "UTF-8 JSON", String(error)) }; }
+  if (!live || live.schema !== "GovernedIntakeReleaseManifestV1" || live.schemaFamily !== "GovernedIntakeBodyV1"
+    || !live.files || !Number.isSafeInteger(live.revision) || typeof live.producer?.commit !== "string") {
+    return { ok: false, refusal: finding("invalid_manifest", PRODUCER_MANIFEST_PATH, "valid producer manifest", live) };
   }
+  if (live.producer.repository !== PRODUCER_REPOSITORY) {
+    return { ok: false, refusal: finding("repository_mismatch", "producer.repository", PRODUCER_REPOSITORY, live.producer.repository) };
+  }
+  const entries = Object.entries(live.files);
+  for (const [name, entry] of entries) {
+    if (!entry || entry.path !== name || !/^[0-9a-f]{64}$/.test(entry.sha256)
+      || !Number.isSafeInteger(entry.byteLength) || entry.byteLength < 0) {
+      return { ok: false, refusal: finding("invalid_manifest", `manifest.files[${name}]`, "valid file entry", entry) };
+    }
+  }
+  const digest = sha256Hex(entries.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
+    .map(([, entry]) => `${entry.path}:${entry.sha256}:${entry.byteLength}`).join("\n"));
+  if (digest !== live.payloadDigest) return { ok: false, refusal: finding("digest_mismatch", "manifest.payloadDigest", digest, live.payloadDigest) };
+  for (const [name, bytes] of [["governed-intake-body.v1.json", release.source], ["task.yml", release.taskForm]] as const) {
+    const entry = live.files[name];
+    if (!entry || bytes.byteLength !== entry.byteLength || sha256Hex(bytes) !== entry.sha256) {
+      return { ok: false, refusal: finding("corrupt_file", `manifest.files[${name}]`, entry ?? "entry present",
+        `sha256:${sha256Hex(bytes)} (${bytes.byteLength} bytes)`) };
+    }
+  }
+  slot = selectAdmittedSlot(live, pins);
+  const bundle = slot === "prepared" ? pins.prepared! : pins.published;
+  const compare = (code: WorkerRefusalCode, field: string, pinned: unknown, current: unknown) => {
+    if (pinned !== current) warnings.push(finding(code, field, pinned, current));
+  };
+  compare("invalid_pin", "schema", bundle.pin?.schema, "GovernedIntakeCurrentReleasePinV1");
+  compare("repository_mismatch", "producer.repository", bundle.pin?.producer?.repository, live.producer.repository);
+  compare("commit_mismatch", "producer.producerCommit", bundle.pin?.producer?.producerCommit, live.producer.commit);
+  compare("revision_mismatch", "revision", bundle.pin?.revision, live.revision);
+  compare("digest_mismatch", "payloadDigest", bundle.pin?.payloadDigest, `sha256:${digest}`);
+  compare("digest_mismatch", "cached manifest payloadDigest", bundle.manifest?.payloadDigest, digest);
+  const sourceBlobSha = gitBlobSha(release.source);
+  compare("source_blob_mismatch", "producer.sourceBlobSha", bundle.pin?.producer?.sourceBlobSha, sourceBlobSha);
+  compare("manifest_blob_mismatch", "producer.releaseManifestBlobSha", bundle.pin?.producer?.releaseManifestBlobSha, gitBlobSha(release.manifest));
+  return { ok: true, slot, warnings, identity: {
+    producerCommit: live.producer.commit, releaseCommit: release.commit ?? live.producer.commit,
+    revision: live.revision as number, payloadDigest: `sha256:${digest}`, sourceBlobSha,
+  } };
 }
 
 /** Text of one top-level function in the worker source, normalized for fingerprinting. */

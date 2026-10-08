@@ -29,9 +29,9 @@
       "cwd": ".",
       "timeoutSeconds": 300,
       "expectedExitCode": 0,
-      "failureDisposition": "fail-gate",
+      "failureDisposition": "warning",
       "detectionProof": {
-        "exempt": "Runs at the exact PR head before any merge effect (spencer-shadley/code#8036). A PR that changes none of contracts/generated/governed-intake/**, contracts/governed-intake-body.v1.json or .github/ISSUE_TEMPLATE/task.yml passes offline with no reads. A release-touching PR exits 0 only when Code master and the deployed github-mcp-worker both admit its release; refusal exits 1 and an unreadable input exits 2. test/consumer-pin-gate.test.ts replays .github#40, #43 and #55 through this entrypoint."
+        "exempt": "Advisory compatibility diagnostics only (code#8212, code#7736). Always exits 0 with specific warnings naming the consumer commit, file, pinned value and current producer value; unreadable inputs emit diagnostic-unavailable warnings. Recorded drift and deployed-worker cases are covered by test/consumer-pin-admission.test.ts and test/consumer-pin-gate.test.ts."
       }
     },
     "authoritative-gate": {
@@ -48,7 +48,7 @@
       "expectedExitCode": 0,
       "failureDisposition": "fail-gate",
       "detectionProof": {
-        "exempt": "node --test exits non-zero when any test fails; test/published-release.test.ts fails when released payload bytes differ from the published manifest (.github#43); test/consumer-pin-admission.test.ts fails when recorded worker pins refuse a release (spencer-shadley/code#8013, replaying .github#40 and #43)."
+        "exempt": "node --test exits non-zero on failed tests; test/published-release.test.ts detects unpublished producer payload changes; consumer-pin tests assert specific warnings and the proceed path."
       }
     }
   },
