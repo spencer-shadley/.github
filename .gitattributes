@@ -1,2 +1,2 @@
-# Byte-exact git blobs recorded for test/consumer-pin-admission.test.ts; never normalize line endings.
-test/fixtures/consumer-pin/blobs/** -text
+# Preserve the historical producer contract byte-for-byte for revision migration tests.
+test/fixtures/governed-intake-r22.json -text

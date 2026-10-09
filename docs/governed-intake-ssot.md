@@ -134,26 +134,19 @@ The manifest's `producer.commit` then names the pre-squash branch commit; that i
 not compared. `npm run release:check` (also part of `test/*.test.ts`) recomputes every payload
 digest and byteLength from the tree and fails, naming the file, when the manifest was not republished.
 
-Consumer compatibility is advisory ([code#8212](https://github.com/spencer-shadley/code/issues/8212),
-[code#7736](https://github.com/spencer-shadley/code/issues/7736)). The producer resolves the current
-release identity from its own manifest, never from a consumer pin. Existing consumer pin files and
-cached manifests are historical diagnostic inputs, not admission authority or a merge dependency.
-This change does not deploy a new Code worker; its observed behavior remains consumer-owned.
+Consumer compatibility is consumer-owned ([#37](https://github.com/spencer-shadley/.github/issues/37),
+[code#8387](https://github.com/spencer-shadley/code/issues/8387)). The producer resolves and verifies its
+own published release; it does not read retired consumer pin files or predict consumer admission
+from a copied Worker resolver. The obsolete consumer-pin diagnostic, its merge-step wiring and
+its consumer snapshots have been retired. Consumers adapt to the latest producer release and
+verify their own behavior.
 
-`local-ci.json` keeps `consumer-pin-gate` (`contracts/governed-intake-consumer-pin.gate.ts`) as a
-warning step. It always exits 0. Release-touching runs compare Code `master` and the commit reported
-by worker health as `deployed_commit`. Drift warnings name the consumer repository, exact commit,
-file, field, pinned value and current producer value, state that admission proceeds, and identify
-compatibility as the operator's consideration. Historical worker-function fingerprint differences
-warn that the prediction may be stale. Unreadable inputs or a checkout/PR-head mismatch produce a
-specific diagnostic-unavailable warning; they do not assert compatibility or block progress.
-Every run prints one `consumer-pin-gate-receipt:` line with the available identities and findings.
-A paired consumer PR is no longer required and does not control admission or merge order.
-
-`npm run consumer-pin:check -- --pr <n>` is the diagnostic entrypoint; `--consumer-git <code clone>`
-uses Git reads instead of REST. `test/consumer-pin-admission.test.ts` and
-`test/consumer-pin-gate.test.ts` replay recorded snapshots offline and assert warning values and the
-proceed path. Producer payload integrity remains checked by `test/published-release.test.ts`.
+The producer keeps its own contract, projection and payload-integrity tests, including
+`test/published-release.test.ts`, and may retain an example or real integration test under the
+accepted [#57](https://github.com/spencer-shadley/.github/pull/57) ruling. The historical r22 producer
+contract remains as a byte-exact migration fixture; it is not a consumer pin or live authority.
+The repository test gate is offline and requires no credentials. No semantic release bytes or
+consumer deployment change as part of this diagnostic retirement.
 
 A new semantic revision requires current-revision triage evidence, not automatic re-execution of
 all prior reasoning. The implementation tracked by
