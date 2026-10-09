@@ -18,22 +18,6 @@
     "default"
   ],
   "commands": {
-    "consumer-pin-gate": {
-      "name": "consumer-pin-gate",
-      "executable": "node",
-      "args": [
-        "--experimental-strip-types",
-        "contracts/governed-intake-consumer-pin.gate.ts"
-      ],
-      "shell": "none",
-      "cwd": ".",
-      "timeoutSeconds": 300,
-      "expectedExitCode": 0,
-      "failureDisposition": "warning",
-      "detectionProof": {
-        "exempt": "Advisory compatibility diagnostics only (code#8212, code#7736). Always exits 0 with specific warnings naming the consumer commit, file, pinned value and current producer value; unreadable inputs emit diagnostic-unavailable warnings. Recorded drift and deployed-worker cases are covered by test/consumer-pin-admission.test.ts and test/consumer-pin-gate.test.ts."
-      }
-    },
     "authoritative-gate": {
       "name": "verify",
       "executable": "node",
@@ -48,7 +32,7 @@
       "expectedExitCode": 0,
       "failureDisposition": "fail-gate",
       "detectionProof": {
-        "exempt": "node --test exits non-zero on failed tests; test/published-release.test.ts detects unpublished producer payload changes; consumer-pin tests assert specific warnings and the proceed path."
+        "exempt": "node --test exits non-zero on failed tests; test/published-release.test.ts detects unpublished producer payload changes."
       }
     }
   },
@@ -72,10 +56,10 @@
     ],
     "requiredEnvVars": [],
     "requiredCredentials": [],
-    "networkExpectation": "outbound-allowed"
+    "networkExpectation": "offline-only"
   },
   "effects": {
-    "credentialsAccess": true,
+    "credentialsAccess": false,
     "networkProviderAccess": false,
     "providerSpend": false,
     "externalMutation": false,

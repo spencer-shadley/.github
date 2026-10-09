@@ -76,10 +76,8 @@ test("the live task form projects the combined revision", () => {
 });
 
 test("combined r22 to r23 delta preserves unchanged evidence, including after the #35 rescope", () => {
-  // Immutable r22 contract already captured by the consumer-pin incident replay.
-  const fixture = JSON.parse(readFileSync(path.join(REPO, "test/fixtures/consumer-pin/dotgithub-55-paired-with-code-8014.case.json"), "utf8"));
-  const blob = fixture.candidate.files["contracts/governed-intake-body.v1.json"];
-  const prior = JSON.parse(readFileSync(path.join(REPO, "test/fixtures/consumer-pin/blobs", blob), "utf8"));
+  // Immutable producer-owned r22 contract, retained independently of retired consumer diagnostics.
+  const prior = JSON.parse(readFileSync(path.join(REPO, "test/fixtures/governed-intake-r22.json"), "utf8"));
   assert.equal(prior.version, 22);
   assert.deepEqual(prior.triageChecklist.executionSubstrateLabels, ["cloud-ready", "local-required"],
     "the historical r22 contract retains its published behavior until activation");
