@@ -13,6 +13,12 @@ export interface TriagePolicy {
   dispositions: Record<string, {
     labels: string[]; efforts: string[]; trackingOnly: boolean;
     qualifiedAssessment: boolean; independentConfirmation: boolean;
+    /**
+     * Whether the receipts named by the two flags above gate completion. Absent means
+     * 'required'. 'encouraged' (.github#48) makes them a strong suggestion: absent receipts
+     * do not block, supplied receipts are checked exactly as when required.
+     */
+    secondOpinion?: 'required' | 'encouraged';
   }>;
   pendingLabel: string;
   retiredProgressLabels: string[];
@@ -86,8 +92,14 @@ export interface PolicySnapshot extends Subject {
   state: 'open' | 'closed';
   repositoryActive: boolean;
   labels: string[];
-  /** Knowledge from prior trusted evidence, not merely the new desired effort label. */
-  priorHighEffort: boolean;
+  /**
+   * @deprecated Accepted and ignored since .github#48 (operator decision 2026-10-06). An issue is
+   * sized on its current scope whatever effort it carried before, so label history no longer
+   * requires a qualified receipt. A second assessment when lowering a previous high is highly
+   * encouraged (see `secondOpinion` in the policy) and is checked when supplied. Consumers may
+   * stop sending this field; remove it from this type once no admitted consumer sends it.
+   */
+  priorHighEffort?: boolean;
   requiresQualifiedAssessment: boolean;
   assessment: Assessment | null;
   currentGraphFingerprint: string | null;
@@ -133,10 +145,12 @@ function exactIdentity(receipt: QualifiedReceipt): boolean {
 function validSnapshot(snapshot: unknown): snapshot is PolicySnapshot {
   if (!object(snapshot) || !subjectFields.every(field => nonempty(snapshot[field]))) return false;
   if (snapshot.state !== 'open' && snapshot.state !== 'closed') return false;
-  for (const field of ['repositoryActive', 'priorHighEffort', 'requiresQualifiedAssessment',
+  for (const field of ['repositoryActive', 'requiresQualifiedAssessment',
     'hasExecutableChildGraph', 'checklistCurrentAndComplete', 'directionEvidenceFresh']) {
     if (typeof snapshot[field] !== 'boolean') return false;
   }
+  // Deprecated input (.github#48): still accepted from consumers that send it, never read.
+  if (!(snapshot.priorHighEffort === undefined || typeof snapshot.priorHighEffort === 'boolean')) return false;
   if (!strings(snapshot.labels)) return false;
   if (!(snapshot.assessment === null || object(snapshot.assessment))) return false;
   if (!(snapshot.currentGraphFingerprint === null || nonempty(snapshot.currentGraphFingerprint))) return false;
@@ -159,15 +173,20 @@ export function assertTriagePolicy(policy: TriagePolicy): void {
     if (!object(disposition) || !strings(disposition.labels) || !disposition.labels.length
       || !strings(disposition.efforts) || !disposition.efforts.length
       || !disposition.efforts.every(effort => ['low', 'medium', 'high'].includes(effort))
-      || (['trackingOnly', 'qualifiedAssessment', 'independentConfirmation'] as const).some(key => typeof disposition[key] !== 'boolean')) {
+      || (['trackingOnly', 'qualifiedAssessment', 'independentConfirmation'] as const).some(key => typeof disposition[key] !== 'boolean')
+      || !(disposition.secondOpinion === undefined || ['required', 'encouraged'].includes(disposition.secondOpinion))) {
       throw new Error('invalid_disposition_contract');
     }
+    if (unique(disposition.labels).length !== disposition.labels.length) throw new Error('conflicting_policy_labels');
     owned.push(...disposition.labels);
   }
-  if (unique(owned).length !== owned.length || !nonempty(policy.pendingLabel)
+  // Labels describe decomposition state; ordinary and atomic-high may share a projection.
+  // The bound assessment, effort and evidence establish the disposition, never label uniqueness.
+  const projected = unique(owned);
+  if (!nonempty(policy.pendingLabel)
     || !strings(policy.retiredProgressLabels) || !strings(policy.unsupportedTerminalAliases)
-    || new Set([...owned, policy.pendingLabel, ...policy.retiredProgressLabels, ...policy.unsupportedTerminalAliases]).size
-      !== owned.length + 1 + policy.retiredProgressLabels.length + policy.unsupportedTerminalAliases.length) {
+    || new Set([...projected, policy.pendingLabel, ...policy.retiredProgressLabels, ...policy.unsupportedTerminalAliases]).size
+      !== projected.length + 1 + policy.retiredProgressLabels.length + policy.unsupportedTerminalAliases.length) {
     throw new Error('conflicting_policy_labels');
   }
   if (!object(policy.evidence) || !strings(policy.evidence.requiredAssessmentFields) || !strings(policy.evidence.atomicFields)
@@ -255,14 +274,20 @@ export async function evaluateTriagePolicy(release: BoundTriagePolicy, input: un
     if (!['high', 'medium'].includes(assessment.confidence)
       || !strings(assessment.blockingAssessmentUnknowns) || assessment.blockingAssessmentUnknowns.length
       || !strings(assessment.implementationUnknowns)) reasons.push('unresolved_assessment_uncertainty');
-    const needsQualified = spec.qualifiedAssessment || snapshot.priorHighEffort || snapshot.requiresQualifiedAssessment;
-    const assessor = needsQualified
+    // .github#48: effort history is not a trigger. A second assessment is required only by a
+    // disposition whose second opinion is not merely encouraged, or by a consumer-established
+    // `requiresQualifiedAssessment`; a receipt supplied voluntarily is checked exactly like a
+    // required one, so a recorded second opinion is never decorative.
+    const encouragedOnly = spec.secondOpinion === 'encouraged';
+    const needsQualified = (spec.qualifiedAssessment && !encouragedOnly) || snapshot.requiresQualifiedAssessment;
+    const assessor = needsQualified || nonempty(assessment.assessorReceiptId)
       ? qualified(snapshot, assessment.assessorReceiptId, 'scope-assessment', assessment.assessmentFingerprint, reasons) : null;
     if (spec.independentConfirmation) {
       for (const field of policy.evidence.atomicFields) {
         if (!nonempty((assessment as unknown as Record<string, unknown>)[field])) reasons.push(`missing_atomic_field:${field}`);
       }
-      const confirmer = qualified(snapshot, assessment.confirmationReceiptId, 'atomic-confirmation', assessment.assessmentFingerprint, reasons);
+      const confirmer = !encouragedOnly || nonempty(assessment.confirmationReceiptId)
+        ? qualified(snapshot, assessment.confirmationReceiptId, 'atomic-confirmation', assessment.assessmentFingerprint, reasons) : null;
       if (assessor && confirmer && (assessor.id === confirmer.id
         || assessor.served.provider === confirmer.served.provider
         || assessor.served.modelFamily === confirmer.served.modelFamily)) reasons.push('atomic_confirmation_not_independent');

@@ -11,7 +11,8 @@
  * Consumer cutover is out of band: this producer exposes the typed API and portable
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
-import { boundTriagePolicyFromProducer, fingerprintIssueScope, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
+import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson, type DirectionFacts, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
+import { evaluateTaxonomy, type TaxonomyEvidence, type TaxonomyObservation } from "./governed-intake-taxonomy.evaluate.ts";
 export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.ts";
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
 import {
@@ -53,6 +54,71 @@ import bodyContract from "./governed-intake-body.v1.json" with { type: "json" };
 export const POLICY_PAYLOAD_NAME = "governed-intake-triage-policy.v1.json";
 export const COMPOSE_CONSUMER_CUTOVER = false as const;
 
+export interface DirectionImpactReceipt {
+  workUnitKey: string;
+  scopeFingerprint: string;
+  factsFingerprint: string;
+  revision: number;
+  assessment: "no-impact" | "potential-impact";
+  rationale: string;
+  reconciliationReceiptId?: string;
+}
+
+/** Actual adapter readbacks, supplied separately from the assessment being checked.
+ * Resolve and verify the authoritative release immediately before effects. The adapter
+ * owns GitHub permission, accepted decision judgment and requested-post-state readback;
+ * this pure composition neither authorizes effects nor trusts labels as decision evidence.
+ */
+export interface DirectionObservation {
+  facts: DirectionFacts;
+  coverage: "complete" | "incomplete" | "unknown";
+  publication: { repository: string; sourceCommit: string; payloadDigest: string; revision: number };
+  /** Independently fetched exhaustive search/readback from the SAME audit settlement.
+   * The adapter enumerates every repository (including archived/private repositories),
+   * pages every open issue and PR older than the seed, and reads bodies, acceptance
+   * criteria and all comments. Unknown/inaccessible/truncated coverage is not complete.
+   * Conflict subjects are the initial hits; repository readbacks are after reconciliation.
+   */
+  exhaustiveSearch?: {
+    receiptId: string;
+    factsFingerprint: string;
+    scopeFingerprint: string;
+    publication: DirectionObservation["publication"];
+    scope: "all-open-issues-and-prs-before-seed";
+    createdBefore: string;
+    phase: "post-reconciliation";
+    inventory: { coverage: "complete" | "incomplete" | "unknown"; repositories: string[] };
+    repositories: {
+      repository: string;
+      issues: "complete" | "incomplete" | "unknown";
+      pullRequests: "complete" | "incomplete" | "unknown";
+      bodiesAndAcceptance: "complete" | "incomplete" | "unknown";
+      comments: "complete" | "incomplete" | "unknown";
+      unresolvedConflicts: number;
+      readbackFingerprint: string;
+    }[];
+    conflictSubjects: { repository: string; issueNumber: number }[];
+  };
+  reconciliation?: {
+    receiptId: string;
+    factsFingerprint: string;
+    scopeFingerprint: string;
+    publication: DirectionObservation["publication"];
+    status: "verified" | "launched" | "failed" | "incomplete" | "unknown" | "unsupported";
+    /** Frozen selection from the audit ledger; GitHub issue numbers also identify PRs. */
+    selectedSubjects: { repository: string; issueNumber: number }[];
+    outcomes: {
+      subject: { repository: string; issueNumber: number };
+      disposition: "keep" | "obsolete" | "superseded" | "reshape";
+      decision?: { repository: string; issueNumber: number; commentId: number };
+      destination?: { repository: string; issueNumber: number };
+      readbackFingerprint: string;
+      conservationVerified: boolean;
+      relationshipsVerified: boolean;
+    }[];
+  };
+}
+
 const unique = (values: readonly string[]): string[] => [...new Set(values)];
 const nonempty = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
@@ -61,6 +127,24 @@ export function currentChecklistRelease(): ChecklistRelease {
   const release: ChecklistRelease = { revision: CURRENT_TRIAGE_REVISION, items };
   validateChecklistRelease(release);
   return release;
+}
+
+/** Existing cloud-readiness facts plus structured environment requirements, not an effect grant.
+ * Adapters verify provenance, current environment/access facts, host IDs and hardware slugs.
+ * The producer validates subject/revision binding and coherence; it cannot authenticate callers.
+ */
+export interface ExecutionEvidence {
+  workUnitKey: string;
+  scopeFingerprint: string;
+  revision: number;
+  stage: "implement";
+  cloudReadiness: {
+    status: "ready" | "not-ready" | "unknown";
+    reason: string;
+    localVerificationRequired: boolean;
+    localFollowUp?: string;
+  };
+  environment: { allOf: string[]; anyOf?: string[][] };
 }
 
 /** Adapter-verified semantic input. There is no `eligible` or `servingVerified` shortcut. */
@@ -73,7 +157,8 @@ export type SemanticEvidenceInput =
       scopeFingerprint: string;
       state: PolicySnapshot["state"];
       repositoryActive: boolean;
-      priorHighEffort: boolean;
+      /** @deprecated Accepted and ignored (.github#48): effort history no longer gates completion. */
+      priorHighEffort?: boolean;
       requiresQualifiedAssessment: boolean;
       assessment: Assessment | null;
       currentGraphFingerprint: string | null;
@@ -81,6 +166,9 @@ export type SemanticEvidenceInput =
       finalAttributesScopeFingerprint: string | null;
       directionEvidenceFresh: boolean;
       trusted: PolicySnapshot["trusted"];
+      /** Required for revision-23 completion. Missing/older adapters remain typed pending. */
+      execution?: ExecutionEvidence;
+      taxonomy?: TaxonomyEvidence;
     };
 
 /**
@@ -98,6 +186,11 @@ export interface ComposedTriageInput {
   priorChecklist?: { previous: ChecklistRelease | null; evidence: PriorChecklistEvidence };
   implementationReceiptId?: string;
   taskProfile?: { record: TaskProfileRecord | null; required: boolean };
+  directionImpact?: DirectionImpactReceipt;
+  /** Fetched independently by the authoritative consumer adapter, never from directionImpact. */
+  directionObservation?: DirectionObservation;
+  /** Independently fetched current issue state and latest lifecycle transition. */
+  taxonomyObservation?: TaxonomyObservation;
 }
 
 export interface ComposedTaskProfileResult {
@@ -231,6 +324,149 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   if (!actualKey.ok || actualKey.key !== evidence.workUnitKey) reasons.push("work_unit_evidence_subject_mismatch");
   if (actualScope !== evidence.scopeFingerprint) reasons.push("scope_evidence_subject_mismatch");
 
+  reasons.push(...evaluateTaxonomy({ labels: input.labels, subject: input.subject, state: evidence.state,
+    workUnitKey: actualKey.key, scopeFingerprint: actualScope,
+    observation: input.taxonomyObservation, evidence: evidence.taxonomy }));
+
+  const execution = evidence.execution;
+  if (!execution) reasons.push("execution_evidence_required");
+  else {
+    if (execution.workUnitKey !== actualKey.key || execution.scopeFingerprint !== actualScope
+      || execution.revision !== CURRENT_TRIAGE_REVISION) reasons.push("execution_evidence_subject_or_revision_mismatch");
+    const cloud = execution.cloudReadiness;
+    const environment = execution.environment;
+    const spec = bodyContract.triageChecklist.executionSubstrateEvidence;
+    const validRequirement = (value: unknown): value is string => typeof value === "string"
+      && (value === spec.environment.localLabel
+        || [spec.environment.hostPrefix, spec.environment.hardwarePrefix].some(prefix =>
+          value.startsWith(prefix) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slice(prefix.length))));
+    const validRequirements = (values: unknown): values is string[] => Array.isArray(values)
+      && values.every(validRequirement) && new Set(values).size === values.length;
+    if (execution.stage !== spec.stage || !cloud || !nonempty(cloud.reason)
+      || !["ready", "not-ready"].includes(cloud.status)
+      || typeof cloud.localVerificationRequired !== "boolean") reasons.push("execution_evidence_invalid_or_unknown");
+    if (cloud?.localVerificationRequired && !nonempty(cloud.localFollowUp)) reasons.push("execution_local_follow_up_required");
+    if (!environment || !validRequirements(environment.allOf)
+      || (environment.anyOf !== undefined && (!Array.isArray(environment.anyOf)
+        || environment.anyOf.some(group => !validRequirements(group) || group.length === 0)))) {
+      reasons.push("execution_environment_invalid");
+    } else {
+      const requirements = unique([...environment.allOf, ...(environment.anyOf ?? []).flat()]);
+      const labels = input.labels.filter(label => label.startsWith("environment:"));
+      // Only unconditional facts are labels. Projecting every anyOf alternative would turn
+      // an OR into an AND in consumers that combine labels with structured requirements.
+      if (labels.length !== new Set(labels).size || labels.some(label => !environment.allOf.includes(label))
+        || environment.allOf.some(requirement => !labels.includes(requirement))) reasons.push("execution_environment_projection_mismatch");
+      const needsLocal = requirements.length > 0;
+      if ((cloud?.status === "ready" && needsLocal)
+        || (cloud?.status === "not-ready" && !environment.allOf.includes(spec.environment.localLabel))) {
+        reasons.push("execution_substrate_environment_mismatch");
+      }
+    }
+  }
+
+  // Existing semantic composition consumes audit evidence; it does not add an audit evaluator
+  // or a second journal. Unknown effects stay with the caller's existing settlement identity.
+  const direction = input.directionImpact;
+  const observed = input.directionObservation;
+  if (!direction || !observed) reasons.push("direction_impact_evidence_required");
+  else {
+    try {
+      const factsFingerprint = fingerprintDirectionFacts(observed.facts);
+      const publication = observed.publication;
+      if (observed.coverage !== "complete") reasons.push("direction_thread_coverage_incomplete");
+      if (!input.subject || observed.facts.seed.repository.toLowerCase() !== input.subject.repository.toLowerCase()
+        || observed.facts.seed.issueNumber !== input.subject.issueNumber
+        || direction.workUnitKey !== actualKey.key || direction.scopeFingerprint !== actualScope
+        || direction.factsFingerprint !== factsFingerprint || direction.revision !== CURRENT_TRIAGE_REVISION) {
+        reasons.push("direction_impact_subject_or_facts_mismatch");
+      }
+      if (publication.repository !== "spencer-shadley/.github" || publication.revision !== CURRENT_TRIAGE_REVISION
+        || !/^(?!0{40}$)[0-9a-f]{40}$/.test(publication.sourceCommit)
+        || !/^[0-9a-f]{64}$/.test(publication.payloadDigest)) reasons.push("direction_publication_mismatch");
+      if (!nonempty(direction.rationale)) reasons.push("direction_impact_rationale_required");
+      if (direction.assessment === "no-impact") {
+        // Empty outcome rows do not prove an existing unknown audit had no effects.
+        // Settle that exact audit first; a no-impact shortcut cannot erase its ledger.
+        if (observed.reconciliation || observed.exhaustiveSearch || direction.reconciliationReceiptId) reasons.push("no_impact_has_cohort_effects");
+      } else if (direction.assessment === "potential-impact") {
+        if (!input.labels.includes("metadata:direction-change")) reasons.push("direction_change_label_required");
+        const audit = observed.reconciliation;
+        if (!audit || audit.status !== "verified") reasons.push(`direction_reconciliation_${audit?.status ?? "missing"}`);
+        else {
+          if (!nonempty(audit.receiptId) || audit.receiptId !== direction.reconciliationReceiptId
+            || audit.factsFingerprint !== factsFingerprint || audit.scopeFingerprint !== actualScope
+            || canonicalPolicyJson(audit.publication) !== canonicalPolicyJson(publication)) reasons.push("direction_reconciliation_binding_mismatch");
+          const identities = new Set<string>();
+          for (const outcome of audit.outcomes) {
+            const subject = observed.facts.threads.find(t => t.repository.toLowerCase() === outcome.subject.repository.toLowerCase()
+              && t.issueNumber === outcome.subject.issueNumber);
+            const identity = `${outcome.subject.repository.toLowerCase()}#${outcome.subject.issueNumber}`;
+            if (!subject || identities.has(identity) || !/^sha256:[0-9a-f]{64}$/.test(outcome.readbackFingerprint)
+              || outcome.conservationVerified !== true || outcome.relationshipsVerified !== true
+              || !["keep", "obsolete", "superseded", "reshape"].includes(outcome.disposition)) reasons.push("direction_reconciliation_readback_incomplete");
+            identities.add(identity);
+            if (outcome.disposition !== "keep") {
+              const decision = outcome.decision;
+              const thread = observed.facts.threads.find(t => decision && t.repository.toLowerCase() === decision.repository.toLowerCase()
+                && t.issueNumber === decision.issueNumber);
+              if (!thread?.decisions.some(d => d.commentId === decision?.commentId && d.state === "accepted")) {
+                reasons.push("direction_accepted_decision_required");
+              }
+            }
+            if (outcome.disposition === "superseded") {
+              const destination = outcome.destination;
+              if (!destination || !observed.facts.threads.some(t => t.repository.toLowerCase() === destination.repository.toLowerCase()
+                && t.issueNumber === destination.issueNumber)
+                || `${destination.repository.toLowerCase()}#${destination.issueNumber}` === identity) reasons.push("direction_conservation_destination_required");
+            }
+          }
+          const selected = audit.selectedSubjects.map(s => `${s.repository.toLowerCase()}#${s.issueNumber}`);
+          if (new Set(selected).size !== selected.length || selected.length !== identities.size
+            || selected.some(id => !identities.has(id))) reasons.push("direction_reconciliation_selection_incomplete");
+          const search = observed.exhaustiveSearch;
+          if (!search) reasons.push("direction_exhaustive_search_required");
+          else {
+            if (search.scope !== "all-open-issues-and-prs-before-seed" || search.phase !== "post-reconciliation"
+              || !observed.facts.seed.createdAt || search.createdBefore !== observed.facts.seed.createdAt
+              || search.receiptId !== audit.receiptId || search.factsFingerprint !== factsFingerprint
+              || search.scopeFingerprint !== actualScope
+              || canonicalPolicyJson(search.publication) !== canonicalPolicyJson(publication)) {
+              reasons.push("direction_exhaustive_search_binding_mismatch");
+            }
+            const inventory = search.inventory.repositories.map(repo => repo.toLowerCase());
+            const searched = search.repositories.map(row => row.repository.toLowerCase());
+            if (search.inventory.coverage !== "complete" || inventory.length === 0
+              || inventory.some(repo => !/^[^/\s]+\/[^/\s]+$/.test(repo))
+              || !inventory.includes(observed.facts.seed.repository.toLowerCase())
+              || new Set(inventory).size !== inventory.length || new Set(searched).size !== searched.length
+              || inventory.length !== searched.length || inventory.some(repo => !searched.includes(repo))) {
+              reasons.push("direction_repository_coverage_incomplete");
+            }
+            for (const row of search.repositories) {
+              if ([row.issues, row.pullRequests, row.bodiesAndAcceptance, row.comments].some(state => state !== "complete")
+                || !/^sha256:[0-9a-f]{64}$/.test(row.readbackFingerprint)) {
+                reasons.push("direction_exhaustive_readback_incomplete");
+              }
+              // Missing, negative, fractional and string counts cannot stand in for zero.
+              if (row.unresolvedConflicts !== 0) reasons.push("direction_unresolved_conflicts");
+            }
+            const conflicts = search.conflictSubjects.map(s => `${s.repository.toLowerCase()}#${s.issueNumber}`);
+            if (new Set(conflicts).size !== conflicts.length || search.conflictSubjects.some(s =>
+              !inventory.includes(s.repository.toLowerCase()) || !Number.isSafeInteger(s.issueNumber) || s.issueNumber < 1)
+              || conflicts.some(id => !identities.has(id))
+              || audit.outcomes.some(outcome => conflicts.includes(`${outcome.subject.repository.toLowerCase()}#${outcome.subject.issueNumber}`)
+                && (outcome.disposition === "keep" || outcome.decision?.repository.toLowerCase() !== observed.facts.seed.repository.toLowerCase()
+                  || outcome.decision?.issueNumber !== observed.facts.seed.issueNumber))
+              || audit.selectedSubjects.some(s => !inventory.includes(s.repository.toLowerCase()))) {
+              reasons.push("direction_conflict_reconciliation_incomplete");
+            }
+          }
+        }
+      } else reasons.push("direction_impact_assessment_invalid");
+    } catch { reasons.push("direction_impact_evidence_invalid"); }
+  }
+
   const snapshot: PolicySnapshot = {
     workUnitKey: actualKey.key ?? "invalid:work_unit_key",
     scopeFingerprint: actualScope,
@@ -239,7 +475,6 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
     state: evidence.state,
     repositoryActive: evidence.repositoryActive,
     labels: [...input.labels],
-    priorHighEffort: evidence.priorHighEffort,
     requiresQualifiedAssessment: evidence.requiresQualifiedAssessment,
     assessment: evidence.assessment,
     currentGraphFingerprint: evidence.currentGraphFingerprint,

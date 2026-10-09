@@ -176,7 +176,7 @@ test("refusal and indeterminate output carry no token or credential-bearing URL"
   assert.ok(!printed.includes(secret));
   assert.ok(!/x-access-token:/.test(printed));
   assert.match(printed, /https:\/\/\[REDACTED\]@github\.com/);
-  assert.equal(redactCredentials("Authorization: Bearer abcdefghijklmnopqrstuvwxyz"), "Authorization: Bearer [REDACTED]");
+  assert.equal(redactCredentials(`Authorization: Bearer ${"x".repeat(26)}`), "Authorization: Bearer [REDACTED]");
   assert.equal(redactCredentials(`github_pat_${"b".repeat(40)}`), "[REDACTED]");
 });
 

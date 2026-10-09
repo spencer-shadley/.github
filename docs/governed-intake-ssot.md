@@ -214,3 +214,121 @@ pinned `canonical-v1.ts:171`, the line moved, and an otherwise-reasonable seat s
 pursuing the outcome. Move implementation pointers like this into "Relevant details" as an explicitly
 advisory hint (`<!-- advisory, not binding: ... -->`) the implementer may disregard; a reviewer may not
 block on "did it differently from the hint" alone.
+
+## Proposal classification (revision 23)
+
+`type:proposal` is a standard type label (defined in Code's work-spine type taxonomy, `tools/work-spine/work-spine-contract.v1.json`). Triage applies it, in addition to any other type label, when an issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision, and removes it once that decision is recorded. It is descriptive only: it never blocks other work, creates a human gate, or changes priority. Revision 23 adds the `proposal-classification` checklist item alongside other changed obligations in the combined cutover. The producer's `planChecklistDelta` is authoritative for revision 22 → 23: re-evaluate added or changed items, independently stale evidence and observed changed-result dependents; carry forward unchanged valid evidence. A revision bump alone never requires full backlog re-triage.
+
+## Revision 23: accepted taxonomy
+
+Under [.github#32](https://github.com/spencer-shadley/.github/issues/32) and [code#7586](https://github.com/spencer-shadley/code/pull/7639), revision 23 adopts the accepted fleet-wide multidimensional taxonomy:
+- **Taxonomy dimensions and cardinalities:**
+  - `delivers`: 0..* (`delivers:agent-efficiency`, `human-efficiency`, `reliability`, `cost-efficiency`, `capability`).
+  - `type`: 1..* after triage (`type:feature`, `bug`, `regression`, `migration`, `deletion`, `research`, `maintenance`). Coexistence allowed (e.g. migration + deletion, bug + regression). Regression requires prior reference. Research conclusions: `positive`, `negative`, `inconclusive`.
+  - `source`: 1..* after triage (`source:human`, `runtime-signal`, `retro-skill`, `retro-bot`, `scheduled-task`, plus dynamic `source:retro-skill:<slug>` / `source:scheduled-task:<slug>`).
+  - `effort`: exactly 1 (`effort:low`, `medium`, `high`).
+  - `priority:repo` and `priority:fleet`: exactly 1 each (`priority:repo:p0`..`p5`, `priority:fleet:p0`..`p5`).
+  - `blocked`: 0..* (`blocked:time`, `blocked:human-required`, `blocked:issue`).
+  - `environment`: 0..* (`environment:fleet-local`, dynamic `host:<host>`, `hardware:<slug>`).
+  - `progress`: exactly 1 (`progress:triage`, `progress:planned`, `progress:implementing`, `progress:reviewing`, `progress:implemented`, `progress:verified`). Replaces prior stage without accumulation.
+  - `decomp`: 0..1 (`decomp:required`, `decomp:in-progress`, `decomp:complete`, `decomp:unnecessary`).
+  - `resolution`: 0 while open, exactly 1 resolved (`resolution:delivered`, `duplicate`, `superseded`, `declined`, `obsolete`). `delivered` requires verified acceptance (`progress:verified`). Non-delivery closure preserves last actual progress. Reopening clears resolution and invalid stamps.
+  - `resolution:obsolete`: immediate before implementation upon accepted direction/retirement, cites causing issue + decision comment, cause backlink listing obsolete issues, preserves last actual progress.
+  - `resolution:superseded`: preserves destination.
+  - `metadata`: `metadata:triage-vN` (dynamic) and `metadata:direction-change` (material direction impact, bound into the completion fingerprint). Only `metadata:triage-v23` represents completed current semantic triage in revision 23. Old stamps (`triaged:v22`), missing stamps, forged stamps, or structurally-checked-only stamps never produce completion.
+  - Initial filing defaults: `labels: agent-review, priority:triage-tbd, progress:triage`.
+- **Single combined cutover:** revision 23 is one combined revision carrying this taxonomy, the `proposal-classification` item, direction-impact reconciliation and the second-opinion/`agent_unattested` change ([.github#32](https://github.com/spencer-shadley/.github/issues/32), [#35](https://github.com/spencer-shadley/.github/issues/35), [#45](https://github.com/spencer-shadley/.github/issues/45), [#48](https://github.com/spencer-shadley/.github/issues/48)). Source and its generated release land in one pull request; that pull request is not merged until every required consumer has prepared and read back compatibility (Code [#7625](https://github.com/spencer-shadley/code/issues/7625)). Until then deployed consumers keep using published revision 22.
+
+## Direction-impact semantic completion
+
+### Revision-23 work shape and execution evidence
+
+The producer projects ordinary and atomic-high leaves to `decomp:unnecessary`, and a validated
+tracking parent to `decomp:complete`. The adapter-verified assessment distinguishes these shapes;
+shared label spelling never replaces the effort rubric, atomic invariant, qualified parent
+assessment or current child-graph receipt. `decomp:required` and `decomp:in-progress` cannot complete
+triage. The second-opinion encouragement and validation rules remain unchanged.
+
+Revision 23 has no execution-substrate label pair (`executionSubstrateLabels` is empty). Consumers
+provide `evidence.execution` to the public composition API, bound to the actual work-unit key,
+scope fingerprint and current revision, with `stage: "implement"`. Its `cloudReadiness` preserves
+the existing `ready` / `not-ready` / `unknown` assessment, a reason, and an explicit
+`localVerificationRequired` boolean; when true it also requires a concrete `localFollowUp` reference.
+Its `environment` carries `allOf` requirements and optional `anyOf` alternative groups using the
+accepted `environment:fleet-local`, `environment:host:<verified-host-id>` and
+`environment:hardware:<governed-slug>` vocabulary. Adapters verify current facts and provenance.
+Only unconditional `allOf` requirements project to labels; alternatives stay structured. A local
+implementation requires `environment:fleet-local` in `allOf`; cloud implementation carries no local
+implementation requirements but may have a separate local verification stage. A parent assesses its
+own scope, without inheriting its children's requirements. These facts never grant effects.
+
+Missing, unsupported, stale or unknown evidence remains pending; the public checklist API exposes
+`cloud-runnable` as pending for execution-evidence failures. Retired substrate labels are refused,
+with no alias or label-based fallback. Historical revision-22 release bytes remain unchanged until
+coordinated publication. Consumers must prepare and read back the corrected immutable candidate;
+an earlier candidate identity does not establish parity with this interface.
+
+The `value-direction` and `dedup-queue-synergy` stable obligations consume direction-impact evidence
+through `evaluateGovernedIntakeTriage`, also exposed by the public completion API. The current
+contract's revision remains the only completion revision. See Code's [reusable audit](https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md)
+for exhaustive search judgment and governed reconciliation.
+
+Consumer adapters provide a `directionImpact` assessment and a separate `directionObservation`
+from actual server-fetched seed/thread identities, complete material decision evidence, source,
+ownership and related-work facts. `fingerprintDirectionFacts` binds material facts and ignores
+invocation timestamps, receipt comments and labels. The adapter must obtain these observations
+independently of the assessed receipt, adjudicate accepted/proposed/reversed decisions and verify
+the authoritative release before effects; this pure producer cannot authenticate arbitrary caller
+objects or fetch GitHub. Unsupported adapters and missing evidence stay pending.
+
+Every triaged issue answers the open-ended question: "Could this issue materially change direction,
+i.e. invalidate earlier issues?" No-impact requires reasoned assessment and no cohort effects.
+Yes/potential material impact requires the canonical `metadata:direction-change` label (no alias or
+dual write), and an exhaustive search of all open issues and PRs created before the causing issue
+across every repository, including bodies, acceptance criteria and all comments. This overrides
+ordinary progressive dedupe stopping rules. Rescope or close every conflict in the same audit step,
+citing the causing issue and its accepted decision; completion requires zero unresolved conflicts
+in exhaustive post-reconciliation readback.
+
+The adapter supplies `directionObservation.exhaustiveSearch` independently of the assessment:
+complete repository inventory and one complete issue/PR/body/comment readback per repository,
+initial conflict subjects, and zero unresolved counts after reconciliation. The search binds the
+server-fetched seed creation cutoff (`facts.seed.createdAt`), material facts, scope, publication,
+and the existing audit's exact settlement ID. Missing repositories, pagination gaps, inaccessible
+repositories, partial comments or unknown readbacks cannot certify completion. Every initial
+conflict must have a reconciled outcome in that same audit's frozen selection, with an accepted
+causal decision and conservation/relationship evidence. The pure evaluator validates this evidence
+contract; the consumer adapter owns exhaustive GitHub enumeration and semantic conflict judgment.
+Superseded valid outcomes require an independently read-back destination. Failed, launched,
+incomplete, unsupported and unknown results remain pending under the existing settlement identity.
+No label rename or checked box satisfies those obligations. The public completion API exposes
+pending direction and synergy items to the existing delta consumer.
+
+Changed material direction, scope, accepted decisions, source, ownership or related-work facts
+invalidate the declared stable obligations. Only observed changed results propagate to dependents;
+unchanged valid facts reuse evidence without semantic reruns, comments or recursive triggers.
+Consumer preparation must prove current and candidate compatibility before actual publication;
+Code #7476 owns adoption and live invocation; revision 23 publication stays gated on the .github#32 consumer readiness (Code #7625).
+
+### Producer taxonomy completion and lifecycle binding
+
+`triageChecklist.taxonomy` in the body contract is the producer's adopted intake vocabulary and
+cardinalities from the accepted Code work-spine contract (including supplemental `type:proposal`).
+The released `governed-intake-taxonomy.evaluate.ts` validates those dimensions before the composition
+can report completion or implementation eligibility. Fingerprint membership alone is insufficient:
+unsupported labels, missing required dimensions, multiple progress states and open resolutions
+remain pending even with a freshly computed completion marker.
+
+Adapters supply independently fetched `taxonomyObservation` (repository, issue number, state and
+latest GitHub state-transition `lifecycleId`, using creation initially) plus `evidence.taxonomy`
+bound to the current work-unit key, scope, revision and that lifecycle identity. Reopening produces
+a new transition identity; an assessment from the previous lifecycle cannot complete unchanged body
+and label bytes. Missing observations, stale identities and unsupported old adapters remain pending.
+This adds no GitHub effect authority or closed-stock rewrite: closed/inactive subjects remain outside
+implementation scope. A fresh current assessment and stamp are required after reopening.
+
+The same validator checks regression references, closed research conclusions, verified acceptance
+for verified progress/delivery, conserved non-delivery progress, supersession destinations, accepted
+obsolete decisions/backlinks, and independent blocker release predicates (including the actual human
+input for `blocked:human-required`). Adapter authentication of those observations remains the consumer's
+responsibility. Environment requirements retain the separate structured execution-evidence checks.

@@ -19,7 +19,7 @@
   "dispositions": {
     "ordinary": {
       "labels": [
-        "decomp-not-needed"
+        "decomp:unnecessary"
       ],
       "efforts": [
         "low",
@@ -31,19 +31,19 @@
     },
     "atomic-high": {
       "labels": [
-        "decomp-atomic"
+        "decomp:unnecessary"
       ],
       "efforts": [
         "high"
       ],
       "trackingOnly": false,
       "qualifiedAssessment": true,
-      "independentConfirmation": true
+      "independentConfirmation": true,
+      "secondOpinion": "encouraged"
     },
     "parent": {
       "labels": [
-        "decomp",
-        "epic"
+        "decomp:complete"
       ],
       "efforts": [
         "low",
@@ -55,14 +55,20 @@
       "independentConfirmation": false
     }
   },
-  "pendingLabel": "decomp-needed",
+  "pendingLabel": "decomp:required",
   "retiredProgressLabels": [
     "decomp-in-progress"
   ],
   "unsupportedTerminalAliases": [
     "decomp-not-possible",
     "cannot-decomp",
-    "decomp-complete"
+    "decomp-complete",
+    "decomp-not-needed",
+    "decomp-atomic",
+    "decomp",
+    "epic",
+    "decomp-needed",
+    "decomp:in-progress"
   ],
   "evidence": {
     "requiredAssessmentFields": [
@@ -80,8 +86,26 @@
       "atomic-confirmation",
       "implementation"
     ],
-    "independence": "distinct model family AND distinct provider; exact router and serving receipts required",
+    "independence": "When an independent confirmation is recorded: distinct model family AND distinct provider; exact router and serving receipts required",
     "graphAuthority": "Code shared decomposition core; consume its validated current graph receipt, do not reimplement graph adjudication"
+  },
+  "secondOpinion": {
+    "status": "suggestion",
+    "decision": "spencer-shadley/.github#48, operator decision 2026-10-06: the rule becomes a suggestion. Getting another opinion is highly encouraged; completion does not depend on it.",
+    "encouragedWhen": [
+      "An issue that carried a high-effort classification before is now assessed low or medium.",
+      "An issue is assessed high effort now (an atomic-high leaf): a qualified scope assessment and an independent confirmation."
+    ],
+    "howToObtain": "Commission a qualified scope-assessment seat through the consumer's routed-seat path (in spencer-shadley/code: skills/gh-issue-triage-sweep/SKILL.md, which commissions the seat through skills/create-subagent/SKILL.md) and record its adapter-verified receipt as the assessment's assessorReceiptId. For an atomic-high leaf, also commission the independent atomic-confirmation seat the same way and record its receipt as confirmationReceiptId.",
+    "whenObtained": "A supplied receipt is checked exactly like a required one: same subject and assessment fingerprint, capability floor, verified serving identity and an agree verdict. An invalid or dissenting receipt keeps triage pending.",
+    "whenAbsent": "Absence does not block completion. Neither effort history nor a current high-effort classification alone requires a receipt.",
+    "stillRequired": [
+      "A consumer-established requiresQualifiedAssessment (for example human-required handling) still requires the qualified scope-assessment receipt.",
+      "Tracking parents keep the qualified scope-assessment receipt and the validated current graph receipt.",
+      "Atomic-high leaves keep the invariant, difficultyRationale and alternativesConsidered evidence fields.",
+      "Executing a high-effort leaf still requires the admitted implementation receipt; execution admission is separate from triage.",
+      "Identity, scope, fingerprint, checklist and direction-freshness checks are unchanged."
+    ]
   },
   "effortRubric": {
     "version": 1,
@@ -113,7 +137,7 @@
       "One repository, one PR, shared context or sequential dependencies alone proves neither atomicity nor low effort.",
       "Prevention RCA is not an unconditional medium-effort or indivisibility classification. Conditional examples are not keyword classifiers.",
       "Aggregate parent effort is not an ordinal sum and never sets every child capability floor.",
-      "Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause; lowering a high classification requires qualified adjudication.",
+      "Reuse accepted sizing on unchanged scope, rubric and evidence. Corrections cite new evidence or a violated rubric clause. Lowering a high classification does not require qualified adjudication; a second opinion is highly encouraged.",
       "An atomic issue may contain a plan, checkpoints, multiple commits and multiple sessions."
     ],
     "receiptFields": [
@@ -214,7 +238,7 @@
       "scope": "Diagnose and repair a subtle concurrency race preserving one inseparable invariant.",
       "assumptions": [
         "Concrete coupled-correctness difficulty is evidenced",
-        "Atomic outcome still needs qualified independent confirmation"
+        "Qualified independent confirmation of the atomic outcome is highly encouraged"
       ]
     },
     {

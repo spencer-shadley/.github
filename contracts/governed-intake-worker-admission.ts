@@ -13,8 +13,8 @@ export const PRODUCER_TASK_FORM_PATH = ".github/ISSUE_TEMPLATE/task.yml" as cons
 export const VENDORED_WORKER_RESOLUTION = {
   repository: "spencer-shadley/code",
   path: "tools/github-mcp-worker/src/triage-checklist-state.ts",
-  commit: "889fcb2f99bc58cf0f1a13789e9852556fa2e079",
-  blobSha: "107cd132af27cd215a42c4bc1a1011c5edd4a24c",
+  commit: "3b2495a79ec7857922337f8b1e20f0a89c0049c9",
+  blobSha: "289332c58c526e95dcfe3a00827cf0233f4ec3ba",
   /** Every worker function the resolution path runs, helpers included (.github#57 review). */
   functions: {
     requireString: "9e1c4f5927bdb40a4f1de4c56ff5d5ce86339be2f22cf53a6271fb0aac88c8d9",
@@ -23,7 +23,7 @@ export const VENDORED_WORKER_RESOLUTION = {
     verifyProducerPayload: "8fc590015083635920b514371ff8b826ffb2691fd76069a6e21c61295ad67fb4",
     verifyLiveManifest: "d012432ffe78317dc43659d79696b4fdd992308f3f2d1a4f539122302b0b0d9a",
     selectAdmittedRelease: "24b80ca992aad9e6a9265954ffb8c46ab7962fe79c47787f941780fca6c59b12",
-    resolveGovernedIntakeRuntime: "4da7e663facd1f40e0cb1a028f1b55d597c5e64aeaea1db011124e6485ea3e1f",
+    resolveGovernedIntakeRuntime: "39f46204eb3922329d693726893983ee12e37a367d42d1df025d8ea730f6313e",
   },
   /** Module constants those functions compare against, fingerprinted by their declaration line. */
   declarations: {

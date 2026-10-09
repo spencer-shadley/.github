@@ -1,0 +1,294 @@
+/** Worker adapter for the producer-owned, pin-admitted governed-intake release.
+ * Wrangler's build admission verifies every cached byte with the producer verifier.
+ * Each operation checks the live producer at one immutable commit before using that
+ * compiled evaluator. A semantic release change requires admission and deployment;
+ * an unrelated producer commit does not. No raw-contract interpreter or local form.
+ */
+import { renderErrorValue } from "../../checks/repo/integrity/runtime/render-error-value.ts";
+import * as producer from "../../../contracts/generated/governed-intake-worker-published/governed-intake-triage-state.evaluate.ts";
+import contractJson from "../../../contracts/generated/governed-intake-worker-published/governed-intake-body.v1.json" with { type: "json" };
+import manifestJson from "../../../contracts/generated/governed-intake-worker-published/manifest.json" with { type: "json" };
+import pinJson from "../../../tools/work-spine/governed-intake-worker-published-release.pin.json" with { type: "json" };
+import * as producerCompose from "../../../contracts/generated/governed-intake-worker-published/governed-intake-triage.compose.ts";
+import * as producerPolicy from "../../../contracts/generated/governed-intake-worker-published/governed-intake-triage-policy.evaluate.ts";
+import * as producerBody from "../../../contracts/generated/governed-intake-worker-published/governed-intake-body.evaluate.ts";
+import type { TriageChecklistState as PublishedChecklistState } from "../../../contracts/generated/governed-intake-worker-published/governed-intake-triage-state.evaluate.ts";
+import type { TriageChecklistState as CandidateChecklistState } from "../../../contracts/generated/governed-intake-candidate/governed-intake-triage-state.evaluate.ts";
+import type { ComposedTriageInput } from "../../../contracts/generated/governed-intake-worker-published/governed-intake-triage.compose.ts";
+import type { ComposedTriageInput as CandidateInput } from "../../../contracts/generated/governed-intake-candidate/governed-intake-triage.compose.ts";
+import * as candidateBinding from "../../../contracts/generated/governed-intake-candidate/governed-intake-policy-binding.ts";
+
+/**
+ * Producer-typed semantic input. Built only by `triage-assessment-adapter.ts`, which binds a
+ * caller's assessment to the server-fetched issue and the live producer identity. MCP arguments
+ * are never copied into `trusted` receipts and never assert identity on their own.
+ */
+export type SemanticTriageInput = Pick<ComposedTriageInput, "subject" | "priorChecklist" | "implementationReceiptId">
+  & Pick<CandidateInput, "directionImpact" | "directionObservation">
+  & { evidence: ComposedTriageInput["evidence"] & CandidateInput["evidence"] };
+/** Exact complete producer input for authenticated downstream retrieval. */
+export type ProducerTriageInput = SemanticTriageInput & Pick<CandidateInput, "body" | "labels">;
+
+/** The producer evaluator's result, including the semantic fields its public API returns. */
+export type SemanticTriageChecklistState = TriageChecklistState & { semantic_reasons?: string[]; scope_resolved?: boolean };
+
+/** The producer's own identity/scope/policy functions for the selected release. */
+export interface TriageSemanticApi {
+  boundTriagePolicyFromProducer: typeof producerCompose.boundTriagePolicyFromProducer;
+  fingerprintIssueScope: typeof producerCompose.fingerprintIssueScope;
+  fingerprintAssessment: typeof producerPolicy.fingerprintAssessment;
+  validateGovernedWorkUnitKey: typeof producerBody.validateGovernedWorkUnitKey;
+  /** Absent on published r22; available only with the selected candidate producer. */
+  direction?: Pick<typeof candidateBinding, "fingerprintDirectionFacts" | "canonicalPolicyJson" | "normalizeIssueScopeBody">;
+}
+
+export type GithubApiFn = <T = unknown>(path: string, token: string, options?: RequestInit) => Promise<T>;
+
+export type TriageChecklistItem = {
+  id: string;
+  title: string;
+  text: string;
+};
+
+export type TriageChecklistContract = {
+  heading: string;
+  revisionSource: "version";
+  sectionMarkerName: string;
+  itemMarkerName: string;
+  completionMarkerName: string;
+  fingerprintAlgorithm: "sha256";
+  fingerprintScope: string;
+  pendingLabels: string[];
+  triagedLabelPrefix: string;
+  triageOwnedLabelPatterns: string[];
+  executionSubstrateLabels: string[];
+  items: TriageChecklistItem[];
+};
+
+export type GovernedIntakeContract = {
+  schema: string;
+  owner?: string;
+  version: number;
+  requiredHeadings: string[];
+  taxonomyRanks: string[];
+  causalClimbColumns: string[];
+  workUnitKey: { heading: string; markerTemplate: string };
+  triageChecklist: TriageChecklistContract;
+  workTypes?: Array<{ id: string; label: string; recordKind?: string; description?: string; authority?: string }>;
+  legacyWorkTypes?: string[];
+};
+
+export type GovernedIntakeIdentity = {
+  repository: "spencer-shadley/.github";
+  defaultBranch: string;
+  commit: string;
+  sourcePath: "contracts/governed-intake-body.v1.json";
+  blobSha: string;
+  revision: number;
+  producerCommit: string;
+  releaseCommit: string;
+  payloadDigest: string;
+};
+
+export type TriageChecklistReason = PublishedChecklistState["reasons"][number] | CandidateChecklistState["reasons"][number];
+export type TriageChecklistState = Omit<PublishedChecklistState, "reasons"> & { reasons: TriageChecklistReason[] };
+
+export interface TriageRuntime {
+  readonly contract: GovernedIntakeContract;
+  readonly preparedRelease: typeof PREPARED_INTAKE_IDENTITY;
+  readonly identity: GovernedIntakeIdentity | null;
+  readonly checklist: TriageChecklistContract;
+  readonly currentRevision: number;
+  readonly currentTriagedLabel: string;
+  readonly requiredHeadings: readonly string[];
+  readonly taxonomyRanks: readonly string[];
+  readonly causalColumns: readonly string[];
+  readonly workUnitHeading: string;
+  readonly workUnitMarkerTemplate: string;
+  readonly workTypeLabels: readonly string[];
+  readonly legacyWorkTypes: readonly string[];
+  isTriagedChecklistLabel(label: string): boolean;
+  isTriageOwnedChecklistLabel(label: string): boolean;
+  renderTriageChecklistBlock(options?: { includeHeading?: boolean; checked?: boolean }): string;
+  renderTriageCompletionMarker(fingerprint: string): string;
+  computeTriageStateFingerprint(body: string, labels: readonly string[]): Promise<string>;
+  evaluateTriageChecklistState(body: string | null | undefined, labels: readonly string[], semanticInput?: SemanticTriageInput): Promise<SemanticTriageChecklistState>;
+  /** Producer identity/scope/policy APIs of the selected release (never a Code-authored rule). */
+  readonly semantic: TriageSemanticApi;
+  triageProjectionErrorMessage(state: TriageChecklistState): string;
+}
+
+
+const PRODUCER_REPOSITORY = "spencer-shadley/.github" as const;
+const PRODUCER_SOURCE_PATH = "contracts/governed-intake-body.v1.json" as const;
+const contract = contractJson as GovernedIntakeContract;
+import * as candidateProducer from "../../../contracts/generated/governed-intake-candidate/governed-intake-triage-state.evaluate.ts";
+import candidateContract from "../../../contracts/generated/governed-intake-candidate/governed-intake-body.v1.json" with { type: "json" };
+import candidateManifest from "../../../contracts/generated/governed-intake-candidate/manifest.json" with { type: "json" };
+import candidatePin from "../../../tools/work-spine/governed-intake-candidate-release.pin.json" with { type: "json" };
+import * as candidateCompose from "../../../contracts/generated/governed-intake-candidate/governed-intake-triage.compose.ts";
+import * as candidatePolicy from "../../../contracts/generated/governed-intake-candidate/governed-intake-triage-policy.evaluate.ts";
+import * as candidateBody from "../../../contracts/generated/governed-intake-candidate/governed-intake-body.evaluate.ts";
+const publishedSemantic: TriageSemanticApi = {
+  boundTriagePolicyFromProducer: producerCompose.boundTriagePolicyFromProducer,
+  fingerprintIssueScope: producerCompose.fingerprintIssueScope,
+  fingerprintAssessment: producerPolicy.fingerprintAssessment,
+  validateGovernedWorkUnitKey: producerBody.validateGovernedWorkUnitKey,
+};
+const preparedSemantic: TriageSemanticApi = {
+  boundTriagePolicyFromProducer: candidateCompose.boundTriagePolicyFromProducer,
+  fingerprintIssueScope: candidateCompose.fingerprintIssueScope,
+  fingerprintAssessment: candidatePolicy.fingerprintAssessment,
+  validateGovernedWorkUnitKey: candidateBody.validateGovernedWorkUnitKey,
+  direction: candidateBinding,
+};
+const publishedBundle = { producer, contract, manifest: manifestJson, pin: pinJson, semantic: publishedSemantic };
+const preparedBundle = { producer: candidateProducer, contract: candidateContract as GovernedIntakeContract, manifest: candidateManifest, pin: candidatePin, semantic: preparedSemantic };
+type ReleaseBundle = typeof publishedBundle | typeof preparedBundle;
+export const PREPARED_INTAKE_IDENTITY = { ...candidateManifest.producer, releaseCommit: candidatePin.producer.releaseCommit, revision: candidateManifest.revision, payloadDigest: candidatePin.payloadDigest, state: "prepared" };
+
+function requireString(value: unknown, name: string): string {
+  if (typeof value !== "string" || value.trim().length === 0) throw new Error(`invalid governed-intake release: ${renderErrorValue(name)} missing`);
+  return value;
+}
+
+export async function sha256Utf8(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function decodeProducerContent(blob: { content?: string; encoding?: string }): string {
+  const content = requireString(blob.content, "content");
+  if (blob.encoding !== "base64") throw new Error(`governed-intake release ${renderErrorValue(PRODUCER_REPOSITORY)} requires base64 GitHub content`);
+  const binary = atob(content.replaceAll("\n", ""));
+  return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, c => c.codePointAt(0) ?? 0));
+}
+
+/** Check bytes against the admitted manifest, including the account-wide Issue Form. */
+export async function verifyProducerPayload(name: keyof typeof manifestJson.files, content: string, runtime?: TriageRuntime): Promise<void> {
+  const bundle = runtime?.identity?.payloadDigest === candidatePin.payloadDigest ? preparedBundle : publishedBundle;
+  const entry = bundle.manifest.files[name];
+  if (!entry || new TextEncoder().encode(content).byteLength !== entry.byteLength
+    || await sha256Utf8(content) !== entry.sha256) throw new Error(`governed-intake corrupt_file: ${renderErrorValue(name)}`);
+}
+
+async function verifyLiveManifest(value: unknown, bundle: ReleaseBundle): Promise<void> {
+  const pinJson = bundle.pin;
+  const manifestJson = bundle.manifest;
+  const manifest = value as typeof manifestJson | null;
+  if (!manifest || manifest.schema !== "GovernedIntakeReleaseManifestV1"
+    || manifest.schemaFamily !== "GovernedIntakeBodyV1" || !manifest.files) throw new Error(`governed-intake invalid_manifest (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  if (manifest.producer?.repository !== PRODUCER_REPOSITORY) throw new Error(`governed-intake repository_mismatch (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  if (manifest.producer?.commit !== pinJson.producer.producerCommit) throw new Error(`governed-intake commit_mismatch: admit the new producer release before deployment (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  if (manifest.revision !== pinJson.revision) throw new Error(`governed-intake revision_mismatch: admit the new producer release before deployment (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  const frame = Object.keys(manifest.files).sort().map(key => {
+    const entry = manifest.files[key as keyof typeof manifest.files];
+    if (!entry || entry.path !== key || !/^[0-9a-f]{64}$/.test(entry.sha256)
+      || !Number.isSafeInteger(entry.byteLength) || entry.byteLength < 0) throw new Error(`governed-intake invalid_manifest file table (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+    return `${entry.path}:${entry.sha256}:${String(entry.byteLength)}`;
+  }).join("\n");
+  const digest = await sha256Utf8(frame);
+  if (`sha256:${digest}` !== pinJson.payloadDigest || digest !== manifest.payloadDigest
+    || digest !== manifestJson.payloadDigest) throw new Error(`governed-intake digest_mismatch (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+}
+
+/**
+ * Dual accept during a release switch (code#8013): the worker admits both its pinned (published)
+ * release and the staged next (prepared) release, keyed by the live manifest's full identity (revision,
+ * producer commit and payload digest) rather than by revision alone. A same-revision republish staged in the prepared
+ * slot (the .github#40 shape) therefore resolves the moment it publishes, while the pinned identity
+ * keeps resolving until then. An identity neither slot admits keeps the revision-keyed slot, so its
+ * refusal names the pin it would need; nothing unadmitted is ever accepted.
+ */
+export function selectAdmittedRelease<T extends { pin: { revision: number; payloadDigest: string; producer: { producerCommit: string } } }>(
+  liveManifest: unknown, slots: { published: T; prepared: T },
+): T {
+  const live = liveManifest as { revision?: unknown; payloadDigest?: unknown; producer?: { commit?: unknown } } | null;
+  const carries = (slot: T) => live?.revision === slot.pin.revision && live.producer?.commit === slot.pin.producer.producerCommit
+    && typeof live.payloadDigest === "string" && `sha256:${live.payloadDigest}` === slot.pin.payloadDigest;
+  if (carries(slots.published)) return slots.published;
+  if (carries(slots.prepared)) return slots.prepared;
+  return live?.revision === slots.prepared.pin.revision ? slots.prepared : slots.published;
+}
+
+export async function resolveGovernedIntakeRuntime(token: string, githubApi: GithubApiFn): Promise<TriageRuntime> {
+  if (pinJson.schema !== "GovernedIntakeCurrentReleasePinV1" || pinJson.producer.repository !== PRODUCER_REPOSITORY
+    || pinJson.revision !== producer.CURRENT_TRIAGE_REVISION || pinJson.revision !== manifestJson.revision
+    || pinJson.payloadDigest !== `sha256:${manifestJson.payloadDigest}`) throw new Error(`governed-intake invalid_pin (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  const repo = await githubApi<{ default_branch?: string }>(`/repos/${PRODUCER_REPOSITORY}`, token);
+  const defaultBranch = requireString(repo.default_branch, "producer default_branch");
+  if (defaultBranch !== pinJson.producer.defaultBranch) throw new Error(`governed-intake producer default branch mismatch (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  const commit = await githubApi<{ sha?: string }>(`/repos/${PRODUCER_REPOSITORY}/commits/${encodeURIComponent(defaultBranch)}`, token);
+  const commitSha = requireString(commit.sha, "producer commit sha");
+  if (!/^[0-9a-f]{40}$/.test(commitSha)) throw new Error(`invalid governed-intake producer commit ${renderErrorValue(commitSha)}`);
+  const fetchContent = async (sourcePath: string) => githubApi<{ content?: string; encoding?: string; sha?: string }>(
+    `/repos/${PRODUCER_REPOSITORY}/contents/${sourcePath}?ref=${commitSha}`, token);
+  const manifest = await fetchContent(pinJson.producer.releaseManifestPath);
+  const liveManifest = JSON.parse(decodeProducerContent(manifest));
+  // The slot is chosen by the release identity the producer actually published (code#8013), so a
+  // release flip to the staged next identity, same revision or new, never takes intake down.
+  // Verification of the chosen slot never falls back to the other one.
+  const bundle = selectAdmittedRelease<ReleaseBundle>(liveManifest, { published: publishedBundle, prepared: preparedBundle });
+  await verifyLiveManifest(liveManifest, bundle);
+  const selectedPin = bundle.pin;
+  const source = await fetchContent(PRODUCER_SOURCE_PATH);
+  const content = decodeProducerContent(source);
+  const entry = bundle.manifest.files["governed-intake-body.v1.json"];
+  if (new TextEncoder().encode(content).byteLength !== entry.byteLength || await sha256Utf8(content) !== entry.sha256) throw new Error("governed-intake corrupt_file: governed-intake-body.v1.json");
+  if (source.sha !== selectedPin.producer.sourceBlobSha) throw new Error(`governed-intake source blob mismatch (${renderErrorValue(PRODUCER_REPOSITORY)})`);
+  return createTriageRuntime({
+    repository: PRODUCER_REPOSITORY, defaultBranch, commit: commitSha,
+    sourcePath: PRODUCER_SOURCE_PATH, blobSha: source.sha,
+    revision: bundle.producer.CURRENT_TRIAGE_REVISION,
+    producerCommit: selectedPin.producer.producerCommit,
+    releaseCommit: selectedPin.producer.releaseCommit,
+    payloadDigest: selectedPin.payloadDigest,
+  }, bundle);
+}
+
+/** Read-only preparation against the admitted immutable carrier. This never selects
+ * the live release for a write or establishes dispatch/completion authority.
+ */
+export async function resolvePreparedDirectionRuntime(token: string, githubApi: GithubApiFn): Promise<TriageRuntime> {
+  const pin = candidatePin;
+  const read = async (path: string) => githubApi<{ content?: string; encoding?: string; sha?: string }>(
+    `/repos/${PRODUCER_REPOSITORY}/contents/${path}?ref=${pin.producer.releaseCommit}`, token);
+  const manifest = await read(pin.producer.releaseManifestPath);
+  await verifyLiveManifest(JSON.parse(decodeProducerContent(manifest)), preparedBundle);
+  const source = await read(PRODUCER_SOURCE_PATH);
+  await verifyProducerPayload("governed-intake-body.v1.json", decodeProducerContent(source), createTriageRuntime({
+    repository: PRODUCER_REPOSITORY, defaultBranch: pin.producer.defaultBranch, commit: pin.producer.releaseCommit,
+    sourcePath: PRODUCER_SOURCE_PATH, blobSha: pin.producer.sourceBlobSha, revision: pin.revision,
+    producerCommit: pin.producer.producerCommit, releaseCommit: pin.producer.releaseCommit, payloadDigest: pin.payloadDigest,
+  }, preparedBundle));
+  if (source.sha !== pin.producer.sourceBlobSha) throw new Error(`prepared direction source blob mismatch for ${renderErrorValue(PRODUCER_REPOSITORY)}`);
+  return createTriageRuntime({ repository: PRODUCER_REPOSITORY, defaultBranch: pin.producer.defaultBranch,
+    commit: pin.producer.releaseCommit, sourcePath: PRODUCER_SOURCE_PATH, blobSha: source.sha,
+    revision: pin.revision, producerCommit: pin.producer.producerCommit, releaseCommit: pin.producer.releaseCommit, payloadDigest: pin.payloadDigest }, preparedBundle);
+}
+
+/** Only the producer's compiled rules are callable; there is no contract injection. */
+export function createTriageRuntime(identity: GovernedIntakeIdentity | null = null, bundle: ReleaseBundle = publishedBundle): TriageRuntime {
+  const { producer, contract } = bundle;
+  return {
+    contract, identity, preparedRelease: PREPARED_INTAKE_IDENTITY, checklist: producer.GOVERNED_TRIAGE_CHECKLIST,
+    currentRevision: producer.CURRENT_TRIAGE_REVISION,
+    currentTriagedLabel: producer.CURRENT_TRIAGED_LABEL,
+    requiredHeadings: producer.GOVERNED_INTAKE_REQUIRED_HEADINGS,
+    taxonomyRanks: producer.GOVERNED_TAXONOMY_RANKS,
+    causalColumns: producer.GOVERNED_CAUSAL_COLUMNS,
+    workUnitHeading: producer.GOVERNED_WORK_UNIT_HEADING,
+    workUnitMarkerTemplate: producer.GOVERNED_WORK_UNIT_MARKER_TEMPLATE,
+    workTypeLabels: producer.GOVERNED_WORK_TYPE_LABELS,
+    legacyWorkTypes: producer.GOVERNED_LEGACY_WORK_TYPES,
+    isTriagedChecklistLabel: producer.isTriagedChecklistLabel,
+    isTriageOwnedChecklistLabel: producer.isTriageOwnedChecklistLabel,
+    renderTriageChecklistBlock: producer.renderTriageChecklistBlock,
+    renderTriageCompletionMarker: producer.renderTriageCompletionMarker,
+    computeTriageStateFingerprint: producer.computeTriageStateFingerprint,
+    evaluateTriageChecklistState: (body, labels, semanticInput) => producer.evaluateTriageChecklistState(body ?? "", labels, semanticInput),
+    // The selected evaluator produces these reasons; keep its own formatter.
+    triageProjectionErrorMessage: state => producer.triageProjectionErrorMessage(state as PublishedChecklistState & CandidateChecklistState),
+    semantic: bundle.semantic,
+  };
+}

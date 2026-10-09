@@ -23,6 +23,7 @@ type TriageChecklistContract = {
   triagedLabelPrefix: string;
   triageOwnedLabelPatterns: string[];
   executionSubstrateLabels: string[];
+  retiredExecutionSubstrateLabels: string[];
   items: TriageChecklistItem[];
 };
 
@@ -53,8 +54,7 @@ export type TriageChecklistReason =
   | "stale_triaged_stamp"
   | "duplicate_triaged_stamp"
   | "pending_marker_present"
-  | "missing_execution_substrate_label"
-  | "conflicting_execution_substrate_labels"
+  | "retired_execution_substrate_label"
   | "semantic_evidence_required"
   | "semantic_evaluation_pending";
 
@@ -92,10 +92,9 @@ function assertContract(): TriageChecklistContract {
     throw new Error("invalid governed triage checklist contract");
   }
   if (!Array.isArray(checklist.executionSubstrateLabels)
-    || checklist.executionSubstrateLabels.length !== 2
-    || new Set(checklist.executionSubstrateLabels).size !== 2
-    || checklist.executionSubstrateLabels.some((label) => typeof label !== "string" || label.trim().length === 0)) {
-    throw new Error("governed triage checklist requires exactly two distinct execution-substrate labels");
+    || checklist.executionSubstrateLabels.length !== 0
+    || !Array.isArray(checklist.retiredExecutionSubstrateLabels)) {
+    throw new Error("governed triage checklist requires structured execution evidence, not substrate labels");
   }
   if (!Array.isArray(checklist.items) || checklist.items.length === 0) {
     throw new Error("governed triage checklist requires at least one item");
@@ -156,7 +155,7 @@ function completionRegex(flags = "g"): RegExp {
 }
 
 function triagedLabelRegex(): RegExp {
-  return new RegExp(`^${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}(\\d+)$`, "i");
+  return new RegExp(`^(?:${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix)}|triaged:v)(\\d+)$`, "i");
 }
 
 const TRIAGE_OWNED_LABEL_REGEXES = GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.map(
@@ -308,11 +307,9 @@ export async function evaluateTriageChecklistStructure(
   const pendingLabels = GOVERNED_TRIAGE_CHECKLIST.pendingLabels.filter((label) => labels.includes(label));
   if (pendingLabels.length > 0) reasons.push("pending_marker_present");
 
-  const executionSubstrateLabels = [...new Set(
-    labels.filter((label) => GOVERNED_TRIAGE_CHECKLIST.executionSubstrateLabels.includes(label)),
-  )];
-  if (executionSubstrateLabels.length === 0) reasons.push("missing_execution_substrate_label");
-  if (executionSubstrateLabels.length > 1) reasons.push("conflicting_execution_substrate_labels");
+  const executionSubstrateLabels = labels.filter((label) =>
+    GOVERNED_TRIAGE_CHECKLIST.retiredExecutionSubstrateLabels.includes(label));
+  if (executionSubstrateLabels.length) reasons.push("retired_execution_substrate_label");
 
   let expectedFingerprint: string | null = null;
   const structurallyComplete = Boolean(
@@ -358,7 +355,7 @@ export function triageProjectionErrorMessage(state: TriageChecklistState): strin
 export async function evaluateTriageChecklistState(
   body: string,
   labels: readonly string[] = [],
-  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId">,
+  semanticInput?: Pick<import("./governed-intake-triage.compose.ts").ComposedTriageInput, "subject" | "evidence" | "priorChecklist" | "implementationReceiptId" | "directionImpact" | "directionObservation" | "taxonomyObservation">,
 ): Promise<TriageChecklistState & { semantic_reasons?: string[]; scope_resolved?: boolean }> {
   const structure = await evaluateTriageChecklistStructure(body, labels);
   if (!semanticInput) return { ...structure, needs_triage: true,
@@ -367,8 +364,15 @@ export async function evaluateTriageChecklistState(
     semantic_reasons: ["missing_semantic_evidence"], scope_resolved: false };
   const { evaluateGovernedIntakeTriage } = await import("./governed-intake-triage.compose.ts");
   const result = await evaluateGovernedIntakeTriage({ body, labels, ...semanticInput });
+  const directionPending = result.reasons.some(reason => reason.startsWith("direction_") || reason === "no_impact_has_cohort_effects");
+  const taxonomyPending = result.reasons.some(reason => reason.startsWith("taxonomy_"));
+  const executionPending = result.reasons.some(reason => reason.startsWith("execution_"));
   return { ...structure, needs_triage: result.needsTriage,
-    unchecked_item_ids: result.scopeResolved ? structure.unchecked_item_ids : [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
+    unchecked_item_ids: [...new Set([...structure.unchecked_item_ids,
+      ...(result.scopeResolved ? [] : ["scope-decomposition"]),
+      ...(executionPending ? ["cloud-runnable"] : []),
+      ...(taxonomyPending ? ["priority-work-dimensions"] : []),
+      ...(directionPending ? ["value-direction", "dedup-queue-synergy"] : [])])],
     reasons: result.needsTriage ? [...new Set([...structure.reasons, "semantic_evaluation_pending" as const])] : structure.reasons,
     semantic_reasons: result.reasons, scope_resolved: result.scopeResolved };
 }
