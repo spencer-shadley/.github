@@ -269,13 +269,16 @@ function preventionRows(contract) {
   });
 }
 
+const DEFAULT_CONTAINMENT_HINT =
+  "<!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) -->";
+
 function detectRows(contract) {
   return contract.taxonomyRanks.map((rank) => {
     const hint = RANK_HINTS[rank];
     return [
       rank,
       `<!-- ${hint.notice} -->`,
-      "<!-- heal/contain -->",
+      DEFAULT_CONTAINMENT_HINT,
       "<!-- restore -->",
       "<!-- escalate if no progress -->",
       "TBD — triage",
@@ -896,6 +899,8 @@ export function runSelfcheck(root = REPO_ROOT) {
   assertIncludes(markdown, contract.defectLadders.detectHealRecover.heading, "md detect ladder");
   for (const column of contract.defectLadders.prevention.columns) assertIncludes(markdown, column, `md prevention column ${column}`);
   for (const column of contract.defectLadders.detectHealRecover.columns) assertIncludes(markdown, column, `md detect column ${column}`);
+  assertIncludes(markdown, "degrade with a warning", "md detect ladder containment default");
+  assertIncludes(markdown, "fail-closed only for", "md detect ladder fail-closed hazards");
   for (const token of contract.statusTokens) assertIncludes(markdown, `\`${token}\``, `md status token ${token}`);
   assert.equal(markdown.includes("| Fix or next action |"), false, "md must not use a single Fix or next action column");
   assert.equal(/\|\s*(Kingdom|Domain)\s*\|[^\n]*\|\s*evidence-ceiling\s*\|/i.test(markdown), false, "taxonomy must not default Kingdom or Domain to evidence-ceiling");
@@ -940,6 +945,8 @@ export function runSelfcheck(root = REPO_ROOT) {
   for (const rank of contract.taxonomyRanks) assertIncludes(yaml, `| ${rank} |`, `yaml rank ${rank}`);
   assertIncludes(yaml, contract.defectLadders.prevention.heading, "yaml prevention ladder");
   assertIncludes(yaml, contract.defectLadders.detectHealRecover.heading, "yaml detect ladder");
+  assertIncludes(yaml, "degrade with a warning", "yaml detect ladder containment default");
+  assertIncludes(yaml, "fail-closed only for", "yaml detect ladder fail-closed hazards");
   assert.equal(yaml.includes("| Fix or next action |"), false, "yaml must not use a single Fix column");
   assert.equal(/\|\s*(Kingdom|Domain)\s*\|[^\n]*\|\s*evidence-ceiling\s*\|/i.test(yaml), false, "yaml must not default Kingdom or Domain to evidence-ceiling");
 
