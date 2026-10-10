@@ -70,11 +70,11 @@ function validBody(): string {
   ].join("\n");
 }
 
-test("candidate contract metadata and namespace conforms to revision 23", () => {
-  assert.equal(contract.version, 23);
-  assert.equal(CURRENT_TRIAGE_REVISION, 23);
+test("candidate contract metadata and namespace conforms to revision 24", () => {
+  assert.equal(contract.version, 24);
+  assert.equal(CURRENT_TRIAGE_REVISION, 24);
   assert.equal(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix, "metadata:triage-v");
-  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v23");
+  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v24");
   assert.deepEqual(GOVERNED_TRIAGE_CHECKLIST.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^delivers:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^type:"));
@@ -102,6 +102,7 @@ test("generated projections use progress:triage and ban work:untriaged", () => {
 });
 
 test("triage label recognizer handles current metadata:triage-v and legacy triaged:v", () => {
+  assert.equal(isTriagedChecklistLabel("metadata:triage-v24"), true);
   assert.equal(isTriagedChecklistLabel("metadata:triage-v23"), true);
   assert.equal(isTriagedChecklistLabel("metadata:triage-v22"), true);
   assert.equal(isTriagedChecklistLabel("triaged:v22"), true);

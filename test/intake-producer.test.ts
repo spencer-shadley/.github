@@ -89,6 +89,26 @@ test("complete body is accepted while incomplete or malformed identities are ref
   assert.equal(validateGovernedWorkUnitKey(marker.replace("sha256:", "sha256:x")).reason, "malformed");
   assert.equal(validateGovernedIntakeBody(validBody().replace("| Domain | Producer", "| Wrong | Producer")).ok, false);
 });
+test("round-trip: a body with the old heading and a body with the new heading both validate", () => {
+  const newBody = validBody();
+  assert.match(newBody, /### A\. Fix the class/);
+  const newResult = validateGovernedIntakeBody(newBody);
+  assert.deepEqual(newResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
+  const oldBody = newBody.replace("### A. Fix the class", "### A. Prevention — never again");
+  assert.match(oldBody, /### A\. Prevention — never again/);
+  const oldResult = validateGovernedIntakeBody(oldBody);
+  assert.deepEqual(oldResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
+  // Regression: legacy heading with canonical words in prose
+  const proseBody = oldBody.replace("Producer ownership mismatch", "Fix the class of producer ownership mismatch");
+  const proseResult = validateGovernedIntakeBody(proseBody);
+  assert.deepEqual(proseResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
+  const badBody = newBody.replace("### A. Fix the class", "### A. Unknown Heading");
+  const badResult = validateGovernedIntakeBody(badBody);
+  assert.equal(badResult.ok, false);
+});
 test("body with empty acceptance criteria is refused; a file:line reference warns without blocking (code#7074)", () => {
   const empty = validBody().replace(
     "## Durable fix and acceptance\nProducer and verified consumers agree on release identity.",
@@ -306,7 +326,7 @@ test("missing policy payload fails closed without requiring a symlink", (t) => {
 
 test("isolated proposal-classification addition is a one-item delta (combined cutover tested separately)", async () => {
   const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
-  assert.equal(c.version, 23);
+  assert.equal(c.version, 24);
   const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
   const item = items.find((i) => i.id === "proposal-classification");
   assert.ok(item && /type:proposal/.test(item.text));

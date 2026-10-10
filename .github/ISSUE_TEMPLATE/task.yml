@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 23). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 24). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -11,11 +11,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 23).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 24).
         This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
         Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
-        Defects must complete Prevention (never again, §14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.
+        Defects must complete Fix the class (§14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.
         Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.
         Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`. Every rank requires a real disposition; use `evidence-ceiling` only when evidence is genuinely unobtainable, never as a default terminator.
 
@@ -82,7 +82,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=23 -->
+        <!-- governed-triage-checklist: revision=24 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -147,7 +147,7 @@ body:
       label: "Root-cause taxonomy and disposition"
       description: |
         Climb all nine DOCTRINE §14 ranks. Causal columns: Rank, Finding, Disposition, Reified as.
-        Defects complete ladders A (Prevention — never again) and B (Detect/heal/recover — if it still happens).
+        Defects complete ladders A (Fix the class) and B (Detect / self-heal / recover — if it still happens).
         Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`. Every rank requires a real disposition; use `evidence-ceiling` only when evidence is genuinely unobtainable, never as a default terminator.
       value: |
         | Rank | Finding | Disposition | Reified as |
@@ -162,7 +162,7 @@ body:
         | Kingdom | <!-- incentive / reward shape --> | <!-- disposition --> | issue/plan or TBD — triage |
         | Domain | <!-- optimization model --> | <!-- disposition --> | CEO / terminal stop reason |
 
-        ### A. Prevention — never again
+        ### A. Fix the class
 
         | Rank | Preventive control | Status |
         |---|---|---|
