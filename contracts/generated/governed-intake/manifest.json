@@ -1,12 +1,12 @@
 {
   "schema": "GovernedIntakeReleaseManifestV1",
   "schemaFamily": "GovernedIntakeBodyV1",
-  "revision": 23,
+  "revision": 24,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "4601851a0630d5ba9f3c42bffc66b794f234b079"
+    "commit": "496ab4bc2d91b8f1d4e7d8767e021373c8b776c3"
   },
-  "payloadDigest": "d09609ceeed4cdaa3eb9e3162ed0e18f2b57ebe6f5f7febe77e886bfe280774d",
+  "payloadDigest": "0b25b0f156ee5e5a4e88225ef37d8800285a05fc285f3a15e943fb89cdcbc36e",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -20,8 +20,8 @@
     },
     "contract.json": {
       "path": "contract.json",
-      "sha256": "b499ad7960b3f5ae2a66e781bbbbc81d54f41dd8c3502e0a07808be3acada241",
-      "byteLength": 36739
+      "sha256": "e4c0a0b321ddae564608d746e4fc39c823b467b55cc84f0500da0b5d79d764b7",
+      "byteLength": 37098
     },
     "delta-planner.js": {
       "path": "delta-planner.js",
@@ -35,48 +35,48 @@
     },
     "evaluator.js": {
       "path": "evaluator.js",
-      "sha256": "a4ed4584050856eae1b0604609ebdb0bc1a94c7bd08e314f5f006f93dce62537",
-      "byteLength": 41658
+      "sha256": "d9896bba3f7c6103a0b5e9307da7f549c5c2847d5cd07b374d562fb82814d760",
+      "byteLength": 42545
     },
     "evaluator.ts": {
       "path": "evaluator.ts",
-      "sha256": "77a963f23846aa4d4984dd17d739caa56f608cf0f6ed291472ad09cd4a3b2ebd",
-      "byteLength": 41658
+      "sha256": "1f1ac9d82d182ed6b18704a943d27bf7a6ed5fe6a65f01000d38d971276be2e5",
+      "byteLength": 42545
     },
     "feature.md": {
       "path": "feature.md",
-      "sha256": "7afd15a0c39918b1aa68febc6dc4c536f041eb01cae392a0779c06550e9536d0",
+      "sha256": "16379834127ba069c8ca3b8cc0c9a92d9dc5c43cf89c856f86d8fe832d5926fe",
       "byteLength": 2763
     },
     "feature.yml": {
       "path": "feature.yml",
-      "sha256": "a4919d553c88badc84a7da9ca018331bcf5f7e4a5bce3a8f84ccc6b67443e738",
+      "sha256": "2c442a886adf544e2ab9a905c0cd59d37e15f72d239fe6ea6a6ae22cfba63be1",
       "byteLength": 4400
     },
     "generator.js": {
       "path": "generator.js",
-      "sha256": "20bca34e90a2714771845001bb243821dcc189aab1318496fe5cc7c4974350dd",
-      "byteLength": 48008
+      "sha256": "ff6fee32df4559778ebd3ff6c470ab6a84ff775c08202a42f14e33bac0666dab",
+      "byteLength": 47992
     },
     "generator.ts": {
       "path": "generator.ts",
-      "sha256": "5135c660e0bfe2a05477cadeebfef187d10574b8ff8d0ce7f6f4d09924f02fef",
-      "byteLength": 48008
+      "sha256": "2c1bc7b07801eed43693763f6e6d641ef0ab0b77507707a94bfb7b2593138db2",
+      "byteLength": 47992
     },
     "governed-intake-body.evaluate.js": {
       "path": "governed-intake-body.evaluate.js",
-      "sha256": "a4ed4584050856eae1b0604609ebdb0bc1a94c7bd08e314f5f006f93dce62537",
-      "byteLength": 41658
+      "sha256": "d9896bba3f7c6103a0b5e9307da7f549c5c2847d5cd07b374d562fb82814d760",
+      "byteLength": 42545
     },
     "governed-intake-body.evaluate.ts": {
       "path": "governed-intake-body.evaluate.ts",
-      "sha256": "77a963f23846aa4d4984dd17d739caa56f608cf0f6ed291472ad09cd4a3b2ebd",
-      "byteLength": 41658
+      "sha256": "1f1ac9d82d182ed6b18704a943d27bf7a6ed5fe6a65f01000d38d971276be2e5",
+      "byteLength": 42545
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "b499ad7960b3f5ae2a66e781bbbbc81d54f41dd8c3502e0a07808be3acada241",
-      "byteLength": 36739
+      "sha256": "e4c0a0b321ddae564608d746e4fc39c823b467b55cc84f0500da0b5d79d764b7",
+      "byteLength": 37098
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -200,13 +200,13 @@
     },
     "task.md": {
       "path": "task.md",
-      "sha256": "0f198d6e4b69cb2f54bc9d38db021e5199c5c221504c4d3e94c7f1626dcc046b",
-      "byteLength": 21062
+      "sha256": "39b60f70005aed1045b673006db64c1f682b5ebbc6f769c3cfb672a3fac63329",
+      "byteLength": 21101
     },
     "task.yml": {
       "path": "task.yml",
-      "sha256": "3195107a86c317df3fa5a4e62efb8249f4403824fa29d6184ac1c5ac12a987b9",
-      "byteLength": 23240
+      "sha256": "d1dd6b511d9b56bb727c2912a06bb7ef1539f1d9567df5ca2e2735a4dd34b95f",
+      "byteLength": 23213
     },
     "taxonomy-evaluator.js": {
       "path": "taxonomy-evaluator.js",
