@@ -113,15 +113,15 @@ N/A — <reason>
 
 | Rank | Notice | Self-heal / contain | Restore | Escalate if no progress | Status |
 |---|---|---|---|---|---|
-| Subspecies | <!-- how this occurrence is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Species | <!-- how the class is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Genus | <!-- how the mechanism is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Family | <!-- how the invariant breach is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Order | <!-- how the pattern failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Class | <!-- how the producing standard is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Phylum | <!-- how ownership/lifecycle miss is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Kingdom | <!-- how the incentive failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Domain | <!-- how objective-model failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Subspecies | <!-- how this occurrence is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Species | <!-- how the class is detected --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Genus | <!-- how the mechanism is detected --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Family | <!-- how the invariant breach is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Order | <!-- how the pattern failure is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Class | <!-- how the producing standard is detected --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Phylum | <!-- how ownership/lifecycle miss is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Kingdom | <!-- how the incentive failure is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Domain | <!-- how objective-model failure is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
 
 At planning/closure, every rank requires a real disposition and an acted-on artifact or an explicit evidence-backed reason for delegation, non-action, unsupported scope, or evidence ceiling. Evidence ceiling is reserved for genuinely unobtainable evidence, not a default terminator. Defects also require both ladders at each rank.
 
