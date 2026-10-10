@@ -101,6 +101,21 @@ test("generated projections use progress:triage and ban work:untriaged", () => {
   assert.equal(checkProjections(root).ok, true);
 });
 
+test("generated projections default Table B containment to degrade with a warning naming fail-closed hazards (.github#47)", () => {
+  const taskMd = generateTaskMarkdown(contract);
+  const taskYml = generateTaskYaml(contract);
+
+  for (const [name, content] of [["task.md", taskMd], ["task.yml", taskYml]]) {
+    assert.match(content, /degrade with a warning/, `${name} must default containment to degrade with a warning`);
+    assert.match(content, /fail-closed only for/, `${name} must name fail-closed only for hazards`);
+    assert.match(content, /protected bytes or custody/, `${name} must list protected bytes or custody hazard`);
+    assert.match(content, /credentials/, `${name} must list credentials hazard`);
+    assert.match(content, /destructive\/production\/external effects/, `${name} must list destructive effects hazard`);
+    assert.match(content, /irreversible\/shared authority/, `${name} must list irreversible/shared authority hazard`);
+    assert.match(content, /materially true acceptance/, `${name} must list materially true acceptance hazard`);
+  }
+});
+
 test("triage label recognizer handles current metadata:triage-v and legacy triaged:v", () => {
   assert.equal(isTriagedChecklistLabel("metadata:triage-v24"), true);
   assert.equal(isTriagedChecklistLabel("metadata:triage-v23"), true);
