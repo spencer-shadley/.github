@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, sy
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials, UNDISPLAYABLE_ORIGIN } from "../contracts/governed-intake-body.generate.ts";
+import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials, UNDISPLAYABLE_ORIGIN, buildProjectedHeadings, extractYamlFieldLabels } from "../contracts/governed-intake-body.generate.ts";
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
 import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
@@ -14,12 +14,15 @@ import { renderTriageChecklistBlock, renderTriageCompletionMarker, computeTriage
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const c = loadContract(root);
 const identity = { fixOwnerGitHubSlug: "Spencer-Shadley/.github", workType: "Task", canonicalWorkUnitIdentity: "producer relocation" };
+/** Create-complete body: schema headings plus the live unchecked triage checklist (same shape as task.yml). */
 function validBody() {
   const ranks = c.taxonomyRanks;
   return [
     "## Work type", "Task", "## Governed work-unit key", renderGovernedWorkUnitKeyMarker(identity),
     "## What happened or what is needed?", "Move the intake producer with preserved validation behavior.",
     "## Initial priority guess", "P2", "## Why this initial priority?", "Prevent template drift.",
+    // Live form projects Triage checklist here — fixtures that claim create-complete must not omit it (.github#68).
+    renderTriageChecklistBlock({ checked: false }),
     "## Relevant details", "- repository: spencer-shadley/.github", `- commit: ${"a".repeat(40)}`, "- path: .github/ISSUE_TEMPLATE/task.yml",
     "## Exact leases", "contracts/governed-intake-body.generate.ts",
     "## Root-cause taxonomy and disposition", "| Rank | Finding | Disposition | Reified as |", "|---|---|---|---|",
@@ -31,6 +34,12 @@ function validBody() {
     "## Durable fix and acceptance", "Producer and verified consumers agree on release identity.",
     "## Human-decision state", "No human decision required",
   ].join("\n");
+}
+function checkedChecklistBody() {
+  return validBody().replace(
+    renderTriageChecklistBlock({ checked: false }),
+    renderTriageChecklistBlock({ checked: true }),
+  );
 }
 function scratch(t: { after: (fn: () => void) => void }) {
   const dir = mkdtempSync(path.join(os.tmpdir(), "intake-producer-test-"));
@@ -57,6 +66,26 @@ test("canonical projections are exact, valid, and contain no cross-repository co
   assert.match(generateTaskMarkdown(c), /repository: spencer-shadley\/\.github/);
   assert.equal(c.owner, "spencer-shadley/.github");
   assert.match(generateTaskYaml(c), /description: "One paragraph\. For bugs: symptom \+ repro\. For features: the user-visible outcome\."/);
+});
+test("yaml field labels match projected heading set and count dynamically (.github#68)", () => {
+  const projected = buildProjectedHeadings(c);
+  assert.equal(projected.length, c.requiredHeadings.length + 2);
+  const labels = extractYamlFieldLabels(generateTaskYaml(c));
+  const unique = [...new Set(labels)];
+  assert.equal(unique.length, projected.length);
+  assert.deepEqual(unique, projected);
+});
+test("create-complete body fixture includes the live unchecked triage checklist (.github#68)", () => {
+  const body = validBody();
+  const checklist = renderTriageChecklistBlock({ checked: false });
+  assert.ok(body.includes(checklist), "validBody must embed renderTriageChecklistBlock so agents copying tests get the real form shape");
+  assert.match(body, new RegExp(`##\\s+${c.triageChecklist.heading.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}`));
+  assert.match(body, /governed-triage-checklist: revision=/);
+  assert.deepEqual(validateGovernedIntakeBody(body), { ok: true, schemaVersion: "governed-intake-body-v1" });
+  // Body admission stays non-fencing for legacy issues that omit the checklist.
+  const withoutChecklist = body.replace(checklist, "").replace(/\n{3,}/g, "\n\n");
+  assert.equal(withoutChecklist.includes("## Triage checklist"), false);
+  assert.deepEqual(validateGovernedIntakeBody(withoutChecklist), { ok: true, schemaVersion: "governed-intake-body-v1" });
 });
 test("live issue forms satisfy GitHub's top-level Issue Form schema (.github#31)", () => {
   const forms = {
@@ -137,7 +166,7 @@ test("governed key preserves canonical identity case and length-framed Unicode n
   assert.notEqual(a, computeGovernedWorkUnitKey({ ...identity, canonicalWorkUnitIdentity: "café" }));
 });
 test("current checklist requires fingerprint and completed items and rejects retired substrate labels", async () => {
-  const body = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
+  const body = checkedChecklistBody();
   const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
   const completed = body + "\n" + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
   assert.equal((await evaluateTriageChecklistState(completed, labels)).needs_triage, false);
@@ -349,7 +378,7 @@ import { planChecklistDelta } from '../contracts/governed-intake-triage-state.mi
 const directionHash = (letter: string) => `sha256:${letter.repeat(64)}`;
 async function directionFixture(material = false): Promise<ComposedTriageInput> {
   const subject = { repository: 'spencer-shadley/.github', issueNumber: 35, title: 'Direction-impact producer' };
-  const body = validBody() + '\n' + renderTriageChecklistBlock({ checked: true });
+  const body = checkedChecklistBody();
   const labels = [CURRENT_TRIAGED_LABEL, 'effort:medium', 'decomp:unnecessary',
     'type:maintenance', 'source:human', 'priority:repo:p2', 'priority:fleet:p2', 'progress:planned'];
   const taxonomyObservation = { ...subject, state: 'open' as const, lifecycleId: 'github-creation-35' };

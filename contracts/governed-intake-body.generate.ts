@@ -158,6 +158,26 @@ function assertTriageChecklistContract(raw: ReturnType<typeof JSON.parse>) {
   assert.match(raw.effortCalibration?.description ?? "", /unknown, not low/);
 }
 
+/** Live Issue Form heading order: requiredHeadings with work-unit key and triage checklist inserted.
+ * Keep in sync with generateTaskYaml field order. Count/set assertions use this — never a magic length.
+ */
+export function buildProjectedHeadings(contract: {
+  requiredHeadings: string[];
+  workUnitKey: { heading: string };
+  triageChecklist: { heading: string };
+}): string[] {
+  const required = contract.requiredHeadings;
+  assert.ok(Array.isArray(required) && required.length > 0, "requiredHeadings must be a non-empty array");
+  // Work-unit key follows Work type; triage checklist follows the initial-priority pair.
+  return [
+    required[0],
+    contract.workUnitKey.heading,
+    ...required.slice(1, 4),
+    contract.triageChecklist.heading,
+    ...required.slice(4),
+  ];
+}
+
 export function loadContract(root = REPO_ROOT) {
   const filePath = path.join(root, CONTRACT_REL);
   const raw = JSON.parse(readFileSync(filePath, "utf8"));
@@ -166,7 +186,12 @@ export function loadContract(root = REPO_ROOT) {
     Number.isInteger(raw.version) && raw.version > 0,
     "governed-intake-body version must be a positive integer",
   );
-  assert.ok(Array.isArray(raw.requiredHeadings) && raw.requiredHeadings.length === 9);
+  assert.ok(Array.isArray(raw.requiredHeadings) && raw.requiredHeadings.length > 0);
+  assert.equal(
+    new Set(raw.requiredHeadings).size,
+    raw.requiredHeadings.length,
+    "requiredHeadings must be unique",
+  );
   assert.equal(raw.workUnitKey?.heading, "Governed work-unit key");
   assert.equal(raw.workUnitKey?.markerName, "governed-work-unit-key");
   assert.equal(raw.workUnitKey?.algorithm, "sha256");
@@ -192,6 +217,30 @@ export function loadContract(root = REPO_ROOT) {
     false,
   );
   assertTriageChecklistContract(raw);
+  // Dynamic sync: projected set = requiredHeadings ∪ {work-unit key, triage checklist}.
+  // Regenerating projections keeps tests green when the form expands — no hand-edited expected length.
+  const projectedHeadings = buildProjectedHeadings(raw);
+  assert.equal(
+    projectedHeadings.length,
+    raw.requiredHeadings.length + 2,
+    "projected heading count must equal requiredHeadings plus work-unit key and triage checklist",
+  );
+  assert.equal(
+    new Set(projectedHeadings).size,
+    projectedHeadings.length,
+    "projected headings must be unique",
+  );
+  for (const heading of raw.requiredHeadings) {
+    assert.ok(projectedHeadings.includes(heading), `projected set must include required heading ${heading}`);
+  }
+  assert.ok(
+    projectedHeadings.includes(raw.workUnitKey.heading),
+    "projected set must include work-unit key heading",
+  );
+  assert.ok(
+    projectedHeadings.includes(raw.triageChecklist.heading),
+    "projected set must include triage checklist heading",
+  );
   assert.equal(raw.projections?.featureMarkdown, "contracts/generated/governed-intake/feature.md");
   assert.equal(raw.projections?.featureYaml, ".github/ISSUE_TEMPLATE/feature.yml");
   assert.ok(Array.isArray(raw.taxonomyRanks) && raw.taxonomyRanks.length === 9);
@@ -925,15 +974,15 @@ export function runSelfcheck(root = REPO_ROOT) {
   assertIncludes(yaml, versionStamp, "yaml contract version stamp");
 
   const labels = extractYamlFieldLabels(yaml);
-  const projectedHeadings = [
-    contract.requiredHeadings[0],
-    contract.workUnitKey.heading,
-    ...contract.requiredHeadings.slice(1, 4),
-    contract.triageChecklist.heading,
-    ...contract.requiredHeadings.slice(4),
-  ];
+  const projectedHeadings = buildProjectedHeadings(contract);
+  const uniqueLabels = [...new Set(labels)];
+  assert.equal(
+    uniqueLabels.length,
+    projectedHeadings.length,
+    "yaml field label count must equal projected heading count (requiredHeadings + work-unit key + triage checklist)",
+  );
   assert.deepEqual(
-    [...new Set(labels)],
+    uniqueLabels,
     projectedHeadings,
     "yaml field labels must equal contract headings plus work-unit key and persisted triage checklist fields",
   );
