@@ -4,9 +4,9 @@
   "revision": 24,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "11b35e980feaa14ed983ac38576fb78ee285cd2c"
+    "commit": "5a5c33a263e46f13b36613b2ff3778d123191619"
   },
-  "payloadDigest": "1f1c1ee41b8bc36add260a5c574647527b4ff6c46cc81a7ddc6ce034099ce701",
+  "payloadDigest": "820645709e2ad34eec067c8483ff28986c71364121d630f60d7564c9b02c057a",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -55,13 +55,13 @@
     },
     "generator.js": {
       "path": "generator.js",
-      "sha256": "ff6fee32df4559778ebd3ff6c470ab6a84ff775c08202a42f14e33bac0666dab",
-      "byteLength": 47992
+      "sha256": "dc6593a3cedb1793cfb04e30d3bdd2e2d682121765ee30492d1a89c7e584dddb",
+      "byteLength": 48599
     },
     "generator.ts": {
       "path": "generator.ts",
-      "sha256": "2c1bc7b07801eed43693763f6e6d641ef0ab0b77507707a94bfb7b2593138db2",
-      "byteLength": 47992
+      "sha256": "f416eefa4fa267803be6a05ca40287b63bab0a3d2e7829314f98ef676021a656",
+      "byteLength": 48599
     },
     "governed-intake-body.evaluate.js": {
       "path": "governed-intake-body.evaluate.js",
@@ -200,13 +200,13 @@
     },
     "task.md": {
       "path": "task.md",
-      "sha256": "39b60f70005aed1045b673006db64c1f682b5ebbc6f769c3cfb672a3fac63329",
-      "byteLength": 21101
+      "sha256": "e685ebef33c807a8016ee267451ea8a5e056cdb92352b69a9c2b30a818fb6f48",
+      "byteLength": 22694
     },
     "task.yml": {
       "path": "task.yml",
-      "sha256": "d1dd6b511d9b56bb727c2912a06bb7ef1539f1d9567df5ca2e2735a4dd34b95f",
-      "byteLength": 23213
+      "sha256": "82e1d116f9453259a63a6b49ada554d759e2c405a7baf4b793a3b2de85092dad",
+      "byteLength": 24806
     },
     "taxonomy-evaluator.js": {
       "path": "taxonomy-evaluator.js",
@@ -240,7 +240,7 @@
     }
   },
   "build": {
-    "runtime": "v24.21.0",
+    "runtime": "v24.19.0",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }
