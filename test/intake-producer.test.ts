@@ -100,6 +100,11 @@ test("round-trip: a body with the old heading and a body with the new heading bo
   const oldResult = validateGovernedIntakeBody(oldBody);
   assert.deepEqual(oldResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
 
+  // Regression: legacy heading with canonical words in prose
+  const proseBody = oldBody.replace("Producer ownership mismatch", "Fix the class of producer ownership mismatch");
+  const proseResult = validateGovernedIntakeBody(proseBody);
+  assert.deepEqual(proseResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
   const badBody = newBody.replace("### A. Fix the class", "### A. Unknown Heading");
   const badResult = validateGovernedIntakeBody(badBody);
   assert.equal(badResult.ok, false);
