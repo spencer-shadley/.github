@@ -819,8 +819,11 @@ export function validateGovernedIntakeMarkdown(
     if (section.includes("| Fix or next action |")) {
       missing.push("causal climb still uses Fix or next action; use Defect ladders A and B");
     }
-    const matchedPreventionHeading = acceptedPreventionHeadings.find((h) => section.includes(h));
-    if (!matchedPreventionHeading) {
+    const preventionHeadingRes = acceptedPreventionHeadings.map(
+      (h) => new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(h)}\s*$`, "i"),
+    );
+    const hasPreventionHeading = section.split("\n").some((l) => preventionHeadingRes.some((re) => re.test(l.trim())));
+    if (!hasPreventionHeading) {
       missing.push(`Defect ladder A: ${prevention.heading}`);
     }
     if (!section.includes(detect.heading)) {
@@ -837,7 +840,7 @@ export function validateGovernedIntakeMarkdown(
 
     const ladderASection = extractLadderSection(
       section,
-      matchedPreventionHeading ?? acceptedPreventionHeadings,
+      acceptedPreventionHeadings,
       detect.heading,
     );
     const ladderBSection = extractLadderSection(section, detect.heading);
