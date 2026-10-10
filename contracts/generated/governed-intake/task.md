@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, progress:triage
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 23). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 24). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, progress:triage
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=23 -->
+<!-- governed-triage-checklist: revision=24 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -73,11 +73,11 @@ labels: agent-review, priority:triage-tbd, progress:triage
 N/A — <reason>
 
 ## Root-cause taxonomy and disposition
-<!-- Required by fleet DOCTRINE.md §14 / governed-intake-body-v1. Climb all nine ranks.
+<!-- Required by docs/doctrine/sections/14.md in spencer-shadley/code / governed-intake-body-v1. Climb all nine ranks.
      Use honest TBD — triage when a rank is not yet known — TBD is an open triage
      obligation, not decoration. Cite §14; do not restate doctrine.
      Causal climb columns are Rank, Finding, Disposition, Reified as.
-     Defects MUST complete ladders A (Prevention / never again) and B (Detect/heal/recover / §18)
+     Defects MUST complete ladders A (Fix the class) and B (Detect / self-heal / recover — if it still happens / §18)
      as distinct structures. Do not keep a single Fix or next action column as the only action.
      Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`. Every rank requires a real disposition; use `evidence-ceiling` only when evidence is genuinely unobtainable, never as a default terminator. -->
 
@@ -93,7 +93,7 @@ N/A — <reason>
 | Kingdom | <!-- incentive / reward shape --> | <!-- disposition --> | issue/plan or TBD — triage |
 | Domain | <!-- optimization model --> | <!-- disposition --> | CEO / terminal stop reason |
 
-### A. Prevention — never again
+### A. Fix the class
 <!-- Required for Defects. Other work types may use N/A per row. Preventive control at each §14 rank. -->
 
 | Rank | Preventive control | Status |
