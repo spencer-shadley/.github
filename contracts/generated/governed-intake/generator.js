@@ -133,9 +133,12 @@ function assertTriageChecklistContract(raw                               ) {
   const order = validateChecklistRelease({ revision: raw.version, items: checklist.items });
   const scopeId = policy.workflow.scopeItemId;
   assert.ok(ids.includes(scopeId), "canonical scope-decomposition item is required");
+  assert.ok(ids.includes("task-profile"), "canonical task-profile item is required");
   const preflight = ["canonical-flow", "value-direction", "fix-owner-responsibility", "dedup-queue-synergy"];
   const finals = ["priority-work-dimensions", "verify-human-required", "cloud-runnable"];
   for (const id of preflight) assert.ok(ids.indexOf(id) < ids.indexOf(scopeId), `${id} must precede ${scopeId}`);
+  assert.ok(ids.indexOf(scopeId) < ids.indexOf("task-profile"), "scope-decomposition must precede task-profile");
+  assert.ok(ids.indexOf("task-profile") < ids.indexOf("priority-work-dimensions"), "task-profile must precede priority-work-dimensions");
   for (const id of finals) assert.ok(ids.indexOf(scopeId) < ids.indexOf(id), `${scopeId} must precede ${id}`);
   assert.ok(order.indexOf(scopeId) < order.indexOf("priority-work-dimensions"), "execution order must resolve scope before final attributes");
   const semantics = (item                           )                          =>
