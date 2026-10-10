@@ -326,7 +326,7 @@ test("missing policy payload fails closed without requiring a symlink", (t) => {
 
 test("isolated proposal-classification addition is a one-item delta (combined cutover tested separately)", async () => {
   const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
-  assert.equal(c.version, 24);
+  assert.equal(c.version, 25);
   const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
   const item = items.find((i) => i.id === "proposal-classification");
   assert.ok(item && /type:proposal/.test(item.text));
@@ -337,6 +337,27 @@ test("isolated proposal-classification addition is a one-item delta (combined cu
     completionVerified: true, completedItemIds: previousItems.map((i) => i.id), staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [],
   });
   assert.deepEqual(delta.reevaluatedItems, [{ id: "proposal-classification", reasons: ["new-item"] }]);
+  assert.deepEqual(delta.mechanicallyChangedItemIds, ["confirm-receipt"]);
+});
+
+test("isolated task-profile addition is a one-item delta", async () => {
+  const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
+  const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
+  const item = items.find((i) => i.id === "task-profile");
+  assert.ok(item && /TaskProfileV1/.test(item.text));
+  assert.ok(items.find((i) => i.id === "confirm-receipt")?.dependsOn?.includes("task-profile"));
+  assert.ok(items.find((i) => i.id === "confirm-receipt")?.resultDependencies?.includes("task-profile"));
+  const previousItems = items.filter((i) => i.id !== "task-profile").map((i) => i.id === "confirm-receipt"
+    ? {
+        ...i,
+        dependsOn: (i.dependsOn ?? []).filter((d) => d !== "task-profile"),
+        resultDependencies: (i.resultDependencies ?? []).filter((d) => d !== "task-profile"),
+      }
+    : i);
+  const delta = planChecklistDelta({ revision: 24, items: previousItems }, { revision: 25, items }, {
+    completionVerified: true, completedItemIds: previousItems.map((i) => i.id), staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [],
+  });
+  assert.deepEqual(delta.reevaluatedItems, [{ id: "task-profile", reasons: ["new-item"] }]);
   assert.deepEqual(delta.mechanicallyChangedItemIds, ["confirm-receipt"]);
 });
 

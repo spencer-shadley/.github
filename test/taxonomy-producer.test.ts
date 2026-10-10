@@ -70,11 +70,11 @@ function validBody(): string {
   ].join("\n");
 }
 
-test("candidate contract metadata and namespace conforms to revision 24", () => {
-  assert.equal(contract.version, 24);
-  assert.equal(CURRENT_TRIAGE_REVISION, 24);
+test("candidate contract metadata and namespace conforms to revision 25", () => {
+  assert.equal(contract.version, 25);
+  assert.equal(CURRENT_TRIAGE_REVISION, 25);
   assert.equal(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix, "metadata:triage-v");
-  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v24");
+  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v25");
   assert.deepEqual(GOVERNED_TRIAGE_CHECKLIST.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^delivers:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^type:"));
@@ -84,6 +84,7 @@ test("candidate contract metadata and namespace conforms to revision 24", () => 
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^progress:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^decomp:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^resolution:"));
+  assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^task:"));
 });
 
 test("generated projections use progress:triage and ban work:untriaged", () => {
