@@ -23,8 +23,8 @@ const item = (id: string): Item => {
 const policy = JSON.parse(readFileSync(path.join(REPO, "contracts/governed-intake-triage-policy.v1.json"), "utf8"));
 
 test("combined revision carries every accepted input", () => {
-  assert.equal(contract.version, 24);
-  assert.equal(CURRENT_TRIAGE_REVISION, 24);
+  assert.equal(contract.version, 25);
+  assert.equal(CURRENT_TRIAGE_REVISION, 25);
   // #32 taxonomy
   assert.equal(contract.triageChecklist.triagedLabelPrefix, "metadata:triage-v");
   assert.deepEqual(contract.triageChecklist.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
@@ -68,7 +68,8 @@ test("the stamp reader accepts the new stamp and the legacy triaged:vN stamp", (
 test("the live task form projects the combined revision", () => {
   const live = readFileSync(path.join(REPO, ".github/ISSUE_TEMPLATE/task.yml"), "utf8");
   assert.equal(live, generateTaskYaml(contract));
-  assert.match(live, /governed-triage-checklist: revision=24/);
+  assert.match(live, /governed-triage-checklist: revision=25/);
+  assert.match(live, /governed-triage-item: task-profile/);
   assert.match(live, /governed-triage-item: proposal-classification/);
   assert.match(live, /- progress:triage/);
   assert.match(live, /agent_unattested/);
@@ -87,10 +88,10 @@ test("combined r22 to r23 delta preserves unchanged evidence, including after th
       staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [],
     });
   assert.deepEqual(delta.reevaluatedItems.map(i => i.id).sort(), [
-    "value-direction", "dedup-queue-synergy", "scope-decomposition", "higher-intelligence-handoff",
+    "value-direction", "dedup-queue-synergy", "scope-decomposition", "task-profile", "higher-intelligence-handoff",
     "confirm-receipt", "proposal-classification", "cloud-runnable", "priority-work-dimensions",
   ].sort());
-  assert.equal(delta.reusedItemIds.length, items.length - 8);
+  assert.equal(delta.reusedItemIds.length, items.length - 9);
   assert.ok(delta.reevaluatedItems.some(i => i.id === "priority-work-dimensions" && i.reasons.includes("semantic-change")));
 });
 
