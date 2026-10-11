@@ -87,6 +87,41 @@ test("create-complete body fixture includes the live unchecked triage checklist 
   assert.equal(withoutChecklist.includes("## Triage checklist"), false);
   assert.deepEqual(validateGovernedIntakeBody(withoutChecklist), { ok: true, schemaVersion: "governed-intake-body-v1" });
 });
+test("validateGovernedIntakeBody dynamically checks every contract required heading without magic counts", () => {
+  // 1. Empty body reports exactly the dynamic requiredHeadings set and count
+  const emptyResult = validateGovernedIntakeBody("");
+  assert.equal(emptyResult.ok, false);
+  const missingHeadings = emptyResult.missing.filter((m) => m.startsWith("## ")).map((m) => m.slice(3));
+  assert.equal(missingHeadings.length, c.requiredHeadings.length, "missing headings count must match contract requiredHeadings count");
+  assert.deepEqual(missingHeadings, c.requiredHeadings, "missing headings must match contract requiredHeadings in sequence");
+
+  // 2. Dynamic mutation: removing any required heading from validBody() fails and names that specific heading
+  const body = validBody();
+  for (const heading of c.requiredHeadings) {
+    const target = `## ${heading}`;
+    const idx = body.indexOf(target);
+    assert.ok(idx !== -1, `validBody must contain heading: "${heading}"`);
+    const stripped = body.slice(0, idx) + body.slice(idx + target.length);
+    const result = validateGovernedIntakeBody(stripped);
+    assert.equal(result.ok, false, `omitting "${target}" must fail validation`);
+    assert.ok(
+      result.missing.includes(target),
+      `result.missing must include "${target}", got: ${JSON.stringify(result.missing)}`,
+    );
+  }
+
+  // 3. Extracted ## headings from validBody() and generated markdown match buildProjectedHeadings dynamically
+  const extractHeadings = (text: string) =>
+    (text.match(/^##\s+(.+)$/gm) ?? []).map((m) => m.replace(/^##\s+/, "").trim());
+  const projected = buildProjectedHeadings(c);
+  const bodyHeadings = extractHeadings(body);
+  const mdHeadings = extractHeadings(generateTaskMarkdown(c));
+
+  assert.equal(bodyHeadings.length, projected.length, "body headings count must match projected headings count");
+  assert.deepEqual(bodyHeadings, projected, "body headings must match projected headings sequence");
+  assert.equal(mdHeadings.length, projected.length, "markdown projection headings count must match projected headings count");
+  assert.deepEqual(mdHeadings, projected, "markdown projection headings must match projected headings sequence");
+});
 test("live issue forms satisfy GitHub's top-level Issue Form schema (.github#31)", () => {
   const forms = {
     task: readFileSync(path.join(root, ".github/ISSUE_TEMPLATE/task.yml"), "utf8"),
