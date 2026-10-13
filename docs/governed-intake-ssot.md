@@ -141,6 +141,20 @@ from a copied Worker resolver. The obsolete consumer-pin diagnostic, its merge-s
 its consumer snapshots have been retired. Consumers adapt to the latest producer release and
 verify their own behavior.
 
+During a staged consumer cutover, the worker can admit the published release and a prepared next
+release simultaneously, even when both have the same checklist revision. Each admission binds the full identity: producer
+repository, producer commit, revision, and payload digest. A revision alone cannot distinguish
+those releases or prove candidate compatibility. Preparing the next identity does not replace
+the published identity or promote preparation evidence to live completion; consumers verify
+and read back each identity separately before publication. Stage the replacement fully and deploy
+the admitting worker before publishing the producer; the old published identity keeps resolving
+until publication switches. Selection matches revision, producer commit and payload digest,
+preferring published then prepared. Revision-keyed selection for unmatched identities is only a
+diagnostic fallback: selected-slot validation fails closed and does not retry the other slot on
+failure. This transitional compatibility behavior does not reinstate consumer pins or supersede
+the floating-latest direction above. See the [conserved operational residual](https://github.com/spencer-shadley/.github/issues/15#issuecomment-6042282586)
+for its implementation evidence; this guide does not certify a deployed worker cutover.
+
 The producer keeps its own contract, projection and payload-integrity tests, including
 `test/published-release.test.ts`, and may retain an example or real integration test under the
 accepted [#57](https://github.com/spencer-shadley/.github/pull/57) ruling. The historical r22 producer
