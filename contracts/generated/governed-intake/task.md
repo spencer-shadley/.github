@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, progress:triage
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 23). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 25). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, progress:triage
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=23 -->
+<!-- governed-triage-checklist: revision=25 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -38,6 +38,8 @@ labels: agent-review, priority:triage-tbd, progress:triage
 - [ ] **Dedup + queue synergy**: Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive; inspect sibling repos only for shared/cross-repo surfaces. Reuse a fresh synergy receipt while issue class, owner, and material scope are unchanged. Never create a parallel implementation track when canonical work already owns the outcome. For potential material direction impact, the exhaustive direction-change gate overrides progressive dedupe stopping rules: search ALL open issues and PRs created before the causing issue across EVERY repository, including bodies, acceptance criteria and all comments, through the same direction-coherence audit. Reconcile/rescope or close each conflict in that same step with the causing issue and accepted decision cited; completion requires exhaustive readback with zero unresolved conflicts. Distinguish obsolete remaining outcomes from valid outcomes superseded and conserved elsewhere; preserve unique acceptance/evidence, exact destination/decision links and active custody. Read the actually published resolution contract immediately before effects; no candidate activation, aliases, dual writes or legacy readiness fallback. Reuse unchanged valid material facts without repeated semantic passes, comments or recursive triggers; changed accepted decisions invalidate only affected obligations and observed result dependents.
 <!-- governed-triage-item: scope-decomposition -->
 - [ ] **Scope + decomposition**: Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp:unnecessary`, low/medium), atomic-high leaf (`decomp:unnecessary` + `effort:high`; a qualified assessment and an independent confirmation are highly encouraged and are checked when recorded, but completion does not depend on them), or tracking parent (`decomp:complete` with a validated child graph). Unresolved or unknown evidence, or a recorded second opinion that fails verification, stays pending. Child triage does not wait for a parent completion stamp. Unresolved decomposition uses `decomp:required` or `decomp:in-progress`; neither is a completed disposition. Labels describe decomposition state, while the bound assessment distinguishes ordinary from atomic-high. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity. Bind the assessment to the actual server-fetched issue identity and normalized scope using the producer-owned identity API; matching caller-supplied identities or structural checkbox checks alone never establish semantic completion.
+<!-- governed-triage-item: task-profile -->
+- [ ] **Task profile (10-point reasoning vector)**: Allocate exactly 10 integer points across the five reasoning categories (implement, diagnose, design, review, judgment) using the canonical TaskProfileV1 contract (code#6458, .github#13). Profiles describe what reasoning determines success for executable leaves (ordinary and atomic-high), not tracking parents. Scores >= 4 project category labels `task:implement`, `task:diagnose`, `task:design`, `task:review`, `task:judgment`; when no category reaches 4, apply `task:mixed`. Never record or infer model, provider, effort, harness, or benchmark identities.
 <!-- governed-triage-item: priority-work-dimensions -->
 - [ ] **Priority + work dimensions**: Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Effort definitions and examples come from the canonical governed-intake triage policy, not private calibration caps. Missing or unclear effort is unknown, not low. Certified atomic-high remains high. Never self-admit P0.
 <!-- governed-triage-item: verify-human-required -->
@@ -73,11 +75,11 @@ labels: agent-review, priority:triage-tbd, progress:triage
 N/A — <reason>
 
 ## Root-cause taxonomy and disposition
-<!-- Required by fleet DOCTRINE.md §14 / governed-intake-body-v1. Climb all nine ranks.
+<!-- Required by docs/doctrine/sections/14.md in spencer-shadley/code / governed-intake-body-v1. Climb all nine ranks.
      Use honest TBD — triage when a rank is not yet known — TBD is an open triage
      obligation, not decoration. Cite §14; do not restate doctrine.
      Causal climb columns are Rank, Finding, Disposition, Reified as.
-     Defects MUST complete ladders A (Prevention / never again) and B (Detect/heal/recover / §18)
+     Defects MUST complete ladders A (Fix the class) and B (Detect / self-heal / recover — if it still happens / §18)
      as distinct structures. Do not keep a single Fix or next action column as the only action.
      Legal status tokens: `landed` | `assigned-issue` | `already-owned` | `inherited` | `N/A` | `evidence-ceiling` | `TBD — triage`. Every rank requires a real disposition; use `evidence-ceiling` only when evidence is genuinely unobtainable, never as a default terminator. -->
 
@@ -93,7 +95,7 @@ N/A — <reason>
 | Kingdom | <!-- incentive / reward shape --> | <!-- disposition --> | issue/plan or TBD — triage |
 | Domain | <!-- optimization model --> | <!-- disposition --> | CEO / terminal stop reason |
 
-### A. Prevention — never again
+### A. Fix the class
 <!-- Required for Defects. Other work types may use N/A per row. Preventive control at each §14 rank. -->
 
 | Rank | Preventive control | Status |
@@ -113,15 +115,15 @@ N/A — <reason>
 
 | Rank | Notice | Self-heal / contain | Restore | Escalate if no progress | Status |
 |---|---|---|---|---|---|
-| Subspecies | <!-- how this occurrence is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Species | <!-- how the class is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Genus | <!-- how the mechanism is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Family | <!-- how the invariant breach is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Order | <!-- how the pattern failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Class | <!-- how the producing standard is detected --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Phylum | <!-- how ownership/lifecycle miss is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Kingdom | <!-- how the incentive failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
-| Domain | <!-- how objective-model failure is noticed --> | <!-- heal/contain --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Subspecies | <!-- how this occurrence is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Species | <!-- how the class is detected --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Genus | <!-- how the mechanism is detected --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Family | <!-- how the invariant breach is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Order | <!-- how the pattern failure is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Class | <!-- how the producing standard is detected --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Phylum | <!-- how ownership/lifecycle miss is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Kingdom | <!-- how the incentive failure is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
+| Domain | <!-- how objective-model failure is noticed --> | <!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) --> | <!-- restore --> | <!-- escalate if no progress --> | TBD — triage |
 
 At planning/closure, every rank requires a real disposition and an acted-on artifact or an explicit evidence-backed reason for delegation, non-action, unsupported scope, or evidence ceiling. Evidence ceiling is reserved for genuinely unobtainable evidence, not a default terminator. Defects also require both ladders at each rank.
 

@@ -6,9 +6,9 @@ contributors. These are the conventions that apply when a human or an agent open
 
 ## Issues
 
-- Use the current account-wide [task form](https://github.com/spencer-shadley/.github/blob/main/.github/ISSUE_TEMPLATE/task.yml)
+- Use the current account-wide [task form](https://github.com/spencer-shadley/.github/blob/master/.github/ISSUE_TEMPLATE/task.yml)
   and fill its sections rather than maintaining a separate checklist in this guide.
-- Read the canonical [governed-intake ownership and migration guide](https://github.com/spencer-shadley/.github/blob/main/docs/governed-intake-ssot.md)
+- Read the canonical [governed-intake ownership and migration guide](https://github.com/spencer-shadley/.github/blob/master/docs/governed-intake-ssot.md)
   before changing intake, filing adapters, validators, templates, or related agent guidance.
 - Search for an existing same-class issue before opening a new one; update and conserve the
   occurrence instead of duplicating it.

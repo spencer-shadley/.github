@@ -5,7 +5,7 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, sy
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials, UNDISPLAYABLE_ORIGIN } from "../contracts/governed-intake-body.generate.ts";
+import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials, UNDISPLAYABLE_ORIGIN, buildProjectedHeadings, extractYamlFieldLabels } from "../contracts/governed-intake-body.generate.ts";
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
 import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
@@ -14,12 +14,15 @@ import { renderTriageChecklistBlock, renderTriageCompletionMarker, computeTriage
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const c = loadContract(root);
 const identity = { fixOwnerGitHubSlug: "Spencer-Shadley/.github", workType: "Task", canonicalWorkUnitIdentity: "producer relocation" };
+/** Create-complete body: schema headings plus the live unchecked triage checklist (same shape as task.yml). */
 function validBody() {
   const ranks = c.taxonomyRanks;
   return [
     "## Work type", "Task", "## Governed work-unit key", renderGovernedWorkUnitKeyMarker(identity),
     "## What happened or what is needed?", "Move the intake producer with preserved validation behavior.",
     "## Initial priority guess", "P2", "## Why this initial priority?", "Prevent template drift.",
+    // Live form projects Triage checklist here — fixtures that claim create-complete must not omit it (.github#68).
+    renderTriageChecklistBlock({ checked: false }),
     "## Relevant details", "- repository: spencer-shadley/.github", `- commit: ${"a".repeat(40)}`, "- path: .github/ISSUE_TEMPLATE/task.yml",
     "## Exact leases", "contracts/governed-intake-body.generate.ts",
     "## Root-cause taxonomy and disposition", "| Rank | Finding | Disposition | Reified as |", "|---|---|---|---|",
@@ -31,6 +34,12 @@ function validBody() {
     "## Durable fix and acceptance", "Producer and verified consumers agree on release identity.",
     "## Human-decision state", "No human decision required",
   ].join("\n");
+}
+function checkedChecklistBody() {
+  return validBody().replace(
+    renderTriageChecklistBlock({ checked: false }),
+    renderTriageChecklistBlock({ checked: true }),
+  );
 }
 function scratch(t: { after: (fn: () => void) => void }) {
   const dir = mkdtempSync(path.join(os.tmpdir(), "intake-producer-test-"));
@@ -57,6 +66,61 @@ test("canonical projections are exact, valid, and contain no cross-repository co
   assert.match(generateTaskMarkdown(c), /repository: spencer-shadley\/\.github/);
   assert.equal(c.owner, "spencer-shadley/.github");
   assert.match(generateTaskYaml(c), /description: "One paragraph\. For bugs: symptom \+ repro\. For features: the user-visible outcome\."/);
+});
+test("yaml field labels match projected heading set and count dynamically (.github#68)", () => {
+  const projected = buildProjectedHeadings(c);
+  assert.equal(projected.length, c.requiredHeadings.length + 2);
+  const labels = extractYamlFieldLabels(generateTaskYaml(c));
+  const unique = [...new Set(labels)];
+  assert.equal(unique.length, projected.length);
+  assert.deepEqual(unique, projected);
+});
+test("create-complete body fixture includes the live unchecked triage checklist (.github#68)", () => {
+  const body = validBody();
+  const checklist = renderTriageChecklistBlock({ checked: false });
+  assert.ok(body.includes(checklist), "validBody must embed renderTriageChecklistBlock so agents copying tests get the real form shape");
+  assert.match(body, new RegExp(`##\\s+${c.triageChecklist.heading.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)}`));
+  assert.match(body, /governed-triage-checklist: revision=/);
+  assert.deepEqual(validateGovernedIntakeBody(body), { ok: true, schemaVersion: "governed-intake-body-v1" });
+  // Body admission stays non-fencing for legacy issues that omit the checklist.
+  const withoutChecklist = body.replace(checklist, "").replace(/\n{3,}/g, "\n\n");
+  assert.equal(withoutChecklist.includes("## Triage checklist"), false);
+  assert.deepEqual(validateGovernedIntakeBody(withoutChecklist), { ok: true, schemaVersion: "governed-intake-body-v1" });
+});
+test("validateGovernedIntakeBody dynamically checks every contract required heading without magic counts", () => {
+  // 1. Empty body reports exactly the dynamic requiredHeadings set and count
+  const emptyResult = validateGovernedIntakeBody("");
+  assert.equal(emptyResult.ok, false);
+  const missingHeadings = emptyResult.missing.filter((m) => m.startsWith("## ")).map((m) => m.slice(3));
+  assert.equal(missingHeadings.length, c.requiredHeadings.length, "missing headings count must match contract requiredHeadings count");
+  assert.deepEqual(missingHeadings, c.requiredHeadings, "missing headings must match contract requiredHeadings in sequence");
+
+  // 2. Dynamic mutation: removing any required heading from validBody() fails and names that specific heading
+  const body = validBody();
+  for (const heading of c.requiredHeadings) {
+    const target = `## ${heading}`;
+    const idx = body.indexOf(target);
+    assert.ok(idx !== -1, `validBody must contain heading: "${heading}"`);
+    const stripped = body.slice(0, idx) + body.slice(idx + target.length);
+    const result = validateGovernedIntakeBody(stripped);
+    assert.equal(result.ok, false, `omitting "${target}" must fail validation`);
+    assert.ok(
+      result.missing.includes(target),
+      `result.missing must include "${target}", got: ${JSON.stringify(result.missing)}`,
+    );
+  }
+
+  // 3. Extracted ## headings from validBody() and generated markdown match buildProjectedHeadings dynamically
+  const extractHeadings = (text: string) =>
+    (text.match(/^##\s+(.+)$/gm) ?? []).map((m) => m.replace(/^##\s+/, "").trim());
+  const projected = buildProjectedHeadings(c);
+  const bodyHeadings = extractHeadings(body);
+  const mdHeadings = extractHeadings(generateTaskMarkdown(c));
+
+  assert.equal(bodyHeadings.length, projected.length, "body headings count must match projected headings count");
+  assert.deepEqual(bodyHeadings, projected, "body headings must match projected headings sequence");
+  assert.equal(mdHeadings.length, projected.length, "markdown projection headings count must match projected headings count");
+  assert.deepEqual(mdHeadings, projected, "markdown projection headings must match projected headings sequence");
 });
 test("live issue forms satisfy GitHub's top-level Issue Form schema (.github#31)", () => {
   const forms = {
@@ -89,6 +153,26 @@ test("complete body is accepted while incomplete or malformed identities are ref
   assert.equal(validateGovernedWorkUnitKey(marker.replace("sha256:", "sha256:x")).reason, "malformed");
   assert.equal(validateGovernedIntakeBody(validBody().replace("| Domain | Producer", "| Wrong | Producer")).ok, false);
 });
+test("round-trip: a body with the old heading and a body with the new heading both validate", () => {
+  const newBody = validBody();
+  assert.match(newBody, /### A\. Fix the class/);
+  const newResult = validateGovernedIntakeBody(newBody);
+  assert.deepEqual(newResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
+  const oldBody = newBody.replace("### A. Fix the class", "### A. Prevention — never again");
+  assert.match(oldBody, /### A\. Prevention — never again/);
+  const oldResult = validateGovernedIntakeBody(oldBody);
+  assert.deepEqual(oldResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
+  // Regression: legacy heading with canonical words in prose
+  const proseBody = oldBody.replace("Producer ownership mismatch", "Fix the class of producer ownership mismatch");
+  const proseResult = validateGovernedIntakeBody(proseBody);
+  assert.deepEqual(proseResult, { ok: true, schemaVersion: "governed-intake-body-v1" });
+
+  const badBody = newBody.replace("### A. Fix the class", "### A. Unknown Heading");
+  const badResult = validateGovernedIntakeBody(badBody);
+  assert.equal(badResult.ok, false);
+});
 test("body with empty acceptance criteria is refused; a file:line reference warns without blocking (code#7074)", () => {
   const empty = validBody().replace(
     "## Durable fix and acceptance\nProducer and verified consumers agree on release identity.",
@@ -117,7 +201,7 @@ test("governed key preserves canonical identity case and length-framed Unicode n
   assert.notEqual(a, computeGovernedWorkUnitKey({ ...identity, canonicalWorkUnitIdentity: "café" }));
 });
 test("current checklist requires fingerprint and completed items and rejects retired substrate labels", async () => {
-  const body = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
+  const body = checkedChecklistBody();
   const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
   const completed = body + "\n" + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
   assert.equal((await evaluateTriageChecklistState(completed, labels)).needs_triage, false);
@@ -306,7 +390,7 @@ test("missing policy payload fails closed without requiring a symlink", (t) => {
 
 test("isolated proposal-classification addition is a one-item delta (combined cutover tested separately)", async () => {
   const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
-  assert.equal(c.version, 23);
+  assert.equal(c.version, 25);
   const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
   const item = items.find((i) => i.id === "proposal-classification");
   assert.ok(item && /type:proposal/.test(item.text));
@@ -320,6 +404,27 @@ test("isolated proposal-classification addition is a one-item delta (combined cu
   assert.deepEqual(delta.mechanicallyChangedItemIds, ["confirm-receipt"]);
 });
 
+test("isolated task-profile addition is a one-item delta", async () => {
+  const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
+  const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
+  const item = items.find((i) => i.id === "task-profile");
+  assert.ok(item && /TaskProfileV1/.test(item.text));
+  assert.ok(items.find((i) => i.id === "confirm-receipt")?.dependsOn?.includes("task-profile"));
+  assert.ok(items.find((i) => i.id === "confirm-receipt")?.resultDependencies?.includes("task-profile"));
+  const previousItems = items.filter((i) => i.id !== "task-profile").map((i) => i.id === "confirm-receipt"
+    ? {
+        ...i,
+        dependsOn: (i.dependsOn ?? []).filter((d) => d !== "task-profile"),
+        resultDependencies: (i.resultDependencies ?? []).filter((d) => d !== "task-profile"),
+      }
+    : i);
+  const delta = planChecklistDelta({ revision: 24, items: previousItems }, { revision: 25, items }, {
+    completionVerified: true, completedItemIds: previousItems.map((i) => i.id), staleItemIds: [], changedEvidenceKeys: [], changedResultItemIds: [],
+  });
+  assert.deepEqual(delta.reevaluatedItems, [{ id: "task-profile", reasons: ["new-item"] }]);
+  assert.deepEqual(delta.mechanicallyChangedItemIds, ["confirm-receipt"]);
+});
+
 // #35 uses the real composition and public completion API with independently observed facts.
 import { evaluateGovernedIntakeTriage, currentChecklistRelease, type ComposedTriageInput, type DirectionObservation } from '../contracts/governed-intake-triage.compose.ts';
 import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts } from '../contracts/governed-intake-policy-binding.ts';
@@ -329,7 +434,7 @@ import { planChecklistDelta } from '../contracts/governed-intake-triage-state.mi
 const directionHash = (letter: string) => `sha256:${letter.repeat(64)}`;
 async function directionFixture(material = false): Promise<ComposedTriageInput> {
   const subject = { repository: 'spencer-shadley/.github', issueNumber: 35, title: 'Direction-impact producer' };
-  const body = validBody() + '\n' + renderTriageChecklistBlock({ checked: true });
+  const body = checkedChecklistBody();
   const labels = [CURRENT_TRIAGED_LABEL, 'effort:medium', 'decomp:unnecessary',
     'type:maintenance', 'source:human', 'priority:repo:p2', 'priority:fleet:p2', 'progress:planned'];
   const taxonomyObservation = { ...subject, state: 'open' as const, lifecycleId: 'github-creation-35' };

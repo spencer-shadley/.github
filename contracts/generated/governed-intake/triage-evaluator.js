@@ -355,7 +355,7 @@ export function triageProjectionErrorMessage(state                      )       
 export async function evaluateTriageChecklistState(
   body        ,
   labels                    = [],
-  semanticInput                                                                                                                                                                                                                      ,
+  semanticInput                                                                                                                                                                                                                                      ,
 )                                                                                            {
   const structure = await evaluateTriageChecklistStructure(body, labels);
   if (!semanticInput) return { ...structure, needs_triage: true,
@@ -367,9 +367,11 @@ export async function evaluateTriageChecklistState(
   const directionPending = result.reasons.some(reason => reason.startsWith("direction_") || reason === "no_impact_has_cohort_effects");
   const taxonomyPending = result.reasons.some(reason => reason.startsWith("taxonomy_"));
   const executionPending = result.reasons.some(reason => reason.startsWith("execution_"));
+  const taskProfilePending = result.reasons.some(reason => reason.startsWith("task_profile_") || reason === "tracking_parent_task_profile" || reason === "task_label_projection_mismatch" || reason === "task_labels_without_profile");
   return { ...structure, needs_triage: result.needsTriage,
     unchecked_item_ids: [...new Set([...structure.unchecked_item_ids,
       ...(result.scopeResolved ? [] : ["scope-decomposition"]),
+      ...(taskProfilePending ? ["task-profile"] : []),
       ...(executionPending ? ["cloud-runnable"] : []),
       ...(taxonomyPending ? ["priority-work-dimensions"] : []),
       ...(directionPending ? ["value-direction", "dedup-queue-synergy"] : [])])],

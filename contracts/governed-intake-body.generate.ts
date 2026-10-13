@@ -133,9 +133,12 @@ function assertTriageChecklistContract(raw: ReturnType<typeof JSON.parse>) {
   const order = validateChecklistRelease({ revision: raw.version, items: checklist.items });
   const scopeId = policy.workflow.scopeItemId;
   assert.ok(ids.includes(scopeId), "canonical scope-decomposition item is required");
+  assert.ok(ids.includes("task-profile"), "canonical task-profile item is required");
   const preflight = ["canonical-flow", "value-direction", "fix-owner-responsibility", "dedup-queue-synergy"];
   const finals = ["priority-work-dimensions", "verify-human-required", "cloud-runnable"];
   for (const id of preflight) assert.ok(ids.indexOf(id) < ids.indexOf(scopeId), `${id} must precede ${scopeId}`);
+  assert.ok(ids.indexOf(scopeId) < ids.indexOf("task-profile"), "scope-decomposition must precede task-profile");
+  assert.ok(ids.indexOf("task-profile") < ids.indexOf("priority-work-dimensions"), "task-profile must precede priority-work-dimensions");
   for (const id of finals) assert.ok(ids.indexOf(scopeId) < ids.indexOf(id), `${scopeId} must precede ${id}`);
   assert.ok(order.indexOf(scopeId) < order.indexOf("priority-work-dimensions"), "execution order must resolve scope before final attributes");
   const semantics = (item: ChecklistItem | undefined): Record<string, unknown> =>
@@ -158,6 +161,26 @@ function assertTriageChecklistContract(raw: ReturnType<typeof JSON.parse>) {
   assert.match(raw.effortCalibration?.description ?? "", /unknown, not low/);
 }
 
+/** Live Issue Form heading order: requiredHeadings with work-unit key and triage checklist inserted.
+ * Keep in sync with generateTaskYaml field order. Count/set assertions use this — never a magic length.
+ */
+export function buildProjectedHeadings(contract: {
+  requiredHeadings: string[];
+  workUnitKey: { heading: string };
+  triageChecklist: { heading: string };
+}): string[] {
+  const required = contract.requiredHeadings;
+  assert.ok(Array.isArray(required) && required.length > 0, "requiredHeadings must be a non-empty array");
+  // Work-unit key follows Work type; triage checklist follows the initial-priority pair.
+  return [
+    required[0],
+    contract.workUnitKey.heading,
+    ...required.slice(1, 4),
+    contract.triageChecklist.heading,
+    ...required.slice(4),
+  ];
+}
+
 export function loadContract(root = REPO_ROOT) {
   const filePath = path.join(root, CONTRACT_REL);
   const raw = JSON.parse(readFileSync(filePath, "utf8"));
@@ -166,7 +189,12 @@ export function loadContract(root = REPO_ROOT) {
     Number.isInteger(raw.version) && raw.version > 0,
     "governed-intake-body version must be a positive integer",
   );
-  assert.ok(Array.isArray(raw.requiredHeadings) && raw.requiredHeadings.length === 9);
+  assert.ok(Array.isArray(raw.requiredHeadings) && raw.requiredHeadings.length > 0);
+  assert.equal(
+    new Set(raw.requiredHeadings).size,
+    raw.requiredHeadings.length,
+    "requiredHeadings must be unique",
+  );
   assert.equal(raw.workUnitKey?.heading, "Governed work-unit key");
   assert.equal(raw.workUnitKey?.markerName, "governed-work-unit-key");
   assert.equal(raw.workUnitKey?.algorithm, "sha256");
@@ -192,6 +220,30 @@ export function loadContract(root = REPO_ROOT) {
     false,
   );
   assertTriageChecklistContract(raw);
+  // Dynamic sync: projected set = requiredHeadings ∪ {work-unit key, triage checklist}.
+  // Regenerating projections keeps tests green when the form expands — no hand-edited expected length.
+  const projectedHeadings = buildProjectedHeadings(raw);
+  assert.equal(
+    projectedHeadings.length,
+    raw.requiredHeadings.length + 2,
+    "projected heading count must equal requiredHeadings plus work-unit key and triage checklist",
+  );
+  assert.equal(
+    new Set(projectedHeadings).size,
+    projectedHeadings.length,
+    "projected headings must be unique",
+  );
+  for (const heading of raw.requiredHeadings) {
+    assert.ok(projectedHeadings.includes(heading), `projected set must include required heading ${heading}`);
+  }
+  assert.ok(
+    projectedHeadings.includes(raw.workUnitKey.heading),
+    "projected set must include work-unit key heading",
+  );
+  assert.ok(
+    projectedHeadings.includes(raw.triageChecklist.heading),
+    "projected set must include triage checklist heading",
+  );
   assert.equal(raw.projections?.featureMarkdown, "contracts/generated/governed-intake/feature.md");
   assert.equal(raw.projections?.featureYaml, ".github/ISSUE_TEMPLATE/feature.yml");
   assert.ok(Array.isArray(raw.taxonomyRanks) && raw.taxonomyRanks.length === 9);
@@ -269,13 +321,16 @@ function preventionRows(contract) {
   });
 }
 
+const DEFAULT_CONTAINMENT_HINT =
+  "<!-- degrade with a warning (fail-closed only for: protected bytes or custody, credentials, destructive/production/external effects, irreversible/shared authority, or materially true acceptance) -->";
+
 function detectRows(contract) {
   return contract.taxonomyRanks.map((rank) => {
     const hint = RANK_HINTS[rank];
     return [
       rank,
       `<!-- ${hint.notice} -->`,
-      "<!-- heal/contain -->",
+      DEFAULT_CONTAINMENT_HINT,
       "<!-- restore -->",
       "<!-- escalate if no progress -->",
       "TBD — triage",
@@ -360,11 +415,11 @@ export function generateTaskMarkdown(contract) {
     "N/A — <reason>",
     "",
     "## Root-cause taxonomy and disposition",
-    "<!-- Required by fleet DOCTRINE.md §14 / governed-intake-body-v1. Climb all nine ranks.",
+    "<!-- Required by docs/doctrine/sections/14.md in spencer-shadley/code / governed-intake-body-v1. Climb all nine ranks.",
     "     Use honest TBD — triage when a rank is not yet known — TBD is an open triage",
     "     obligation, not decoration. Cite §14; do not restate doctrine.",
     "     Causal climb columns are Rank, Finding, Disposition, Reified as.",
-    "     Defects MUST complete ladders A (Prevention / never again) and B (Detect/heal/recover / §18)",
+    `     Defects MUST complete ladders A (${prevention.heading}) and B (${detect.heading} / §18)`,
     "     as distinct structures. Do not keep a single Fix or next action column as the only action.",
     `     ${STATUS_TOKEN_LINE} -->`,
     "",
@@ -442,7 +497,7 @@ export function generateTaskYaml(contract) {
     "This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.",
     "Normal consumer repositories must not carry local issue-template or chooser overrides.",
     "Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.",
-    "Defects must complete Prevention (never again, §14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.",
+    "Defects must complete Fix the class (§14) and Detect/heal/recover (if it happens, §18) as distinct ladders — not a single Fix or next action column.",
     "Every governed create body must contain exactly one governed-work-unit-key HTML marker with the placeholder replaced by the derived digest.",
     STATUS_TOKEN_LINE,
   ].join("\n");
@@ -553,7 +608,7 @@ export function generateTaskYaml(contract) {
     `      label: ${yamlQuote("Root-cause taxonomy and disposition")}`,
     "      description: |",
     "        Climb all nine DOCTRINE §14 ranks. Causal columns: Rank, Finding, Disposition, Reified as.",
-    "        Defects complete ladders A (Prevention — never again) and B (Detect/heal/recover — if it still happens).",
+    `        Defects complete ladders A (${prevention.heading}) and B (${detect.heading}).`,
     `        ${STATUS_TOKEN_LINE}`,
     "      value: |",
     yamlMultiline(taxonomyDefault, 8),
@@ -896,6 +951,8 @@ export function runSelfcheck(root = REPO_ROOT) {
   assertIncludes(markdown, contract.defectLadders.detectHealRecover.heading, "md detect ladder");
   for (const column of contract.defectLadders.prevention.columns) assertIncludes(markdown, column, `md prevention column ${column}`);
   for (const column of contract.defectLadders.detectHealRecover.columns) assertIncludes(markdown, column, `md detect column ${column}`);
+  assertIncludes(markdown, "degrade with a warning", "md detect ladder containment default");
+  assertIncludes(markdown, "fail-closed only for", "md detect ladder fail-closed hazards");
   for (const token of contract.statusTokens) assertIncludes(markdown, `\`${token}\``, `md status token ${token}`);
   assert.equal(markdown.includes("| Fix or next action |"), false, "md must not use a single Fix or next action column");
   assert.equal(/\|\s*(Kingdom|Domain)\s*\|[^\n]*\|\s*evidence-ceiling\s*\|/i.test(markdown), false, "taxonomy must not default Kingdom or Domain to evidence-ceiling");
@@ -920,15 +977,15 @@ export function runSelfcheck(root = REPO_ROOT) {
   assertIncludes(yaml, versionStamp, "yaml contract version stamp");
 
   const labels = extractYamlFieldLabels(yaml);
-  const projectedHeadings = [
-    contract.requiredHeadings[0],
-    contract.workUnitKey.heading,
-    ...contract.requiredHeadings.slice(1, 4),
-    contract.triageChecklist.heading,
-    ...contract.requiredHeadings.slice(4),
-  ];
+  const projectedHeadings = buildProjectedHeadings(contract);
+  const uniqueLabels = [...new Set(labels)];
+  assert.equal(
+    uniqueLabels.length,
+    projectedHeadings.length,
+    "yaml field label count must equal projected heading count (requiredHeadings + work-unit key + triage checklist)",
+  );
   assert.deepEqual(
-    [...new Set(labels)],
+    uniqueLabels,
     projectedHeadings,
     "yaml field labels must equal contract headings plus work-unit key and persisted triage checklist fields",
   );
@@ -940,6 +997,8 @@ export function runSelfcheck(root = REPO_ROOT) {
   for (const rank of contract.taxonomyRanks) assertIncludes(yaml, `| ${rank} |`, `yaml rank ${rank}`);
   assertIncludes(yaml, contract.defectLadders.prevention.heading, "yaml prevention ladder");
   assertIncludes(yaml, contract.defectLadders.detectHealRecover.heading, "yaml detect ladder");
+  assertIncludes(yaml, "degrade with a warning", "yaml detect ladder containment default");
+  assertIncludes(yaml, "fail-closed only for", "yaml detect ladder fail-closed hazards");
   assert.equal(yaml.includes("| Fix or next action |"), false, "yaml must not use a single Fix column");
   assert.equal(/\|\s*(Kingdom|Domain)\s*\|[^\n]*\|\s*evidence-ceiling\s*\|/i.test(yaml), false, "yaml must not default Kingdom or Domain to evidence-ceiling");
 

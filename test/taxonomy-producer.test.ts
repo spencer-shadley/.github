@@ -70,11 +70,11 @@ function validBody(): string {
   ].join("\n");
 }
 
-test("candidate contract metadata and namespace conforms to revision 23", () => {
-  assert.equal(contract.version, 23);
-  assert.equal(CURRENT_TRIAGE_REVISION, 23);
+test("candidate contract metadata and namespace conforms to revision 25", () => {
+  assert.equal(contract.version, 25);
+  assert.equal(CURRENT_TRIAGE_REVISION, 25);
   assert.equal(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix, "metadata:triage-v");
-  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v23");
+  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v25");
   assert.deepEqual(GOVERNED_TRIAGE_CHECKLIST.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^delivers:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^type:"));
@@ -84,6 +84,7 @@ test("candidate contract metadata and namespace conforms to revision 23", () => 
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^progress:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^decomp:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^resolution:"));
+  assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^task:"));
 });
 
 test("generated projections use progress:triage and ban work:untriaged", () => {
@@ -101,7 +102,23 @@ test("generated projections use progress:triage and ban work:untriaged", () => {
   assert.equal(checkProjections(root).ok, true);
 });
 
+test("generated projections default Table B containment to degrade with a warning naming fail-closed hazards (.github#47)", () => {
+  const taskMd = generateTaskMarkdown(contract);
+  const taskYml = generateTaskYaml(contract);
+
+  for (const [name, content] of [["task.md", taskMd], ["task.yml", taskYml]]) {
+    assert.match(content, /degrade with a warning/, `${name} must default containment to degrade with a warning`);
+    assert.match(content, /fail-closed only for/, `${name} must name fail-closed only for hazards`);
+    assert.match(content, /protected bytes or custody/, `${name} must list protected bytes or custody hazard`);
+    assert.match(content, /credentials/, `${name} must list credentials hazard`);
+    assert.match(content, /destructive\/production\/external effects/, `${name} must list destructive effects hazard`);
+    assert.match(content, /irreversible\/shared authority/, `${name} must list irreversible/shared authority hazard`);
+    assert.match(content, /materially true acceptance/, `${name} must list materially true acceptance hazard`);
+  }
+});
+
 test("triage label recognizer handles current metadata:triage-v and legacy triaged:v", () => {
+  assert.equal(isTriagedChecklistLabel("metadata:triage-v24"), true);
   assert.equal(isTriagedChecklistLabel("metadata:triage-v23"), true);
   assert.equal(isTriagedChecklistLabel("metadata:triage-v22"), true);
   assert.equal(isTriagedChecklistLabel("triaged:v22"), true);

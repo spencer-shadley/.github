@@ -12,6 +12,7 @@ export type IntakeLadder = {
   id?: string;
   name?: string;
   heading: string;
+  legacyHeadings?: string[];
   doctrine?: string;
   purpose?: string;
   columns: string[];
@@ -102,6 +103,9 @@ function ladder(value: unknown, label: string): IntakeLadder {
     id: typeof row.id === "string" ? row.id : undefined,
     name: typeof row.name === "string" ? row.name : undefined,
     heading: row.heading,
+    legacyHeadings: Array.isArray(row.legacyHeadings)
+      ? strings(row.legacyHeadings, `${label}.legacyHeadings`)
+      : undefined,
     doctrine: typeof row.doctrine === "string" ? row.doctrine : undefined,
     purpose: typeof row.purpose === "string" ? row.purpose : undefined,
     columns: strings(row.columns, `${label}.columns`),
@@ -458,29 +462,46 @@ export function taxonomySection(text: string): string {
   return out.join("\n");
 }
 
-function extractCausalClimbSection(text: string, preventionHeading: string): string {
+function extractCausalClimbSection(text: string, preventionHeading: string | string[]): string {
+  const headings = Array.isArray(preventionHeading) ? preventionHeading : [preventionHeading];
   const lines = text.split("\n");
-  const endRe = new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(preventionHeading)}\s*$`, "i");
+  const endRes = headings.map(
+    (h) => new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(h)}\s*$`, "i"),
+  );
   const out: string[] = [];
   for (const line of lines) {
-    if (endRe.test(line.trim())) break;
+    if (endRes.some((re) => re.test(line.trim()))) break;
     out.push(line);
   }
   return out.join("\n");
 }
 
-function extractLadderSection(text: string, startHeading: string, endHeading?: string): string {
+function extractLadderSection(
+  text: string,
+  startHeading: string | string[],
+  endHeading?: string | string[],
+): string {
+  const startHeadings = Array.isArray(startHeading) ? startHeading : [startHeading];
   const lines = text.split("\n");
-  const startRe = new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(startHeading)}\s*$`, "i");
-  const start = lines.findIndex((l) => startRe.test(l.trim()));
+  const startRes = startHeadings.map(
+    (h) => new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(h)}\s*$`, "i"),
+  );
+  const start = lines.findIndex((l) => startRes.some((re) => re.test(l.trim())));
   if (start === -1) return "";
-  const endRe = endHeading
-    ? new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(endHeading)}\s*$`, "i")
+  const endHeadings = endHeading
+    ? Array.isArray(endHeading)
+      ? endHeading
+      : [endHeading]
+    : null;
+  const endRes = endHeadings
+    ? endHeadings.map(
+        (h) => new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(h)}\s*$`, "i"),
+      )
     : null;
   const out: string[] = [];
   for (let i = start + 1; i < lines.length; i += 1) {
     const line = lines[i] ?? "";
-    if (endRe && endRe.test(line.trim())) break;
+    if (endRes && endRes.some((re) => re.test(line.trim()))) break;
     if (/^##\s+/.test(line)) break;
     out.push(line);
   }
@@ -783,8 +804,9 @@ export function validateGovernedIntakeMarkdown(
   } else {
     const prevention = contract.defectLadders.prevention;
     const detect = contract.defectLadders.detectHealRecover;
+    const acceptedPreventionHeadings = [prevention.heading, ...(prevention.legacyHeadings ?? [])];
 
-    const causalSection = extractCausalClimbSection(section, prevention.heading);
+    const causalSection = extractCausalClimbSection(section, acceptedPreventionHeadings);
     for (const rank of contract.taxonomyRanks) {
       if (!new RegExp(String.raw`\|\s*` + escapeRegExp(rank) + String.raw`\s*\|`, "i").test(causalSection)) {
         missing.push(`taxonomy rank row: ${rank}`);
@@ -797,7 +819,11 @@ export function validateGovernedIntakeMarkdown(
     if (section.includes("| Fix or next action |")) {
       missing.push("causal climb still uses Fix or next action; use Defect ladders A and B");
     }
-    if (!section.includes(prevention.heading)) {
+    const preventionHeadingRes = acceptedPreventionHeadings.map(
+      (h) => new RegExp(String.raw`^(?:###?\s+)?(?:[A-Z]\.\s+)?${escapeRegExp(h)}\s*$`, "i"),
+    );
+    const hasPreventionHeading = section.split("\n").some((l) => preventionHeadingRes.some((re) => re.test(l.trim())));
+    if (!hasPreventionHeading) {
       missing.push(`Defect ladder A: ${prevention.heading}`);
     }
     if (!section.includes(detect.heading)) {
@@ -812,7 +838,11 @@ export function validateGovernedIntakeMarkdown(
       missing.push(`detect/heal/recover columns: ${detect.columns.join(", ")}`);
     }
 
-    const ladderASection = extractLadderSection(section, prevention.heading, detect.heading);
+    const ladderASection = extractLadderSection(
+      section,
+      acceptedPreventionHeadings,
+      detect.heading,
+    );
     const ladderBSection = extractLadderSection(section, detect.heading);
 
     for (const rank of contract.taxonomyRanks) {
