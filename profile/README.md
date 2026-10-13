@@ -11,18 +11,18 @@ here is a public open-source project soliciting outside contributors.
 overrides. It owns the live issue forms; Repo Template owns bootstrap/no-local-override conformance,
 not an issue-template copying channel.
 
-- [Task issue form](https://github.com/spencer-shadley/.github/blob/main/.github/ISSUE_TEMPLATE/task.yml)
-  and [feature-request form](https://github.com/spencer-shadley/.github/blob/main/.github/ISSUE_TEMPLATE/feature.yml)
+- [Task issue form](https://github.com/spencer-shadley/.github/blob/master/.github/ISSUE_TEMPLATE/task.yml)
+  and [feature-request form](https://github.com/spencer-shadley/.github/blob/master/.github/ISSUE_TEMPLATE/feature.yml)
   are selected through GitHub's inherited web chooser.
-- [Pull-request template](https://github.com/spencer-shadley/.github/blob/main/.github/PULL_REQUEST_TEMPLATE.md)
+- [Pull-request template](https://github.com/spencer-shadley/.github/blob/master/.github/PULL_REQUEST_TEMPLATE.md)
   supplies the default PR contract.
-- [Security](https://github.com/spencer-shadley/.github/blob/main/SECURITY.md),
-  [support](https://github.com/spencer-shadley/.github/blob/main/SUPPORT.md),
-  [contribution guidance](https://github.com/spencer-shadley/.github/blob/main/CONTRIBUTING.md), and
-  [code of conduct](https://github.com/spencer-shadley/.github/blob/main/CODE_OF_CONDUCT.md)
+- [Security](https://github.com/spencer-shadley/.github/blob/master/SECURITY.md),
+  [support](https://github.com/spencer-shadley/.github/blob/master/SUPPORT.md),
+  [contribution guidance](https://github.com/spencer-shadley/.github/blob/master/CONTRIBUTING.md), and
+  [code of conduct](https://github.com/spencer-shadley/.github/blob/master/CODE_OF_CONDUCT.md)
   supply account-wide community-health defaults.
 
-The [canonical intake guide](https://github.com/spencer-shadley/.github/blob/main/docs/governed-intake-ssot.md)
+The [canonical intake guide](https://github.com/spencer-shadley/.github/blob/master/docs/governed-intake-ssot.md)
 distinguishes the live form from the still-in-progress semantic producer and consumer cutover.
 Machine intake verifies its admitted release and rendered body; this page does not certify that
 all adapters have migrated. Do not copy a form into a leaf repository to make it locally visible.

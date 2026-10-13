@@ -1,5 +1,9 @@
 # .github#13 account-wide intake SSOT
 
+Historical rollout snapshot, including the linked DAG's pins, paths, seats and statuses.
+It is not current intake or dispatch authority. Read the
+[canonical intake guide](../docs/governed-intake-ssot.md) and current owner issues before acting.
+
 Parent: https://github.com/spencer-shadley/.github/issues/13
 
 ## Outcome

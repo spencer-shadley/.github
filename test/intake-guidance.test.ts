@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const guide = "docs/governed-intake-ssot.md";
-const canonicalGuideUrl = `https://github.com/spencer-shadley/.github/blob/main/${guide}`;
+const canonicalGuideUrl = `https://github.com/spencer-shadley/.github/blob/master/${guide}`;
 const entrypoints = ["AGENTS.md", "README.md", "CONTRIBUTING.md", "profile/README.md", "SUPPORT.md", "skills/full-validation/SKILL.md"];
 
 function linksToGuide(file: string, content: string): boolean {
@@ -44,6 +44,16 @@ test("canonical guide link checking resolves relative paths and rejects lookalik
   assert.equal(linksToGuide("README.md", "[guide](other/docs/governed-intake-ssot.md)"), false);
   assert.equal(linksToGuide("README.md", "docs/governed-intake-ssot.md"), false);
   assert.equal(linksToGuide("README.md", `[guide](${canonicalGuideUrl}.old)`), false);
+});
+
+test("active account-default links use the live branch and existing producer paths", () => {
+  for (const file of entrypoints) {
+    const content = readFileSync(path.join(root, file), "utf8");
+    for (const match of content.matchAll(/https:\/\/github\.com\/spencer-shadley\/\.github\/blob\/([^/\s)]+)\/([^\s)#]+)/g)) {
+      assert.equal(match[1], "master", `${file}: account-default link must use the live default branch`);
+      assert.ok(existsSync(path.join(root, match[2])), `${file}: missing producer path ${match[2]}`);
+    }
+  }
 });
 
 test("active entrypoints do not reintroduce the known retired instructions", () => {
