@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { loadContract, generateTaskMarkdown, generateTaskYaml, generateFeatureYaml, assertGitHubIssueFormTopLevel, checkProjections, writeProjections, assertProducerCheckout, redactRemoteUrl, stripRemoteUrlCredentials, UNDISPLAYABLE_ORIGIN, buildProjectedHeadings, extractYamlFieldLabels } from "../contracts/governed-intake-body.generate.ts";
 import { validateIssueTemplate, validateGovernedIntakeBody, computeGovernedWorkUnitKey, validateGovernedWorkUnitKey, renderGovernedWorkUnitKeyMarker } from "../contracts/governed-intake-body.evaluate.ts";
 import { buildGovernedIntakeRelease } from "../contracts/governed-intake-body.release.ts";
-import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
+import { admitGovernedIntakeRelease, verifyGovernedIntakeRelease, computePayloadDigest, sha256, REQUIRED_RELEASE_PAYLOADS, type GovernedIntakeReleasePin } from "../contracts/governed-intake-release.verify.ts";
 import { renderTriageChecklistBlock, renderTriageCompletionMarker, computeTriageStateFingerprint, evaluateTriageChecklistStructure as evaluateTriageChecklistState, CURRENT_TRIAGED_LABEL } from "../contracts/governed-intake-triage-state.evaluate.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -340,6 +340,34 @@ test("corrupt runtime JavaScript is rejected, not hidden by intact TypeScript", 
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.code, "corrupt_file");
 });
+test("every executable import in the portable release requires manifest integrity coverage", (t) => {
+  const s = scratch(t);
+  const required = new Set<string>(REQUIRED_RELEASE_PAYLOADS);
+  for (const [name, bytes] of Object.entries(s.release.files)) {
+    if (!/\.(?:ts|js)$/.test(name)) continue;
+    // Static imports, re-exports and dynamic imports are all executable dependencies.
+    for (const match of bytes.toString("utf8").matchAll(/(?:from\s*|import\s*(?:\(\s*)?)["'](\.\.?\/[^"']+)["']/g)) {
+      const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(name), match[1]));
+      assert.ok(required.has(dependency), `${name} imports ${dependency} without required manifest coverage`);
+      assert.ok(Object.hasOwn(s.release.files, dependency), `${name} imports absent payload ${dependency}`);
+    }
+  }
+});
+test("omitting any required payload entry fails even with a recomputed manifest digest", (t) => {
+  const s = scratch(t);
+  for (const name of REQUIRED_RELEASE_PAYLOADS) {
+    const manifest = structuredClone(s.release.manifest);
+    delete manifest.files[name];
+    manifest.payloadDigest = computePayloadDigest(manifest.files);
+    writeFileSync(path.join(s.out, "manifest.json"), JSON.stringify(manifest));
+    const result = verifyGovernedIntakeRelease(s.out);
+    assert.equal(result.ok, false, `unverified ${name} must not be executable`);
+    if (!result.ok) {
+      assert.equal(result.code, "invalid_manifest");
+      assert.ok(result.error.includes(name), result.error);
+    }
+  }
+});
 test("manifest rejects foreign producer, traversal, aliases, null and absent payloads", (t) => {
   const s = scratch(t);
   const original = s.release.manifest;
@@ -372,9 +400,7 @@ test("symlink payload fails closed", (t) => {
     // Non-elevated Windows cannot create file symlinks; a directory junction is still not a regular file.
     const code = error && typeof error === "object" && "code" in error ? String((error as NodeJS.ErrnoException).code) : "";
     if (code !== "EPERM" && code !== "EACCES") throw error;
-    execFileSync("cmd.exe", ["/c", "mklink", "/J", payload, path.join(s.source, "contracts", "generated", "governed-intake")], {
-      windowsHide: true,
-    });
+    symlinkSync(path.join(s.source, "contracts", "generated", "governed-intake"), payload, "junction");
   }
   const result = verifyGovernedIntakeRelease(s.out);
   assert.equal(result.ok, false);
