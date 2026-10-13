@@ -24,6 +24,11 @@ export const REQUIRED_RELEASE_PAYLOADS = [
   "compose.ts", "compose.js",
   "governed-intake-policy-binding.ts", "governed-intake-policy-binding.js",
   "policy-binding.ts", "policy-binding.js",
+  "governed-intake-taxonomy.evaluate.ts", "governed-intake-taxonomy.evaluate.js",
+  "taxonomy-evaluator.ts", "taxonomy-evaluator.js",
+  "governed-intake-task-profile.v1.json", "task-profile-contract.json",
+  "governed-intake-task-profile.evaluate.ts", "governed-intake-task-profile.evaluate.js",
+  "task-profile-evaluator.ts", "task-profile-evaluator.js",
 ]         ;
                                                                                                   
                                              

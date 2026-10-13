@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "4ad778c7a326096621a77894c6d8fbb5dd55f65a"
+    "commit": "99d438e7fc39238af462850b1872585473b6a007"
   },
-  "payloadDigest": "adfcf678eb9324127a796371ec2a97bd08fec386e8a8a91355a7d6efdfd2023e",
+  "payloadDigest": "f6de1bc5892c49137e928104ab67d7ebecf55c503a12701bc4c20f15d11a5db8",
   "files": {
     "compose.js": {
       "path": "compose.js",
@@ -230,17 +230,17 @@
     },
     "verify.js": {
       "path": "verify.js",
-      "sha256": "caf5aa112901e0a1db69b0cc0af07ad7060329dc9cb877a7d3ac90a0a1ab5b02",
-      "byteLength": 9960
+      "sha256": "c8aa5c2e027cb7691b0e84699a4385f464a910fffd0ffbbc14ae4931f99a5518",
+      "byteLength": 10316
     },
     "verify.ts": {
       "path": "verify.ts",
-      "sha256": "6250e87b3b409cc16f8593baf6df4ca6a8d40b2400db5c5312a25e39e7b25105",
-      "byteLength": 9960
+      "sha256": "cfebeb9da6f37c7428f4fa8a647c0cd15ea207cca494e85c6246ec3c22b4c3fb",
+      "byteLength": 10316
     }
   },
   "build": {
-    "runtime": "v24.19.0",
+    "runtime": "v24.21.0",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }
