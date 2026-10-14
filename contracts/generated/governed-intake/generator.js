@@ -53,25 +53,25 @@ const RANK_HINTS = {
   Subspecies: {
     finding: "this exact symptom",
     reified: "this issue",
-    prevent: "control so this occurrence cannot recur",
+    prevent: "fix that catches, flags or repairs this occurrence",
     notice: "how this occurrence is noticed",
   },
   Species: {
     finding: "same mode + proximate cause elsewhere",
     reified: "issue/plan or TBD — triage",
-    prevent: "class control across the same mode",
+    prevent: "class fix that catches, flags or repairs the same mode",
     notice: "how the class is detected",
   },
   Genus: {
     finding: "shared mechanism",
     reified: "issue/plan or TBD — triage",
-    prevent: "mechanism cannot produce this species",
+    prevent: "mechanism fix that catches, flags or repairs this species",
     notice: "how the mechanism is detected",
   },
   Family: {
     finding: "subsystem invariant",
     reified: "issue/plan or TBD — triage",
-    prevent: "contract/boundary that forbids the mechanism",
+    prevent: "contract/boundary that catches, flags or repairs the mechanism",
     notice: "how the invariant breach is noticed",
   },
   Order: {
@@ -83,7 +83,7 @@ const RANK_HINTS = {
   Class: {
     finding: "standard/tool/prompt producing it",
     reified: "issue/plan or TBD — triage",
-    prevent: "engineering-system change so tools cannot emit it",
+    prevent: "engineering-system change so tools catch, flag or repair it",
     notice: "how the producing standard is detected",
   },
   Phylum: {
@@ -426,7 +426,7 @@ export function generateTaskMarkdown(contract) {
     causal,
     "",
     `### ${ladderHeading(prevention)}`,
-    "<!-- Required for Defects. Other work types may use N/A per row. Preventive control at each §14 rank. -->",
+    "<!-- Required for Defects. Other work types may use N/A per row. Class fix at each §14 rank: catch, flag or repair; prefer the fix ladder; never requires a new refusal. -->",
     "",
     preventionTable,
     "",

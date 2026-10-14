@@ -1,4 +1,4 @@
-# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 25). Do not hand-edit; run:
+# Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 26). Do not hand-edit; run:
 #   node --experimental-strip-types contracts/governed-intake-body.generate.ts
 # Account producer: spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml
 name: Task / bug / feature
@@ -11,7 +11,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 25).
+        Generated projection of spencer-shadley/.github `contracts/governed-intake-body.v1.json` (GovernedIntakeBodyV1 version 26).
         This form is generated beside its semantic source in spencer-shadley/.github and inherited natively.
         Normal consumer repositories must not carry local issue-template or chooser overrides.
         Priority is an initial guess, not a self-assignment. Triage cadence is runtime schedule configuration, not semantic issue-template law.
@@ -82,7 +82,7 @@ body:
       label: "Triage checklist"
       description: Current governed triage-state SSOT. Triage checks boxes in the persisted issue body; do not delete item markers.
       value: |
-        <!-- governed-triage-checklist: revision=25 -->
+        <!-- governed-triage-checklist: revision=26 -->
         <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
         <!-- governed-triage-item: canonical-flow -->
         - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -166,14 +166,14 @@ body:
 
         ### A. Fix the class
 
-        | Rank | Preventive control | Status |
+        | Rank | Class fix | Status |
         |---|---|---|
-        | Subspecies | <!-- control so this occurrence cannot recur --> | TBD — triage |
-        | Species | <!-- class control across the same mode --> | TBD — triage |
-        | Genus | <!-- mechanism cannot produce this species --> | TBD — triage |
-        | Family | <!-- contract/boundary that forbids the mechanism --> | TBD — triage |
+        | Subspecies | <!-- fix that catches, flags or repairs this occurrence --> | TBD — triage |
+        | Species | <!-- class fix that catches, flags or repairs the same mode --> | TBD — triage |
+        | Genus | <!-- mechanism fix that catches, flags or repairs this species --> | TBD — triage |
+        | Family | <!-- contract/boundary that catches, flags or repairs the mechanism --> | TBD — triage |
         | Order | <!-- architecture that does not share the weakness --> | TBD — triage |
-        | Class | <!-- engineering-system change so tools cannot emit it --> | TBD — triage |
+        | Class | <!-- engineering-system change so tools catch, flag or repair it --> | TBD — triage |
         | Phylum | <!-- org/process that owns the class --> | TBD — triage |
         | Kingdom | <!-- governance that does not reward this mode --> | TBD — triage |
         | Domain | <!-- objective that does not select for this class --> | TBD — triage |

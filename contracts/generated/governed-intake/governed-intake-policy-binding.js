@@ -3,8 +3,9 @@ import { createHash } from "node:crypto";
 import policyJson from "./governed-intake-triage-policy.v1.json" with { type: "json" };
 import contractJson from "./governed-intake-body.v1.json" with { type: "json" };
 import { assertTriagePolicy,                                           } from "./governed-intake-triage-policy.evaluate.js";
-import { renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.js";
+import { acceptedChecklistBlocks } from "./governed-intake-triage-state.evaluate.js";
 import { normalizeLf, validateGovernedWorkUnitKey } from "./governed-intake-body.evaluate.js";
+import { parseRevisionCompatibility } from "./governed-intake-revision-compatibility.js";
 
 /** Canonical JSON ignores object-key order, not array order or substantive values. */
 export function canonicalPolicyJson(value         )         {
@@ -25,7 +26,17 @@ export function bindTriagePolicy(policy              )                    {
   return { policy: immutableInput, policyIdentity: digest(immutableInput), rubricIdentity: digest(immutableInput.effortRubric) };
 }
 export function boundTriagePolicyFromProducer()                    {
-  return bindTriagePolicy(policyJson                );
+  const bound = bindTriagePolicy(policyJson                );
+  const parsed = parseRevisionCompatibility(contractJson);
+  if (!parsed.ok) throw new Error(parsed.messages.join("; "));
+  return {
+    ...bound,
+    acceptedIdentityPairs: parsed.compatibility.acceptedIdentities.map((entry) => ({
+      revision: entry.revision,
+      policyIdentity: entry.policyIdentity,
+      rubricIdentity: entry.rubricIdentity,
+    })),
+  };
 }
 
                                    
@@ -81,12 +92,12 @@ export function normalizeIssueScopeBody(body        )         {
   const escape = (text        )         => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   let text = normalizeLf(body);
   const block = new RegExp(`<!--\\s*${escape(checklist.sectionMarkerName)}: revision=([0-9]+)\\s*-->[\\s\\S]*?<!--\\s*\\/${escape(checklist.sectionMarkerName)}\\s*-->`, "g");
-  const canonical = renderTriageChecklistBlock({ includeHeading: false, checked: false });
+  const acceptedBlocks = new Set(acceptedChecklistBlocks());
   text = text.replace(block, matched => {
     const normalized = matched.replace(/^([ \t]*[-*][ \t]+)\[[xX ]\]/gm, "$1[ ]");
-    // Only the exact producer-authored block is metadata. Foreign prose and malformed
-    // markers remain substantive scope, even if placed inside a checklist-shaped region.
-    return normalized === canonical ? "" : matched;
+    // Only an exact producer-authored block from an accepted revision is metadata.
+    // Foreign prose and malformed markers remain substantive scope.
+    return acceptedBlocks.has(normalized) ? "" : matched;
   });
   text = text.replace(new RegExp(`<!--\\s*${escape(checklist.completionMarkerName)}:[\\s\\S]*?-->`, "g"), "");
   text = text.replace(/^<!--\s*(?:Generated (?:against|from)|Intake form observed:)[^\n]*-->\s*$/gm, "");

@@ -31,7 +31,19 @@
                        
                          
                          
+                                                                           
+                                                                                                           
  
+
+export function policyIdentityAccepted(
+  release                   ,
+  policyIdentity        ,
+  rubricIdentity        ,
+)          {
+  if (policyIdentity === release.policyIdentity && rubricIdentity === release.rubricIdentity) return true;
+  return (release.acceptedIdentityPairs ?? []).some((pair) =>
+    pair.policyIdentity === policyIdentity && pair.rubricIdentity === rubricIdentity);
+}
                           
                       
                            
@@ -246,7 +258,7 @@ export async function evaluateTriagePolicy(release                   , input    
   const reasons           = [];
   const completionReasons           = [];
   const projectionReasons           = [];
-  if (snapshot.policyIdentity !== release.policyIdentity || snapshot.rubricIdentity !== release.rubricIdentity) {
+  if (!policyIdentityAccepted(release, snapshot.policyIdentity, snapshot.rubricIdentity)) {
     reasons.push('unsupported_policy_or_rubric_identity');
   }
   const assessment = snapshot.assessment;
