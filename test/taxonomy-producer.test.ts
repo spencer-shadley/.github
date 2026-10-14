@@ -70,11 +70,11 @@ function validBody(): string {
   ].join("\n");
 }
 
-test("candidate contract metadata and namespace conforms to revision 25", () => {
-  assert.equal(contract.version, 25);
-  assert.equal(CURRENT_TRIAGE_REVISION, 25);
+test("candidate contract metadata and namespace conforms to revision 26", () => {
+  assert.equal(contract.version, 26);
+  assert.equal(CURRENT_TRIAGE_REVISION, 26);
   assert.equal(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix, "metadata:triage-v");
-  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v25");
+  assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v26");
   assert.deepEqual(GOVERNED_TRIAGE_CHECKLIST.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^delivers:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^type:"));

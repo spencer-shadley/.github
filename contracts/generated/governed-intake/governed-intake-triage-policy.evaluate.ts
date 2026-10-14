@@ -31,6 +31,18 @@ export interface BoundTriagePolicy {
   policy: TriagePolicy;
   policyIdentity: string;
   rubricIdentity: string;
+  /** Policy/rubric identity pairs of revisions in the compatible range. */
+  acceptedIdentityPairs?: readonly { revision?: number; policyIdentity: string; rubricIdentity: string }[];
+}
+
+export function policyIdentityAccepted(
+  release: BoundTriagePolicy,
+  policyIdentity: string,
+  rubricIdentity: string,
+): boolean {
+  if (policyIdentity === release.policyIdentity && rubricIdentity === release.rubricIdentity) return true;
+  return (release.acceptedIdentityPairs ?? []).some((pair) =>
+    pair.policyIdentity === policyIdentity && pair.rubricIdentity === rubricIdentity);
 }
 export interface Subject {
   workUnitKey: string;
@@ -246,7 +258,7 @@ export async function evaluateTriagePolicy(release: BoundTriagePolicy, input: un
   const reasons: string[] = [];
   const completionReasons: string[] = [];
   const projectionReasons: string[] = [];
-  if (snapshot.policyIdentity !== release.policyIdentity || snapshot.rubricIdentity !== release.rubricIdentity) {
+  if (!policyIdentityAccepted(release, snapshot.policyIdentity, snapshot.rubricIdentity)) {
     reasons.push('unsupported_policy_or_rubric_identity');
   }
   const assessment = snapshot.assessment;

@@ -1,0 +1,342 @@
+{
+  "revision": 25,
+  "policyIdentity": "sha256:9d48ffb07961a4d11b86bb19cf000dc47ffd022a69281a635e929ceea84d898e",
+  "rubricIdentity": "sha256:c7fad2c3b84a70c78950877c64ba8e27d58fcfad92f71638997ad273bd2138df",
+  "items": [
+    {
+      "id": "canonical-flow",
+      "title": "Canonical flow",
+      "text": "Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.",
+      "evidenceKeys": [
+        "procedure"
+      ]
+    },
+    {
+      "id": "value-direction",
+      "title": "Value + direction evidence",
+      "text": "Decide current value and direction from live sources. Record `direction-checked-at: <ISO-8601 UTC>` in the idempotent triage receipt, bound to the issue's governed work-unit key and current checklist revision. Direction evidence expires after 3 days. AO #8570 owns runtime stale-evidence re-pend / pickup refusal; Code records the contract and evidence but does not pretend its docs are the actuator. Ask of EVERY triaged issue: \"Could this issue materially change direction, i.e. invalidate earlier issues?\" The question is open-ended; retirement, SSOT/ownership migration, doctrine, process, taxonomy and learnings are examples, not trigger limits. On yes/potential material impact, apply only the canonical `metadata:direction-change` label (no alias or dual write). Use the reusable Code direction-coherence audit through existing triage. No-impact reasoning can complete without cohort mutations; potential material impact requires an exhaustive search of ALL open issues and PRs created before the causing issue, across EVERY repository, including bodies, acceptance criteria and all comments. Reconcile/rescope or close every conflict in the same audit step, citing the causing issue and accepted decision; refuse completion until exhaustive post-reconciliation readback shows zero unresolved conflicts. Failed, incomplete, unsupported or unknown reconciliation remains explicit and resumable in the existing audit ledger; dispatch alone is not completion. Bind the receipt to independently fetched actual issue/thread and accepted decision identities, normalized scope and current published contract, never labels or matching caller assertions.",
+      "dependsOn": [
+        "canonical-flow"
+      ],
+      "evidenceKeys": [
+        "direction",
+        "scope",
+        "accepted-decision",
+        "direction-source",
+        "direction-ownership",
+        "related-work"
+      ],
+      "semantics": {
+        "directionImpact": "adapter-observed-facts-v1",
+        "auditProcedure": "https://github.com/spencer-shadley/code/blob/master/skills/direction-coherence-audit/SKILL.md",
+        "noImpactRequiresCohortMutation": false,
+        "materialImpactCompletion": "exhaustive-zero-unresolved-conflicts",
+        "unknownCompletion": false,
+        "questionScope": "every-triaged-issue",
+        "directionChangeLabel": "metadata:direction-change",
+        "searchScope": "all-open-issues-and-prs-before-seed",
+        "searchSurfaces": [
+          "bodies",
+          "acceptance-criteria",
+          "comments"
+        ],
+        "reconciliationTiming": "same-audit-step"
+      }
+    },
+    {
+      "id": "fix-owner-responsibility",
+      "title": "Fix-owner + responsibility",
+      "text": "Resolve fix ownership from the current FleetRegistryReleaseV1 and repository charter evidence. Reuse a prior high-confidence ownership receipt for an existing issue while its durable outcome, repository, relevant scope, and governing charter identity are unchanged. Reroute new work, moves/transfers, cross-repo expansion, ambiguous ownership, charter changes, and catch-all `code`/`agent-orchestrator` cases. An obvious deterministic single-owner result does not require a model seat; use routed judgment only for genuine ambiguity.",
+      "dependsOn": [
+        "canonical-flow"
+      ],
+      "evidenceKeys": [
+        "owner"
+      ]
+    },
+    {
+      "id": "dedup-queue-synergy",
+      "title": "Dedup + queue synergy",
+      "text": "Apply progressive same-class dedupe. Search open work in the resolved owner first and stop when the canonical owner is established. Inspect pending WorkProjection/plan state only when implementation overlap is plausible; search closed history only for regression/prior-fix evidence or when open search is inconclusive; inspect sibling repos only for shared/cross-repo surfaces. Reuse a fresh synergy receipt while issue class, owner, and material scope are unchanged. Never create a parallel implementation track when canonical work already owns the outcome. For potential material direction impact, the exhaustive direction-change gate overrides progressive dedupe stopping rules: search ALL open issues and PRs created before the causing issue across EVERY repository, including bodies, acceptance criteria and all comments, through the same direction-coherence audit. Reconcile/rescope or close each conflict in that same step with the causing issue and accepted decision cited; completion requires exhaustive readback with zero unresolved conflicts. Distinguish obsolete remaining outcomes from valid outcomes superseded and conserved elsewhere; preserve unique acceptance/evidence, exact destination/decision links and active custody. Read the actually published resolution contract immediately before effects; no candidate activation, aliases, dual writes or legacy readiness fallback. Reuse unchanged valid material facts without repeated semantic passes, comments or recursive triggers; changed accepted decisions invalidate only affected obligations and observed result dependents.",
+      "dependsOn": [
+        "canonical-flow",
+        "value-direction",
+        "fix-owner-responsibility"
+      ],
+      "evidenceKeys": [
+        "dedup",
+        "accepted-decision",
+        "direction-source",
+        "direction-ownership",
+        "related-work"
+      ],
+      "resultDependencies": [
+        "value-direction",
+        "fix-owner-responsibility"
+      ],
+      "semantics": {
+        "directionReconciliation": "existing-audit-exhaustive-zero-conflict-readback-v1",
+        "effectVocabulary": "verified-published-contract-at-effect-time",
+        "obsolete": "no-valid-remaining-outcome",
+        "superseded": "valid-outcome-conserved-at-exact-destination",
+        "unchangedFacts": "reuse-no-comments-no-recursive-triggers",
+        "searchScope": "all-open-issues-and-prs-before-seed",
+        "unresolvedConflictsRequired": 0
+      }
+    },
+    {
+      "id": "scope-decomposition",
+      "title": "Scope + decomposition",
+      "text": "Resolve work shape before assigning final attributes. Record exactly one current disposition from the canonical triage policy: ordinary leaf (`decomp:unnecessary`, low/medium), atomic-high leaf (`decomp:unnecessary` + `effort:high`; a qualified assessment and an independent confirmation are highly encouraged and are checked when recorded, but completion does not depend on them), or tracking parent (`decomp:complete` with a validated child graph). Unresolved or unknown evidence, or a recorded second opinion that fails verification, stays pending. Child triage does not wait for a parent completion stamp. Unresolved decomposition uses `decomp:required` or `decomp:in-progress`; neither is a completed disposition. Labels describe decomposition state, while the bound assessment distinguishes ordinary from atomic-high. Reuse `evaluateTriagePolicy` and the effort rubric in `contracts/governed-intake-triage-policy.v1.json`; do not copy a second rubric or treat checked boxes as qualified identity. Bind the assessment to the actual server-fetched issue identity and normalized scope using the producer-owned identity API; matching caller-supplied identities or structural checkbox checks alone never establish semantic completion.",
+      "dependsOn": [
+        "canonical-flow",
+        "value-direction",
+        "fix-owner-responsibility",
+        "dedup-queue-synergy"
+      ],
+      "evidenceKeys": [
+        "scope"
+      ],
+      "resultDependencies": [
+        "value-direction",
+        "dedup-queue-synergy"
+      ],
+      "semantics": {
+        "workflowStage": "scope-decomposition",
+        "dispositions": [
+          "ordinary",
+          "atomic-high",
+          "parent"
+        ],
+        "childTriageRequiresParentStamp": false,
+        "legacyProgressLabelRequired": false,
+        "subjectBinding": "server-fetched-issue-v1",
+        "identityBinding": "producer-canonical-json-v1",
+        "completionAuthority": "composed-semantic-evaluation-v1"
+      }
+    },
+    {
+      "id": "task-profile",
+      "title": "Task profile (10-point reasoning vector)",
+      "text": "Allocate exactly 10 integer points across the five reasoning categories (implement, diagnose, design, review, judgment) using the canonical TaskProfileV1 contract (code#6458, .github#13). Profiles describe what reasoning determines success for executable leaves (ordinary and atomic-high), not tracking parents. Scores >= 4 project category labels `task:implement`, `task:diagnose`, `task:design`, `task:review`, `task:judgment`; when no category reaches 4, apply `task:mixed`. Never record or infer model, provider, effort, harness, or benchmark identities.",
+      "dependsOn": [
+        "scope-decomposition"
+      ],
+      "evidenceKeys": [
+        "task-profile"
+      ],
+      "resultDependencies": [
+        "scope-decomposition"
+      ],
+      "semantics": {
+        "contract": "contracts/governed-intake-task-profile.v1.json",
+        "profileSchemaVersion": "task-profile.v1",
+        "categories": [
+          "implement",
+          "diagnose",
+          "design",
+          "review",
+          "judgment"
+        ],
+        "totalPoints": 10,
+        "appliesTo": [
+          "ordinary",
+          "atomic-high"
+        ],
+        "labelProjectionThreshold": 4,
+        "mixedLabel": "task:mixed"
+      }
+    },
+    {
+      "id": "priority-work-dimensions",
+      "title": "Priority + work dimensions",
+      "text": "Apply the complete priority triplet, exactly one honest effort, and exactly one lawful tier from the live priority/work-spine policies. Effort definitions and examples come from the canonical governed-intake triage policy, not private calibration caps. Missing or unclear effort is unknown, not low. Certified atomic-high remains high. Never self-admit P0.",
+      "dependsOn": [
+        "scope-decomposition"
+      ],
+      "evidenceKeys": [
+        "scope",
+        "rubric-meaning",
+        "taxonomy",
+        "lifecycle"
+      ],
+      "resultDependencies": [
+        "scope-decomposition"
+      ],
+      "semantics": {
+        "completionAuthority": "producer-taxonomy-validation-v1",
+        "subjectBinding": "server-fetched-issue-and-lifecycle-v1",
+        "requiredDimensions": [
+          "type",
+          "source",
+          "effort",
+          "priority:repo",
+          "priority:fleet",
+          "progress"
+        ],
+        "singleProgress": true,
+        "openResolutionCount": 0,
+        "resolvedResolutionCount": 1,
+        "deliveredRequires": "verified-acceptance",
+        "reopenInvalidatesAssessment": true
+      }
+    },
+    {
+      "id": "verify-human-required",
+      "title": "Verify + human-required fences",
+      "text": "`tier:auto` executable leaves require a bounded scoped verification contract before an implementation writer starts, but completed triage does not require the issue body to already contain `## Verify`. Reuse a current scoped named-file `## Verify` fence when present; otherwise the implementation commissioning path derives and persists/backfills the verification contract before dispatch. If safe scoped verification cannot yet be derived, the leaf waits on verification clarification at implementation preflight rather than remaining untriaged. Tracking parents do not inherit child Verify, host, or substrate requirements. `human-required` is adjudicated through `stamp-human-required` and requires the current tradeoffs contract. A verification-contract derivation allowance is never blanket body-rewrite authority.",
+      "dependsOn": [
+        "scope-decomposition",
+        "priority-work-dimensions"
+      ],
+      "evidenceKeys": [
+        "scope"
+      ],
+      "resultDependencies": [
+        "scope-decomposition",
+        "priority-work-dimensions"
+      ],
+      "semantics": {
+        "verifyFenceRequiredFor": [],
+        "trackingParentInheritsChildVerify": false,
+        "verificationContractRequiredBeforeImplementation": [
+          "ordinary-auto",
+          "atomic-high-auto"
+        ]
+      }
+    },
+    {
+      "id": "cloud-runnable",
+      "title": "Cloud vs local execution",
+      "text": "Assess implementation-stage suitability using the [cloud-readiness criteria](https://github.com/spencer-shadley/code/blob/master/docs/architecture/cloud-local-executor-routing.md#cloud-ready-issue-triage). Record adapter-verified execution evidence bound to the current issue scope and revision: stage `implement`, cloudReadiness status `ready` or `not-ready`, a reason, and whether local verification is required (with its concrete follow-up reference when required). Missing, unsupported, stale or `unknown` evidence stays pending. Carry hard environment requirements as `environment.allOf` and optional `environment.anyOf` alternatives. A `not-ready` implementation requires `environment:fleet-local`; exact hosts use `environment:host:<verified-host-id>` and hardware uses `environment:hardware:<governed-slug>`. These facts constrain placement and never grant effects. Do not apply legacy substrate labels or invent a cloud label. Tracking parents assess their own scope and do not inherit child requirements.",
+      "dependsOn": [
+        "scope-decomposition"
+      ],
+      "evidenceKeys": [
+        "scope",
+        "execution-substrate"
+      ],
+      "resultDependencies": [
+        "scope-decomposition"
+      ],
+      "semantics": {
+        "completionAuthority": "adapter-verified-execution-evidence-v1",
+        "stage": "implement",
+        "subjectBinding": "server-fetched-issue-v1",
+        "environmentAuthority": "structured-execution-contract",
+        "trackingParentInheritsChildRequirements": false
+      }
+    },
+    {
+      "id": "disposition-effect-authority",
+      "title": "Disposition != effect authority",
+      "text": "Adjudicate close / keep / strengthen / residualize / consolidate / move semantics from evidence. Execute close, move, substantive rewrite, or another restricted GitHub effect only when the current role is authorized; otherwise hand the adjudicated effect to the authorized executor with a durable receipt. Do not keep zombie work alive merely because the current seat cannot execute the terminal effect.",
+      "dependsOn": [
+        "scope-decomposition"
+      ],
+      "evidenceKeys": [
+        "disposition"
+      ],
+      "resultDependencies": [
+        "scope-decomposition"
+      ]
+    },
+    {
+      "id": "higher-intelligence-handoff",
+      "title": "Higher-intelligence handoff",
+      "text": "Unclear effort, `human-required`, material remaining uncertainty, or programme-shaped work uses qualified higher-intelligence assessment inside triage. Scope and decomposition are the earlier `scope-decomposition` obligation. Confirmed tracking parents stay tracking-only. Unresolved delegation is not completed triage. For `effort:high` work, and for an issue that carried `effort:high` before and is now assessed low or medium (it is sized on its current scope), getting a qualified second assessment is highly encouraged (commission the routed assessment seat through `skills/gh-issue-triage-sweep/SKILL.md` and record its receipt), but completion does not depend on it. The triage role does not mint implementation plans or commission implementation writers.",
+      "dependsOn": [
+        "scope-decomposition",
+        "priority-work-dimensions"
+      ],
+      "evidenceKeys": [
+        "scope"
+      ],
+      "resultDependencies": [
+        "scope-decomposition",
+        "priority-work-dimensions"
+      ]
+    },
+    {
+      "id": "github-effects-quota",
+      "title": "GitHub effects + quota",
+      "text": "Use the governed GitHub mutation/read path and preserve typed rate-limit defer such as `deferred_rate_limited`; rate-limit or transport failure is not an empty candidate set or successful sweep.",
+      "dependsOn": [
+        "canonical-flow"
+      ],
+      "evidenceKeys": [
+        "transport"
+      ]
+    },
+    {
+      "id": "confirm-receipt",
+      "title": "Confirm + receipt",
+      "text": "Clear pending/legacy triage labels only after the contract is satisfied, then apply the current `metadata:triage-vN` stamp last when authorized and read it back. In addition, a substantive model-triaged run whose model and effort are named by an authoritative execution or route receipt records additive model provenance using `triaged-by-<model>-<effort>` derived from that receipt. A run by an authenticated agent that has no such receipt (provenance actor `agent_unattested`) completes with no `triaged-by-*` label for that run and never invents a model or effort slug. Existing `triaged-by-*` labels are never stripped on re-triage or correction. The single idempotent receipt records checklist completion, direction evidence, disposition, priority/effort/tier, actor-permission outcome, and any handoff. Pickup additionally requires fresh direction evidence. Cosmetic removal of `decomp-in-progress` never gates discovery or reuse.",
+      "dependsOn": [
+        "canonical-flow",
+        "value-direction",
+        "fix-owner-responsibility",
+        "dedup-queue-synergy",
+        "scope-decomposition",
+        "task-profile",
+        "priority-work-dimensions",
+        "verify-human-required",
+        "cloud-runnable",
+        "disposition-effect-authority",
+        "higher-intelligence-handoff",
+        "github-effects-quota",
+        "taxonomy",
+        "outcome-shaped-acceptance",
+        "proposal-classification"
+      ],
+      "evidenceKeys": [
+        "completion"
+      ],
+      "resultDependencies": [
+        "value-direction",
+        "scope-decomposition",
+        "task-profile",
+        "priority-work-dimensions",
+        "verify-human-required",
+        "cloud-runnable",
+        "taxonomy"
+      ]
+    },
+    {
+      "id": "taxonomy",
+      "title": "Taxonomy",
+      "text": "Validate the current DOCTRINE §14 causal taxonomy and, for defects, distinct prevention and detect/self-heal/recover ladders; conserve new actionable findings as durable work.",
+      "dependsOn": [
+        "scope-decomposition"
+      ],
+      "evidenceKeys": [
+        "taxonomy"
+      ],
+      "resultDependencies": [
+        "scope-decomposition"
+      ]
+    },
+    {
+      "id": "outcome-shaped-acceptance",
+      "title": "Outcome-shaped acceptance",
+      "text": "Confirm 'Durable fix and acceptance' states binding acceptance criteria (each names a real consumer or the evidence that stands in for one) rather than a prescribed implementation, and that any implementation suggestions live only in 'Relevant details' as explicitly advisory. Rewrite a prescriptive body into this shape using skills/gh-issue-value-review's refresh-required procedure instead of restating it here.",
+      "dependsOn": [
+        "canonical-flow"
+      ],
+      "evidenceKeys": [
+        "acceptance-shape"
+      ]
+    },
+    {
+      "id": "proposal-classification",
+      "title": "Proposal classification",
+      "text": "Apply `type:proposal` (from the work-spine type taxonomy, in addition to any other type label) when the issue proposes a higher-level design, architecture or process change whose adoption awaits Spencer's decision; remove it once that decision is recorded on the issue. Bounded defects, tasks and changes agents may decide under standing authority are not proposals. The label is descriptive: it never blocks other work, creates a human gate, or changes priority.",
+      "dependsOn": [
+        "canonical-flow"
+      ],
+      "evidenceKeys": [
+        "proposal"
+      ]
+    }
+  ]
+}

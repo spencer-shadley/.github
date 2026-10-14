@@ -16,6 +16,7 @@ export const REQUIRED_RELEASE_PAYLOADS = [
   "governed-intake-task-profile.evaluate.js", "governed-intake-task-profile.evaluate.ts", "governed-intake-task-profile.v1.json",
   "governed-intake-taxonomy.evaluate.js", "governed-intake-taxonomy.evaluate.ts",
   "governed-intake-triage-policy.evaluate.js", "governed-intake-triage-policy.evaluate.ts", "governed-intake-triage-policy.v1.json",
+  "governed-intake-revision-compatibility.js", "governed-intake-revision-compatibility.ts",
   "governed-intake-triage-state.evaluate.js", "governed-intake-triage-state.evaluate.ts",
   "governed-intake-triage-state.migrate.js", "governed-intake-triage-state.migrate.ts",
   "governed-intake-triage.compose.js", "governed-intake-triage.compose.ts",

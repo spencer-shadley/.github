@@ -4,6 +4,15 @@
  * consume it instead of re-authoring checklist-state rules.
  */
 import governedIntakeContractJson from "./governed-intake-body.v1.json" with { type: "json" };
+import {
+  applicableTightenedOrNewItemIds,
+  formatCompatibleRevisionWarning,
+  isRevisionInAcceptedRange,
+  itemsAtRevision,
+  parseRevisionCompatibility,
+                             
+                             
+} from "./governed-intake-revision-compatibility.js";
 
                             
              
@@ -35,6 +44,7 @@ import governedIntakeContractJson from "./governed-intake-body.v1.json" with { t
                                
                                                            
                                            
+                                  
                                                                                                                   
                              
   
@@ -76,6 +86,15 @@ import governedIntakeContractJson from "./governed-intake-body.v1.json" with { t
                            
                                        
                                    
+                                                                                        
+                     
+ 
+
+                                          
+                      
+                       
+                                                                                        
+                                        
  
 
 const CONTRACT = governedIntakeContractJson                          ;
@@ -109,6 +128,17 @@ function assertContract()                          {
 export const GOVERNED_TRIAGE_CHECKLIST = assertContract();
 export const CURRENT_TRIAGE_REVISION = CONTRACT.version;
 export const CURRENT_TRIAGED_LABEL = `${GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix}${String(CURRENT_TRIAGE_REVISION)}`;
+const parsedCompatibility = parseRevisionCompatibility(CONTRACT);
+if (!parsedCompatibility.ok) throw new Error(parsedCompatibility.messages.join("; "));
+const PUBLISHED_COMPATIBILITY                        = parsedCompatibility.compatibility;
+
+export function isAcceptedTriageRevision(revision        , compatibility                        = PUBLISHED_COMPATIBILITY)          {
+  return isRevisionInAcceptedRange(revision, CURRENT_TRIAGE_REVISION, compatibility);
+}
+
+function checklistSnapshots()                          {
+  return GOVERNED_TRIAGE_CHECKLIST.items.map((item) => ({ id: item.id, title: item.title, text: item.text }));
+}
 export const GOVERNED_INTAKE_REQUIRED_HEADINGS                    = CONTRACT.requiredHeadings;
 export const GOVERNED_TAXONOMY_RANKS                    = CONTRACT.taxonomyRanks;
 export const GOVERNED_CAUSAL_COLUMNS                    = CONTRACT.causalClimbColumns;
@@ -170,20 +200,34 @@ export function isTriageOwnedChecklistLabel(label        )          {
   return isTriagedChecklistLabel(label) || TRIAGE_OWNED_LABEL_REGEXES.some((pattern) => pattern.test(label));
 }
 
-export function renderTriageChecklistBlock(options                                                  = {})         {
+export function renderTriageChecklistBlock(options                                                                     = {})         {
   const includeHeading = options.includeHeading !== false;
   const checkbox = options.checked === true ? "x" : " ";
+  const revision = options.revision ?? CURRENT_TRIAGE_REVISION;
+  if (!isAcceptedTriageRevision(revision)) {
+    throw new Error(`cannot render triage checklist for unaccepted revision ${revision}`);
+  }
+  const items = itemsAtRevision(checklistSnapshots(), revision, CURRENT_TRIAGE_REVISION, PUBLISHED_COMPATIBILITY);
   const lines = [
     ...(includeHeading ? [`## ${GOVERNED_TRIAGE_CHECKLIST.heading}`] : []),
-    `<!-- ${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName}: revision=${String(CURRENT_TRIAGE_REVISION)} -->`,
+    `<!-- ${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName}: revision=${String(revision)} -->`,
     "<!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->",
   ];
-  for (const item of GOVERNED_TRIAGE_CHECKLIST.items) {
+  for (const item of items) {
     lines.push(`<!-- ${GOVERNED_TRIAGE_CHECKLIST.itemMarkerName}: ${item.id} -->`);
     lines.push(`- [${checkbox}] **${item.title}**: ${item.text}`);
   }
   lines.push(`<!-- /${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName} -->`);
   return lines.join("\n");
+}
+
+/** Unchecked canonical blocks for every accepted revision, used to strip scope metadata. */
+export function acceptedChecklistBlocks()           {
+  const blocks           = [];
+  for (let revision = PUBLISHED_COMPATIBILITY.oldestAcceptedRevision; revision <= CURRENT_TRIAGE_REVISION; revision += 1) {
+    blocks.push(renderTriageChecklistBlock({ includeHeading: false, checked: false, revision }));
+  }
+  return blocks;
 }
 
 export function renderTriageCompletionMarker(fingerprint        )         {
@@ -257,15 +301,35 @@ function checklistItems(section        )
   return { observed, unchecked, malformed };
 }
 
+function canonicalStamp(revision        )         {
+  return `${GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix}${String(revision)}`;
+}
+
+function stampRevision(label        )                                                  {
+  const match = triagedLabelRegex().exec(label);
+  if (!match?.[1]) return null;
+  const revision = Number(match[1]);
+  return { revision, canonical: label === canonicalStamp(revision) };
+}
+
 export async function evaluateTriageChecklistStructure(
   body                           ,
   labels                   ,
+  context                          ,
 )                                {
   const text = body ?? "";
-  const expectedIds = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
+  const compatibility = context?.compatibility ?? PUBLISHED_COMPATIBILITY;
   const sections = extractChecklistSections(text);
-  const currentSections = sections.filter((section) => section.revision === CURRENT_TRIAGE_REVISION);
-  const activeSection = currentSections.length === 1 ? currentSections[0] : null;
+  const sectionRevision = sections.length === 1 ? sections[0].revision : null;
+  const sectionAccepted = sectionRevision !== null && isAcceptedTriageRevision(sectionRevision, compatibility);
+  const activeSection = sectionAccepted ? sections[0] : null;
+  const expectedItems = itemsAtRevision(
+    checklistSnapshots(),
+    activeSection ? sectionRevision  : CURRENT_TRIAGE_REVISION,
+    CURRENT_TRIAGE_REVISION,
+    compatibility,
+  );
+  const expectedIds = expectedItems.map((item) => item.id);
   const parsedItems = activeSection
     ? checklistItems(activeSection.content)
     : { observed: [], unchecked: [], malformed: [] };
@@ -276,12 +340,17 @@ export async function evaluateTriageChecklistStructure(
   if (sections.some((section) => !section.closed) || parsedItems.malformed.length > 0) {
     reasons.push("malformed_checklist");
   }
-  if (sections.length > 0 && currentSections.length !== 1) reasons.push("checklist_revision_mismatch");
+  if (sections.length > 0 && !sectionAccepted) reasons.push("checklist_revision_mismatch");
 
   const observedIds = parsedItems.observed;
   const itemSetMatches = observedIds.length === expectedIds.length
     && new Set(observedIds).size === observedIds.length
     && expectedIds.every((id) => observedIds.includes(id));
+  if (activeSection && sectionRevision !== null && sectionRevision < CURRENT_TRIAGE_REVISION) {
+    for (const id of applicableTightenedOrNewItemIds(compatibility, { labels, body: text })) {
+      if (!parsedItems.unchecked.includes(id)) parsedItems.unchecked.push(id);
+    }
+  }
   if (activeSection && !itemSetMatches) reasons.push("checklist_item_set_mismatch");
   if (activeSection && parsedItems.unchecked.length > 0) reasons.push("unchecked_checklist_item");
 
@@ -290,18 +359,31 @@ export async function evaluateTriageChecklistStructure(
   if (completions.length > 1) reasons.push("duplicate_completion_marker");
   const completionRevision = completions.length === 1 ? Number(completions[0][1]) : null;
   const completionFingerprint = completions.length === 1 ? completions[0][2] : null;
-  if (completionRevision !== null && completionRevision !== CURRENT_TRIAGE_REVISION) {
+  if (completionRevision !== null && (!isAcceptedTriageRevision(completionRevision, compatibility)
+    || (sectionRevision !== null && completionRevision !== sectionRevision))) {
     reasons.push("completion_revision_mismatch");
   }
 
   const labelPattern = triagedLabelRegex();
   const triagedLabels = labels.filter((label) => labelPattern.test(label));
-  const currentStampCount = triagedLabels.filter((label) => label === CURRENT_TRIAGED_LABEL).length;
+  const stamps = triagedLabels.map((label) => stampRevision(label));
+  const stamp = stamps.length === 1 ? stamps[0] : null;
   if (triagedLabels.length === 0) reasons.push("missing_triaged_stamp");
-  if (triagedLabels.some((label) => label !== CURRENT_TRIAGED_LABEL)) reasons.push("stale_triaged_stamp");
-  if (triagedLabels.length > 1 || currentStampCount > 1) reasons.push("duplicate_triaged_stamp");
-  if (triagedLabels.length === 1 && currentStampCount !== 1 && !reasons.includes("stale_triaged_stamp")) {
+  if (triagedLabels.length > 1) reasons.push("duplicate_triaged_stamp");
+  if (stamps.some((parsed) => !parsed?.canonical || !isAcceptedTriageRevision(parsed.revision, compatibility)
+    || (sectionRevision !== null && parsed.revision !== sectionRevision))) {
     reasons.push("stale_triaged_stamp");
+  }
+
+  const warnings           = [];
+  const revisionRefused = reasons.includes("checklist_revision_mismatch")
+    || reasons.includes("completion_revision_mismatch")
+    || reasons.includes("stale_triaged_stamp");
+  const evaluatedRevisions = [sectionRevision, completionRevision, stamp?.canonical ? stamp.revision : null]
+    .filter((revision)                     => revision !== null && isAcceptedTriageRevision(revision, compatibility));
+  const uniqueEvaluated = [...new Set(evaluatedRevisions)];
+  if (!revisionRefused && uniqueEvaluated.length === 1 && uniqueEvaluated[0] !== CURRENT_TRIAGE_REVISION) {
+    warnings.push(formatCompatibleRevisionWarning(uniqueEvaluated[0], CURRENT_TRIAGE_REVISION, context ?? null));
   }
 
   const pendingLabels = GOVERNED_TRIAGE_CHECKLIST.pendingLabels.filter((label) => labels.includes(label));
@@ -343,6 +425,7 @@ export async function evaluateTriageChecklistStructure(
     pending_labels: pendingLabels,
     execution_substrate_labels: executionSubstrateLabels,
     reasons: [...new Set(reasons)],
+    warnings,
   };
 }
 
@@ -357,7 +440,9 @@ export async function evaluateTriageChecklistState(
   labels                    = [],
   semanticInput                                                                                                                                                                                                                                      ,
 )                                                                                            {
-  const structure = await evaluateTriageChecklistStructure(body, labels);
+  const structure = await evaluateTriageChecklistStructure(body, labels, semanticInput?.subject
+    ? { repository: semanticInput.subject.repository, issueNumber: semanticInput.subject.issueNumber }
+    : undefined);
   if (!semanticInput) return { ...structure, needs_triage: true,
     unchecked_item_ids: [...new Set([...structure.unchecked_item_ids, "scope-decomposition"])],
     reasons: [...new Set([...structure.reasons, "semantic_evidence_required"         ])],
