@@ -602,7 +602,7 @@ for (const kind of ["ordinary", "atomic-high", "parent"] as const) {
       const manifest = JSON.parse(readFileSync(path.join(releaseDir, "manifest.json"), "utf8"));
       assert.equal(admitGovernedIntakeRelease(releaseDir, { repository: "spencer-shadley/.github",
         commit: manifest.producer.commit, revision: contract.version, payloadDigest: manifest.payloadDigest }).ok, true);
-      const portable = await import("../contracts/generated/governed-intake/compose.js");
+      const portable = await import("../contracts/generated/governed-intake/governed-intake-triage.compose.js");
       const portableResult = await portable.evaluateGovernedIntakeTriage({ subject: actualIssue, ...observedNoImpact(), body, labels, evidence });
       assert.deepEqual(portableResult, result, "verified unmodified release and canonical source must agree");
     });
@@ -660,7 +660,7 @@ for (const [name, extra] of [
 for (const surface of ["canonical", "portable"] as const) {
   const evaluate = async (input: Parameters<typeof evaluateProducerTriage>[0]) => surface === "canonical"
     ? evaluateGovernedIntakeTriage(input)
-    : (await import("../contracts/generated/governed-intake/compose.js")).evaluateGovernedIntakeTriage({ subject: actualIssue, ...observedNoImpact(), ...input });
+    : (await import("../contracts/generated/governed-intake/governed-intake-triage.compose.js")).evaluateGovernedIntakeTriage({ subject: actualIssue, ...observedNoImpact(), ...input });
   for (const dimension of ["type", "source", "priority:repo", "priority:fleet", "progress"]) {
     test(`${surface} composed taxonomy refuses missing ${dimension} with a recomputed stamp`, async () => {
       const current = await completedBodyAndLabels(dispositionLabels("ordinary").filter(label => !label.startsWith(`${dimension}:`)));
