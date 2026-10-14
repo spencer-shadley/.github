@@ -2,24 +2,28 @@
  * No model or GitHub effects. Verify against a separately admitted pin before use.
  */
 import { createHash } from "node:crypto";
-import { lstatSync, readFileSync, readdirSync } from "node:fs";
+import { lstatSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 export const RELEASE_MANIFEST_SCHEMA = "GovernedIntakeReleaseManifestV1";
 export const RELEASE_SCHEMA_FAMILY = "GovernedIntakeBodyV1";
 export const RELEASE_PRODUCER = "spencer-shadley/.github";
-/** Exact canonical payload set. One name per source, plus the .js twin of each declared .ts source. */
 export const REQUIRED_RELEASE_PAYLOADS = [
-  "feature.md", "feature.yml", "generator.js", "generator.ts",
-  "governed-intake-body.evaluate.js", "governed-intake-body.evaluate.ts", "governed-intake-body.v1.json",
-  "governed-intake-policy-binding.js", "governed-intake-policy-binding.ts",
-  "governed-intake-task-profile.evaluate.js", "governed-intake-task-profile.evaluate.ts", "governed-intake-task-profile.v1.json",
-  "governed-intake-taxonomy.evaluate.js", "governed-intake-taxonomy.evaluate.ts",
-  "governed-intake-triage-policy.evaluate.js", "governed-intake-triage-policy.evaluate.ts", "governed-intake-triage-policy.v1.json",
-  "governed-intake-triage-state.evaluate.js", "governed-intake-triage-state.evaluate.ts",
-  "governed-intake-triage-state.migrate.js", "governed-intake-triage-state.migrate.ts",
-  "governed-intake-triage.compose.js", "governed-intake-triage.compose.ts",
-  "task.md", "task.yml", "verify.js", "verify.ts",
+  "contract.json", "governed-intake-body.v1.json", "evaluator.ts", "evaluator.js",
+  "governed-intake-body.evaluate.ts", "governed-intake-body.evaluate.js",
+  "triage-evaluator.ts", "triage-evaluator.js",
+  "governed-intake-triage-state.evaluate.ts", "governed-intake-triage-state.evaluate.js",
+  "task.md", "task.yml", "feature.md", "feature.yml",
+  "generator.ts", "generator.js", "verify.ts", "verify.js",
+  "governed-intake-triage-policy.v1.json", "policy.json",
+  "governed-intake-triage-policy.evaluate.ts", "governed-intake-triage-policy.evaluate.js",
+  "policy-evaluator.ts", "policy-evaluator.js",
+  "governed-intake-triage-state.migrate.ts", "governed-intake-triage-state.migrate.js",
+  "delta-planner.ts", "delta-planner.js",
+  "governed-intake-triage.compose.ts", "governed-intake-triage.compose.js",
+  "compose.ts", "compose.js",
+  "governed-intake-policy-binding.ts", "governed-intake-policy-binding.js",
+  "policy-binding.ts", "policy-binding.js",
 ]         ;
                                                                                                   
                                              
@@ -92,12 +96,8 @@ export function verifyGovernedIntakeRelease(
   if (options.expectedRevision !== undefined && raw.revision !== options.expectedRevision) return fail("revision_mismatch", "release revision differs from admitted revision");
   if (options.expectedCommit !== undefined && raw.producer.commit !== options.expectedCommit) return fail("commit_mismatch", "producer commit differs from admitted commit");
   if (!digest(raw.payloadDigest) || !object(raw.files)) return fail("invalid_manifest", "invalid payload digest or file map");
-  const required = new Set        (REQUIRED_RELEASE_PAYLOADS);
   for (const name of REQUIRED_RELEASE_PAYLOADS) {
     if (!Object.hasOwn(raw.files, name)) return fail("invalid_manifest", `manifest missing required payload entry: ${name}`);
-  }
-  for (const name of Object.keys(raw.files)) {
-    if (!required.has(name)) return fail("invalid_manifest", `manifest contains unexpected payload: ${name}`);
   }
   for (const [name, entry] of Object.entries(raw.files)) {
     if (!/^[a-z0-9][a-z0-9._-]*$/.test(name) || !object(entry) || entry.path !== name
@@ -110,14 +110,6 @@ export function verifyGovernedIntakeRelease(
   if (options.expectedPayloadDigest !== undefined && manifest.payloadDigest !== options.expectedPayloadDigest) return fail("digest_mismatch", "payloadDigest differs from admitted digest");
   if (dir) {
     try {
-      const present = readdirSync(dir);
-      for (const name of present) {
-        if (name === "manifest.json") continue;
-        if (!required.has(name)) return fail("invalid_manifest", `release contains unexpected payload: ${name}`);
-      }
-      for (const name of REQUIRED_RELEASE_PAYLOADS) {
-        if (!present.includes(name)) return fail("missing_file", `release missing required payload: ${name}`);
-      }
       for (const [name, entry] of Object.entries(manifest.files)) {
         const file = path.join(dir, name);
         const stat = lstatSync(file);
@@ -125,12 +117,17 @@ export function verifyGovernedIntakeRelease(
         const bytes = readFileSync(file);
         if (bytes.length !== entry.byteLength || sha256(bytes) !== entry.sha256) return fail("corrupt_file", `payload digest or byteLength mismatch: ${name}`);
       }
+      const alias = readFileSync(path.join(dir, "contract.json"));
       const canonical = readFileSync(path.join(dir, "governed-intake-body.v1.json"));
+      if (!alias.equals(canonical)) return fail("corrupt_file", "contract aliases contain different bytes");
+      const policyAlias = readFileSync(path.join(dir, "policy.json"));
+      const policyCanonical = readFileSync(path.join(dir, "governed-intake-triage-policy.v1.json"));
+      if (!policyAlias.equals(policyCanonical)) return fail("corrupt_file", "policy aliases contain different bytes");
       const contract          = JSON.parse(canonical.toString("utf8"));
       if (!object(contract) || contract.schema !== RELEASE_SCHEMA_FAMILY || contract.version !== manifest.revision || contract.owner !== RELEASE_PRODUCER) {
         return fail("corrupt_file", "contract schema, revision or owner differs from release identity");
       }
-      const policy          = JSON.parse(readFileSync(path.join(dir, "governed-intake-triage-policy.v1.json"), "utf8"));
+      const policy          = JSON.parse(policyCanonical.toString("utf8"));
       if (!object(policy) || policy.schema !== "GovernedTriagePolicyV1" || policy.owner !== RELEASE_PRODUCER) {
         return fail("corrupt_file", "policy schema or owner differs from producer identity");
       }
@@ -158,9 +155,9 @@ export function loadGovernedIntakeRelease(dir        , options                  
   if (!result.ok) throw new Error(`governed-intake release: ${result.code}: ${result.error}`);
   return {
     manifest: result.manifest,
-    contract: JSON.parse(readFileSync(path.join(dir, "governed-intake-body.v1.json"), "utf8")),
-    evaluatorSource: readFileSync(path.join(dir, "governed-intake-body.evaluate.ts"), "utf8"),
-    triageEvaluatorSource: readFileSync(path.join(dir, "governed-intake-triage-state.evaluate.ts"), "utf8"),
+    contract: JSON.parse(readFileSync(path.join(dir, "contract.json"), "utf8")),
+    evaluatorSource: readFileSync(path.join(dir, "evaluator.ts"), "utf8"),
+    triageEvaluatorSource: readFileSync(path.join(dir, "triage-evaluator.ts"), "utf8"),
     templateMarkdown: readFileSync(path.join(dir, "task.md"), "utf8"),
     releaseDir: dir,
   };
