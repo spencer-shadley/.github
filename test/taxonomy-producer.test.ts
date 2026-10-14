@@ -319,10 +319,30 @@ test("accepted taxonomy dimensions participate in completion fingerprint", () =>
     "environment:fleet-local",
     "environment:host:mangekyo",
     "environment:hardware:gpu-h100",
+    "environment:provider:claude-desktop",
+    "environment:account:claude-desktop/spencer-main",
   ];
   for (const label of environments) {
     assert.equal(isTriageOwnedChecklistLabel(label), true);
   }
+
+  // The taxonomy contract itself admits exactly these dynamic environment shapes.
+  const dynamic = GOVERNED_TRIAGE_CHECKLIST.taxonomy.dimensions.environment.dynamicPatterns.map((p: string) => new RegExp(p));
+  const admitted = (label: string) => dynamic.some((re: RegExp) => re.test(label));
+  for (const label of environments.slice(1)) assert.equal(admitted(label), true, label);
+  for (const label of [
+    "environment:provider:",
+    "environment:provider:Claude",
+    "environment:provider:claude/desktop",
+    "environment:account:claude-desktop",
+    "environment:account:claude-desktop/",
+    "environment:account:/main",
+    "environment:account:claude-desktop/main/extra",
+    "environment:account:claude--desktop/main",
+    "environment:account:claude-desktop/Main",
+  ]) assert.equal(admitted(label), false, label);
+  assert.equal(GOVERNED_TRIAGE_CHECKLIST.taxonomy.dimensions.environment.providerAuthority, "governed_provider_id");
+  assert.equal(GOVERNED_TRIAGE_CHECKLIST.taxonomy.dimensions.environment.accountAuthority, "governed_account_id");
 
   const blocked = [
     "blocked:time",
