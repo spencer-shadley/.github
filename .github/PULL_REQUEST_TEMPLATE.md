@@ -3,6 +3,13 @@
 Does this PR add or change external side effects? If yes, describe the rate-limit/backoff/breaker
 and reversibility story from ADR-0001 §2.
 
+## Consumer Safety
+
+If this PR changes a library, contract, release, CLI, or anything else with consumers: confirm it
+won't break them, **or** that a clear path for every consumer is ready (backward-compatible, consumer
+updated first, or shipped in the same change). Name the consumers and the option, or write "no
+consumers affected". Details: [docs/consumer-safe-changes.md](https://github.com/spencer-shadley/.github/blob/main/docs/consumer-safe-changes.md).
+
 ## User Surface Review
 
 Every user-visible message/control is actionable by the user or clearly informational; disabled
