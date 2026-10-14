@@ -52,3 +52,26 @@ fleet-cli's verifier against the candidate release) would have prevented it.
 
 Tracking: [cli-wrappers#1739](https://github.com/spencer-shadley/cli-wrappers/issues/1739)
 ([impact comment](https://github.com/spencer-shadley/cli-wrappers/issues/1739#issuecomment-6172486434)).
+
+## Second incident: a revision bump that the Worker could not follow (2026-10-14)
+
+At 11:30 PT, `.github#82` (`7237be8`) published governed-intake **revision 26** for a wording-only
+change (ladder A column `Preventive control` renamed `Class fix`). The PR's Consumer Safety line said
+no consumer breaks because each keeps a pinned release. That was false for the GitHub MCP Worker: it
+reads the live release (r26) but evaluates with the rules compiled into its last deployment (r25), and
+its completion gate requires the two revisions to match. Every Worker triage completion was refused
+with `direction_publication_mismatch` until the revert (`9b73d78`, PR #84) restored r25
+([#83](https://github.com/spencer-shadley/.github/issues/83)). A new revision also moves the stamp to
+`metadata:triage-v<N>`, so adopting it would have made every settled r25 stamp stale again.
+
+What would have made it safe:
+
+- **Deploy the admitting consumer first.** Stage the next release in the Worker's prepared slot, deploy
+  the Worker, read back `GET /` (`checklist_revision`), then publish the producer
+  (see "Stage the replacement fully" in [governed-intake-ssot.md](governed-intake-ssot.md)).
+- **Do not bump for wording nothing validates.** A bump is for changes to checklist meaning. If the
+  validator still has to accept both spellings, say which spelling an older evaluator rejects before
+  claiming compatibility: r25 evaluators accept the `Fix the class` heading but reject the `Class fix`
+  column, so that part is not backward-compatible for a consumer that has not loaded r26.
+- **Check the live consumer, not the pin.** "Consumers keep a pinned release" is no longer a true
+  statement (`.github#37`); read the consumer's health or loader output instead of assuming.
