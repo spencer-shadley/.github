@@ -134,6 +134,13 @@ The manifest's `producer.commit` then names the pre-squash branch commit; that i
 not compared. `npm run release:check` (also part of `test/*.test.ts`) recomputes every payload
 digest and byteLength from the tree and fails, naming the file, when the manifest was not republished.
 
+Each release source is declared once. The payload name is the source basename, except the
+sole-name payloads `verify.ts` and `generator.ts`. A TypeScript source also emits the `.js`
+twin of that declared payload. The manifest schema stays `GovernedIntakeReleaseManifestV1`.
+Removing a duplicate payload name does not change the checklist revision. Consumers of the
+floating latest release identify it by producer commit and payload digest and read the
+canonical payload names ([#33](https://github.com/spencer-shadley/.github/issues/33)).
+
 Consumer compatibility is consumer-owned ([#37](https://github.com/spencer-shadley/.github/issues/37),
 [code#8387](https://github.com/spencer-shadley/code/issues/8387)). The producer resolves and verifies its
 own published release; it does not read retired consumer pin files or predict consumer admission

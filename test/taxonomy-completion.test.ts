@@ -26,7 +26,7 @@ const replace = (input: Input, from: string, to: string) => { input.labels = inp
 // manifest-verified elsewhere, and never rewritten by these tests.
 for (const surface of ["canonical", "portable"] as const) {
   const evaluate = async (input: Parameters<typeof evaluateTaxonomy>[0]) => surface === "canonical"
-    ? evaluateTaxonomy(input) : (await import("../contracts/generated/governed-intake/taxonomy-evaluator.js")).evaluateTaxonomy(input);
+    ? evaluateTaxonomy(input) : (await import("../contracts/generated/governed-intake/governed-intake-taxonomy.evaluate.js")).evaluateTaxonomy(input);
 
   test(`${surface} taxonomy accepts independent multi-value dimensions and unrelated overlays`, async () => {
     const input = fixture();

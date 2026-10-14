@@ -307,20 +307,18 @@ test("the refusal never echoes any credential fragment, whatever the stored orig
 test("published JavaScript actually executes the same body and checklist evaluators", async (t) => {
   const s = scratch(t);
   assert.equal(admitGovernedIntakeRelease(s.out, s.pin).ok, true);
-  const evaluator = await import(pathToFileURL(path.join(s.out, "evaluator.js")).href);
-  const triage = await import(pathToFileURL(path.join(s.out, "triage-evaluator.js")).href);
+  const evaluator = await import(pathToFileURL(path.join(s.out, "governed-intake-body.evaluate.js")).href);
+  const triage = await import(pathToFileURL(path.join(s.out, "governed-intake-triage-state.evaluate.js")).href);
   assert.deepEqual(evaluator.validateGovernedIntakeBody(validBody()), validateGovernedIntakeBody(validBody()));
   assert.equal(triage.CURRENT_TRIAGED_LABEL, CURRENT_TRIAGED_LABEL);
   assert.equal(evaluator.computeGovernedWorkUnitKey(identity), computeGovernedWorkUnitKey(identity));
 });
-test("portable release ships policy, delta planner and compose as executable JS with matching aliases", async (t) => {
+test("portable release ships policy, delta planner and compose as executable canonical JavaScript", async (t) => {
   const s = scratch(t);
   assert.equal(admitGovernedIntakeRelease(s.out, s.pin).ok, true);
-  assert.equal(readFileSync(path.join(s.out, "policy.json")).equals(readFileSync(path.join(s.out, "governed-intake-triage-policy.v1.json"))), true);
-  assert.equal(readFileSync(path.join(s.out, "compose.js")).equals(readFileSync(path.join(s.out, "governed-intake-triage.compose.js"))), true);
-  const compose = await import(pathToFileURL(path.join(s.out, "compose.js")).href);
-  const planner = await import(pathToFileURL(path.join(s.out, "delta-planner.js")).href);
-  const policyEval = await import(pathToFileURL(path.join(s.out, "policy-evaluator.js")).href);
+  const compose = await import(pathToFileURL(path.join(s.out, "governed-intake-triage.compose.js")).href);
+  const planner = await import(pathToFileURL(path.join(s.out, "governed-intake-triage-state.migrate.js")).href);
+  const policyEval = await import(pathToFileURL(path.join(s.out, "governed-intake-triage-policy.evaluate.js")).href);
   const isolated = await compose.evaluateGovernedIntakeTriage({
     body: validBody(),
     labels: [CURRENT_TRIAGED_LABEL],
@@ -331,11 +329,11 @@ test("portable release ships policy, delta planner and compose as executable JS 
   assert.equal(isolated.consumerCutover, false);
   assert.equal(typeof planner.planChecklistDelta, "function");
   assert.equal(typeof policyEval.evaluateTriagePolicy, "function");
-  assert.match(readFileSync(path.join(s.out, "compose.js"), "utf8"), /from "\.\/governed-intake-triage-policy\.evaluate\.js"/);
+  assert.match(readFileSync(path.join(s.out, "governed-intake-triage.compose.js"), "utf8"), /from "\.\/governed-intake-triage-policy\.evaluate\.js"/);
 });
 test("corrupt runtime JavaScript is rejected, not hidden by intact TypeScript", (t) => {
   const s = scratch(t);
-  writeFileSync(path.join(s.out, "evaluator.js"), "throw new Error('untrusted');\n");
+  writeFileSync(path.join(s.out, "governed-intake-body.evaluate.js"), "throw new Error('untrusted');\n");
   const result = admitGovernedIntakeRelease(s.out, s.pin);
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.code, "corrupt_file");
@@ -350,12 +348,14 @@ test("manifest rejects foreign producer, traversal, aliases, null and absent pay
     assert.equal(verifyGovernedIntakeRelease(s.out).ok, false);
   }
   const changed = structuredClone(original);
-  const bytes = Buffer.from(JSON.stringify({ ...c, version: c.version + 1 }));
+  const bytes = Buffer.from("{}\n");
   writeFileSync(path.join(s.out, "contract.json"), bytes);
   changed.files["contract.json"] = { path: "contract.json", sha256: sha256(bytes), byteLength: bytes.length };
   changed.payloadDigest = computePayloadDigest(changed.files);
   writeFileSync(path.join(s.out, "manifest.json"), JSON.stringify(changed));
-  assert.equal(verifyGovernedIntakeRelease(s.out).ok, false, "even internally rehashed metadata cannot hide alias mismatch");
+  const alias = verifyGovernedIntakeRelease(s.out);
+  assert.equal(alias.ok, false, "an old alias name is not a release payload");
+  if (!alias.ok) assert.match(alias.error, /unexpected payload: contract\.json/);
 });
 test("missing payload fails closed", (t) => {
   const s = scratch(t);
@@ -649,7 +649,7 @@ test('a conflicting PR shares the GitHub subject namespace and requires same-ste
 
 test('portable JavaScript enforces the exhaustive direction gate and settlement fence', async (t) => {
   const s = scratch(t);
-  const portable = await import(pathToFileURL(path.join(s.out, 'compose.js')).href);
+  const portable = await import(pathToFileURL(path.join(s.out, 'governed-intake-triage.compose.js')).href);
   const input = await directionFixture(true);
   assert.equal((await portable.evaluateGovernedIntakeTriage(input)).status, 'complete');
   input.directionObservation!.exhaustiveSearch!.repositories[1].unresolvedConflicts = 1;
