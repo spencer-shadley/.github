@@ -173,6 +173,23 @@ test("round-trip: a body with the old heading and a body with the new heading bo
   const badResult = validateGovernedIntakeBody(badBody);
   assert.equal(badResult.ok, false);
 });
+test("r26 ladder A column: canonical 'Class fix' and legacy 'Preventive control' headers both validate (.github#72)", () => {
+  const prevention = c.defectLadders.prevention;
+  assert.deepEqual(prevention.columns, ["Rank", "Class fix", "Status"]);
+  assert.deepEqual(prevention.legacyColumns, [["Rank", "Preventive control", "Status"]]);
+  assert.match(prevention.purpose, /^Fix the class of error at each subspecies→domain rank\. Prefer the fix ladder/);
+  assert.doesNotMatch(prevention.purpose, /[Nn]ever again/);
+  const legacyBody = validBody();
+  assert.match(legacyBody, /\| Rank \| Preventive control \| Status \|/);
+  assert.deepEqual(validateGovernedIntakeBody(legacyBody), { ok: true, schemaVersion: "governed-intake-body-v1" });
+  const canonicalBody = legacyBody.replace("| Rank | Preventive control | Status |", "| Rank | Class fix | Status |");
+  assert.deepEqual(validateGovernedIntakeBody(canonicalBody), { ok: true, schemaVersion: "governed-intake-body-v1" });
+  const unknown = validateGovernedIntakeBody(legacyBody.replace("| Rank | Preventive control | Status |", "| Rank | Other | Status |"));
+  assert.equal(unknown.ok, false);
+  const md = generateTaskMarkdown(c);
+  assert.match(md, /\| Rank \| Class fix \| Status \|/);
+  assert.doesNotMatch(md, /cannot recur|forbids the mechanism|cannot produce this species|cannot emit it/);
+});
 test("body with empty acceptance criteria is refused; a file:line reference warns without blocking (code#7074)", () => {
   const empty = validBody().replace(
     "## Durable fix and acceptance\nProducer and verified consumers agree on release identity.",
@@ -390,7 +407,7 @@ test("missing policy payload fails closed without requiring a symlink", (t) => {
 
 test("isolated proposal-classification addition is a one-item delta (combined cutover tested separately)", async () => {
   const { planChecklistDelta } = await import("../contracts/governed-intake-triage-state.migrate.ts");
-  assert.equal(c.version, 25);
+  assert.equal(c.version, 26);
   const items = c.triageChecklist.items as Array<{ id: string; title: string; text: string; dependsOn?: string[]; evidenceKeys?: string[]; resultDependencies?: string[] }>;
   const item = items.find((i) => i.id === "proposal-classification");
   assert.ok(item && /type:proposal/.test(item.text));
