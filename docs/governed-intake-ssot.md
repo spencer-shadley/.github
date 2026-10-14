@@ -243,7 +243,7 @@ Under [.github#32](https://github.com/spencer-shadley/.github/issues/32) and [co
   - `effort`: exactly 1 (`effort:low`, `medium`, `high`).
   - `priority:repo` and `priority:fleet`: exactly 1 each (`priority:repo:p0`..`p5`, `priority:fleet:p0`..`p5`).
   - `blocked`: 0..* (`blocked:time`, `blocked:human-required`, `blocked:issue`).
-  - `environment`: 0..* (`environment:fleet-local`, dynamic `host:<host>`, `hardware:<slug>`).
+  - `environment`: 0..* (`environment:fleet-local`, dynamic `host:<host>`, `hardware:<slug>`, `provider:<provider-id>`, `account:<provider-id>/<account-id>`).
   - `progress`: exactly 1 (`progress:triage`, `progress:planned`, `progress:implementing`, `progress:reviewing`, `progress:implemented`, `progress:verified`). Replaces prior stage without accumulation.
   - `decomp`: 0..1 (`decomp:required`, `decomp:in-progress`, `decomp:complete`, `decomp:unnecessary`).
   - `resolution`: 0 while open, exactly 1 resolved (`resolution:delivered`, `duplicate`, `superseded`, `declined`, `obsolete`). `delivered` requires verified acceptance (`progress:verified`). Non-delivery closure preserves last actual progress. Reopening clears resolution and invalid stamps.
@@ -270,11 +270,26 @@ the existing `ready` / `not-ready` / `unknown` assessment, a reason, and an expl
 `localVerificationRequired` boolean; when true it also requires a concrete `localFollowUp` reference.
 Its `environment` carries `allOf` requirements and optional `anyOf` alternative groups using the
 accepted `environment:fleet-local`, `environment:host:<verified-host-id>` and
-`environment:hardware:<governed-slug>` vocabulary. Adapters verify current facts and provenance.
+`environment:hardware:<governed-slug>` vocabulary, plus the provider/account dimensions below.
+Adapters verify current facts and provenance.
 Only unconditional `allOf` requirements project to labels; alternatives stay structured. A local
 implementation requires `environment:fleet-local` in `allOf`; cloud implementation carries no local
 implementation requirements but may have a separate local verification stage. A parent assesses its
 own scope, without inheriting its children's requirements. These facts never grant effects.
+
+**Provider and account environment dimensions (code#9169).** Where state physically lives is a hard
+environment requirement, not a preference. `environment:provider:<provider-id>` (for example
+`environment:provider:claude-desktop`) matches `^environment:provider:[a-z0-9]+(?:-[a-z0-9]+)*$`;
+its authority is `governed_provider_id`. `environment:account:<provider-id>/<account-id>` matches
+`^environment:account:[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$`: an account id only
+means something inside its provider, so the provider slug, exactly one `/`, and the account slug are
+all required; its authority is `governed_account_id`. They sit beside `hostAuthority` and
+`hardwareAuthority` in the `environment` taxonomy dimension, follow the same `allOf` /
+`anyOf` and label-projection rules, and are neither blockers nor permission grants. Model and
+provider preference stays governed by fleet DOCTRINE §66 (no identity bans); these labels only
+record that the work's state is reachable only through a given provider or account. Adding the
+dimensions changes taxonomy and evidence-validation data, not checklist item text, so the checklist
+revision and item identities are unchanged and no re-triage is required.
 
 Missing, unsupported, stale or unknown evidence remains pending; the public checklist API exposes
 `cloud-runnable` as pending for execution-evidence failures. Retired substrate labels are refused,

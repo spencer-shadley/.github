@@ -468,7 +468,9 @@
       "environment": {
         "localLabel": "environment:fleet-local",
         "hostPrefix": "environment:host:",
-        "hardwarePrefix": "environment:hardware:"
+        "hardwarePrefix": "environment:hardware:",
+        "providerPrefix": "environment:provider:",
+        "accountPrefix": "environment:account:"
       }
     },
     "retiredExecutionSubstrateLabels": [
@@ -578,10 +580,14 @@
           "maximum": null,
           "dynamicPatterns": [
             "^environment:host:[a-z0-9]+(?:-[a-z0-9]+)*$",
-            "^environment:hardware:[a-z0-9]+(?:-[a-z0-9]+)*$"
+            "^environment:hardware:[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "^environment:provider:[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "^environment:account:[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$"
           ],
           "hostAuthority": "verified_FleetRegistryReleaseV1_host_id",
           "hardwareAuthority": "governed_requirement_slug",
+          "providerAuthority": "governed_provider_id",
+          "accountAuthority": "governed_account_id",
           "meaning": "hard_execution_requirements_not_blockers_or_permission",
           "andOrRequirements": "structured_execution_contract"
         },

@@ -638,6 +638,30 @@ test("environment alternatives stay structured rather than becoming conjunctive 
   assert.ok(result.reasons.includes("execution_environment_projection_mismatch"));
 });
 
+// code#9169: provider and provider-scoped account are hard environment requirements (where state lives).
+for (const [name, allOf, valid] of [
+  ["provider", ["environment:fleet-local", "environment:provider:claude-desktop"], true],
+  ["account", ["environment:fleet-local", "environment:provider:claude-desktop", "environment:account:claude-desktop/spencer-main"], true],
+  ["account without a provider scope", ["environment:fleet-local", "environment:account:spencer-main"], false],
+  ["account with a nested path", ["environment:fleet-local", "environment:account:claude-desktop/spencer/main"], false],
+  ["account with an empty account id", ["environment:fleet-local", "environment:account:claude-desktop/"], false],
+  ["provider containing a slash", ["environment:fleet-local", "environment:provider:claude/desktop"], false],
+  ["uppercase provider", ["environment:fleet-local", "environment:provider:Claude"], false],
+] as const) {
+  test(`environment requirement ${name} is ${valid ? "accepted" : "refused"}`, async () => {
+    const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary"), ...allOf]);
+    const evidence = await verifiedEvidence("ordinary");
+    evidence.execution!.cloudReadiness = { status: "not-ready", reason: "State lives in the provider account.", localVerificationRequired: false };
+    evidence.execution!.environment = { allOf: [...allOf] };
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    if (valid) assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+    else {
+      assert.equal(result.status, "pending");
+      assert.ok(result.reasons.includes("execution_environment_invalid") || result.reasons.some(reason => reason.startsWith("taxonomy_")), JSON.stringify(result.reasons));
+    }
+  });
+}
+
 // Review B1: recompute the stamp so these cases exercise semantic taxonomy,
 // rather than merely discovering a stale completion fingerprint.
 for (const [name, extra] of [

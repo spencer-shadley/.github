@@ -336,10 +336,15 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
     const cloud = execution.cloudReadiness;
     const environment = execution.environment;
     const spec = bodyContract.triageChecklist.executionSubstrateEvidence;
+    // Provider/account ids are hard "where state lives" requirements. An account id only means
+    // something inside its provider, so the account suffix is exactly `<provider-slug>/<account-slug>`.
+    const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
     const validRequirement = (value: unknown): value is string => typeof value === "string"
       && (value === spec.environment.localLabel
-        || [spec.environment.hostPrefix, spec.environment.hardwarePrefix].some(prefix =>
-          value.startsWith(prefix) && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.slice(prefix.length))));
+        || [spec.environment.hostPrefix, spec.environment.hardwarePrefix, spec.environment.providerPrefix].some(prefix =>
+          value.startsWith(prefix) && slug.test(value.slice(prefix.length)))
+        || (value.startsWith(spec.environment.accountPrefix)
+          && (parts => parts.length === 2 && parts.every(part => slug.test(part)))(value.slice(spec.environment.accountPrefix.length).split("/"))));
     const validRequirements = (values: unknown): values is string[] => Array.isArray(values)
       && values.every(validRequirement) && new Set(values).size === values.length;
     if (execution.stage !== spec.stage || !cloud || !nonempty(cloud.reason)
