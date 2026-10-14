@@ -19,6 +19,9 @@ import {
   computePayloadDigest, sha256, RELEASE_MANIFEST_SCHEMA, RELEASE_SCHEMA_FAMILY, RELEASE_PRODUCER,
   verifyGovernedIntakeRelease, type GovernedIntakeReleaseManifest, type GovernedIntakeReleaseFileEntry,
 } from "./governed-intake-release.verify.ts";
+import {
+  checkRevisionCompatibility, parseRevisionCompatibility, type RevisionSnapshot,
+} from "./governed-intake-revision-compatibility.ts";
 export * from "./governed-intake-release.verify.ts";
 const THIS_FILE = fileURLToPath(import.meta.url);
 const REPO_ROOT = path.resolve(path.dirname(THIS_FILE), "..");
@@ -34,6 +37,7 @@ export const RELEASE_SOURCES = [
   "contracts/governed-intake-body.v1.json",
   "contracts/governed-intake-body.evaluate.ts",
   "contracts/governed-intake-triage-state.evaluate.ts",
+  "contracts/governed-intake-revision-compatibility.ts",
   "contracts/governed-intake-body.generate.ts",
   "contracts/governed-intake-release.verify.ts",
   "contracts/generated/governed-intake/task.md",
@@ -155,6 +159,40 @@ export function releaseFileEntries(files: Record<string, Buffer>): Record<string
   return entries;
 }
 export const REPUBLISH_COMMAND = "node --experimental-strip-types contracts/governed-intake-body.release.ts --source-commit <full SHA of the commit holding the changed sources>";
+const SNAPSHOT_DIR = "contracts/revision-compatibility";
+
+/** Predecessor snapshots named by the compatibility declaration. A missing file is a failed check, not a throw. */
+export function loadRevisionSnapshots(repoRoot: string, revisions: readonly number[]): { snapshots: RevisionSnapshot[]; messages: string[] } {
+  const snapshots: RevisionSnapshot[] = [];
+  const messages: string[] = [];
+  for (const revision of revisions) {
+    const file = path.join(repoRoot, SNAPSHOT_DIR, `r${revision}.json`);
+    try {
+      const raw: unknown = JSON.parse(readFileSync(file, "utf8"));
+      if (!raw || typeof raw !== "object") messages.push(`predecessor snapshot r${revision}.json is not an object`);
+      else snapshots.push(raw as RevisionSnapshot);
+    } catch (error) {
+      messages.push(`predecessor snapshot r${revision}.json unreadable: ${String(error)}`);
+    }
+  }
+  return { snapshots, messages };
+}
+
+export function checkPublishedRevisionCompatibility(repoRoot: string = REPO_ROOT): { ok: true } | { ok: false; messages: string[] } {
+  try {
+    const contract = JSON.parse(readFileSync(path.join(repoRoot, "contracts/governed-intake-body.v1.json"), "utf8"));
+    const parsed = parseRevisionCompatibility(contract);
+    if (!parsed.ok) return parsed;
+    const revisions: number[] = [];
+    for (let revision = parsed.compatibility.oldestAcceptedRevision; revision < contract.version; revision += 1) revisions.push(revision);
+    const loaded = loadRevisionSnapshots(repoRoot, revisions);
+    const checked = checkRevisionCompatibility(contract, loaded.snapshots);
+    const messages = [...loaded.messages, ...(!checked.ok ? checked.messages : [])];
+    return messages.length ? { ok: false, messages } : { ok: true };
+  } catch (error) {
+    return { ok: false, messages: [`revision compatibility unreadable: ${String(error)}`] };
+  }
+}
 export type PublishedReleaseCheck = { ok: true } | { ok: false; mismatches: string[]; message: string };
 /** .github#43: the committed release must describe the payload bytes this tree would release.
  * Compares payload digests and byteLengths only. `producer.commit` is deliberately not compared:
@@ -184,6 +222,8 @@ export function checkPublishedReleaseMatchesSource(repoRoot: string = REPO_ROOT)
   } catch (error) {
     mismatches.push(`release sources or published manifest unreadable: ${String(error)}`);
   }
+  const compatibility = checkPublishedRevisionCompatibility(root);
+  if (!compatibility.ok) mismatches.push(...compatibility.messages.map((line) => `revision compatibility: ${line}`));
   // The same structural read every consumer performs on default-branch bytes.
   const verified = verifyGovernedIntakeRelease(releaseDir);
   if (!verified.ok) mismatches.push(`published release directory refuses verification: ${verified.code}: ${verified.error}`);

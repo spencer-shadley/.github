@@ -176,6 +176,28 @@ item evidence and re-evaluate only added/changed items, affected dependents, or 
 evidence. Do not claim delta-only re-triage is deployed until the evaluator/worker tests and release
 readback prove it. Moving producer ownership does not justify silently changing this requirement.
 
+## Compatible revisions
+
+A release may declare `revisionCompatibility.oldestAcceptedRevision`, the oldest revision whose
+completions it still accepts, and `itemChanges` classifying each checklist item that differs from
+the immediate predecessor as `wording-only`, `relaxed`, `tightened`, or `new`
+([.github#52](https://github.com/spencer-shadley/.github/issues/52)). `npm run release:check`
+refuses a declaration that contradicts those item changes. A tightened or new item must name the
+issues it applies to (`appliesTo`); a wording-only or relaxed item must not re-pend anyone.
+
+The state evaluator accepts `metadata:triage-vN` stamps, checklist markers, and completion markers
+from any revision in that inclusive range. The policy evaluator accepts the policy and rubric
+identity pair recorded for each of those revisions. The scope fingerprint strips a checklist block
+rendered by any revision in the range. A tightened or new item re-pends only issues its selectors
+match. A revision outside the range, and a release that names no predecessor, stays stale.
+
+An accepted completion recorded under an older revision than the live one stays complete. The
+evaluator reports one warning naming the evaluated revision, the live revision, and the issue.
+That mismatch is not a refusal. Revision 26 re-lands the wording-only ladder A column change from
+[.github#82](https://github.com/spencer-shadley/.github/issues/82) (`Preventive control` to
+`Class fix`, with the legacy header still accepted) and declares revision 25 compatible, so issues
+triaged on revision 25 stay valid ([.github#83](https://github.com/spencer-shadley/.github/issues/83)).
+
 ## Cutover and verification
 
 1. Land source, generator, evaluators, and a deterministic form check together in `.github`.

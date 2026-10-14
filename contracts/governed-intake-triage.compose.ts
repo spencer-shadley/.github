@@ -18,13 +18,16 @@ import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeVal
 import {
   evaluateTriageChecklistStructure,
   CURRENT_TRIAGE_REVISION,
+  isAcceptedTriageRevision,
   type TriageChecklistState,
 } from "./governed-intake-triage-state.evaluate.ts";
+import { formatCompatibleRevisionWarning } from "./governed-intake-revision-compatibility.ts";
 import {
   assertTriagePolicy,
   evaluateTriagePolicy,
   evaluateImplementationCandidate,
   planRetiredProgressLabelCleanup,
+  policyIdentityAccepted,
   type Assessment,
   type BoundTriagePolicy,
   type PolicyEvaluation,
@@ -120,6 +123,15 @@ export interface DirectionObservation {
 }
 
 const unique = (values: readonly string[]): string[] => [...new Set(values)];
+
+function noteCompatibleRevision(
+  warnings: string[],
+  evaluated: number | undefined,
+  subject: ComposedTriageInput["subject"],
+): void {
+  if (evaluated === undefined || evaluated === CURRENT_TRIAGE_REVISION || !isAcceptedTriageRevision(evaluated)) return;
+  warnings.push(formatCompatibleRevisionWarning(evaluated, CURRENT_TRIAGE_REVISION, subject ?? null));
+}
 const nonempty = (value: unknown): value is string => typeof value === "string" && value.trim().length > 0;
 
 export function currentChecklistRelease(): ChecklistRelease {
@@ -218,6 +230,8 @@ export interface ComposedTriageResult {
   checklistDelta: ChecklistDelta | null;
   consumerCutover: typeof COMPOSE_CONSUMER_CUTOVER;
   taskProfile: ComposedTaskProfileResult | null;
+  /** Accepted older revisions stay complete. A mismatch names the evaluated revision, the live revision, and the issue. */
+  warnings: string[];
 }
 
 function asStatus(reasons: readonly string[], policy: PolicyEvaluation | null): ComposedTriageStatus {
@@ -232,8 +246,11 @@ function asStatus(reasons: readonly string[], policy: PolicyEvaluation | null): 
 export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): Promise<ComposedTriageResult> {
   const bound = boundTriagePolicyFromProducer();
   const body = validateGovernedIntakeBody(input.body);
-  const checklist = await evaluateTriageChecklistStructure(input.body, input.labels);
+  const checklist = await evaluateTriageChecklistStructure(input.body, input.labels, input.subject
+    ? { repository: input.subject.repository, issueNumber: input.subject.issueNumber }
+    : undefined);
   const reasons: string[] = [];
+  const warnings = [...checklist.warnings];
   if (!body.ok) reasons.push("body_invalid");
   if (checklist.needs_triage) reasons.push("checklist_incomplete");
 
@@ -267,6 +284,7 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
       checklistDelta,
       consumerCutover: COMPOSE_CONSUMER_CUTOVER,
       taskProfile: null,
+      warnings: [...warnings],
     };
   }
   if (evidence.kind === "unsupported") {
@@ -290,6 +308,7 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
       checklistDelta,
       consumerCutover: COMPOSE_CONSUMER_CUTOVER,
       taskProfile: null,
+      warnings: [...warnings],
     };
   }
   if (evidence.kind !== "adapter-verified") {
@@ -312,6 +331,7 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
       checklistDelta,
       consumerCutover: COMPOSE_CONSUMER_CUTOVER,
       taskProfile: null,
+      warnings: [...warnings],
     };
   }
 
@@ -331,8 +351,10 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
   const execution = evidence.execution;
   if (!execution) reasons.push("execution_evidence_required");
   else {
+    const executionRevisionOk = execution.revision === CURRENT_TRIAGE_REVISION || isAcceptedTriageRevision(execution.revision);
     if (execution.workUnitKey !== actualKey.key || execution.scopeFingerprint !== actualScope
-      || execution.revision !== CURRENT_TRIAGE_REVISION) reasons.push("execution_evidence_subject_or_revision_mismatch");
+      || !executionRevisionOk) reasons.push("execution_evidence_subject_or_revision_mismatch");
+    noteCompatibleRevision(warnings, execution.revision, input.subject);
     const cloud = execution.cloudReadiness;
     const environment = execution.environment;
     const spec = bodyContract.triageChecklist.executionSubstrateEvidence;
@@ -375,15 +397,19 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
       const factsFingerprint = fingerprintDirectionFacts(observed.facts);
       const publication = observed.publication;
       if (observed.coverage !== "complete") reasons.push("direction_thread_coverage_incomplete");
+      const directionRevisionOk = direction.revision === CURRENT_TRIAGE_REVISION || isAcceptedTriageRevision(direction.revision);
       if (!input.subject || observed.facts.seed.repository.toLowerCase() !== input.subject.repository.toLowerCase()
         || observed.facts.seed.issueNumber !== input.subject.issueNumber
         || direction.workUnitKey !== actualKey.key || direction.scopeFingerprint !== actualScope
-        || direction.factsFingerprint !== factsFingerprint || direction.revision !== CURRENT_TRIAGE_REVISION) {
+        || direction.factsFingerprint !== factsFingerprint || !directionRevisionOk) {
         reasons.push("direction_impact_subject_or_facts_mismatch");
       }
-      if (publication.repository !== "spencer-shadley/.github" || publication.revision !== CURRENT_TRIAGE_REVISION
+      noteCompatibleRevision(warnings, direction.revision, input.subject);
+      const publicationRevisionOk = publication.revision === CURRENT_TRIAGE_REVISION || isAcceptedTriageRevision(publication.revision);
+      if (publication.repository !== "spencer-shadley/.github" || !publicationRevisionOk
         || !/^(?!0{40}$)[0-9a-f]{40}$/.test(publication.sourceCommit)
         || !/^[0-9a-f]{64}$/.test(publication.payloadDigest)) reasons.push("direction_publication_mismatch");
+      noteCompatibleRevision(warnings, publication.revision, input.subject);
       if (!nonempty(direction.rationale)) reasons.push("direction_impact_rationale_required");
       if (direction.assessment === "no-impact") {
         // Empty outcome rows do not prove an existing unknown audit had no effects.
@@ -467,11 +493,19 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
     } catch { reasons.push("direction_impact_evidence_invalid"); }
   }
 
+  const assessed = evidence.assessment;
+  const assessedIdentity = assessed && policyIdentityAccepted(bound, assessed.policyIdentity, assessed.rubricIdentity)
+    ? assessed : null;
+  if (assessedIdentity && (assessedIdentity.policyIdentity !== bound.policyIdentity || assessedIdentity.rubricIdentity !== bound.rubricIdentity)) {
+    const match = bound.acceptedIdentityPairs?.find((pair) =>
+      pair.policyIdentity === assessedIdentity.policyIdentity && pair.rubricIdentity === assessedIdentity.rubricIdentity);
+    if (match?.revision !== undefined) noteCompatibleRevision(warnings, match.revision, input.subject);
+  }
   const snapshot: PolicySnapshot = {
     workUnitKey: actualKey.key ?? "invalid:work_unit_key",
     scopeFingerprint: actualScope,
-    policyIdentity: bound.policyIdentity,
-    rubricIdentity: bound.rubricIdentity,
+    policyIdentity: assessedIdentity?.policyIdentity ?? bound.policyIdentity,
+    rubricIdentity: assessedIdentity?.rubricIdentity ?? bound.rubricIdentity,
     state: evidence.state,
     repositoryActive: evidence.repositoryActive,
     labels: [...input.labels],
@@ -534,5 +568,6 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
     checklistDelta,
     consumerCutover: COMPOSE_CONSUMER_CUTOVER,
     taskProfile,
+    warnings: unique(warnings),
   };
 }

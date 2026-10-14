@@ -16,6 +16,8 @@ export type IntakeLadder = {
   doctrine?: string;
   purpose?: string;
   columns: string[];
+  /** Earlier column headers still accepted on input (r26: "Preventive control" before "Class fix"). */
+  legacyColumns?: string[][];
 };
 
 export type WorkUnitKeyContract = {
@@ -109,6 +111,9 @@ function ladder(value: unknown, label: string): IntakeLadder {
     doctrine: typeof row.doctrine === "string" ? row.doctrine : undefined,
     purpose: typeof row.purpose === "string" ? row.purpose : undefined,
     columns: strings(row.columns, `${label}.columns`),
+    legacyColumns: Array.isArray(row.legacyColumns)
+      ? row.legacyColumns.map((cols, i) => strings(cols, `${label}.legacyColumns[${i}]`))
+      : undefined,
   };
 }
 
@@ -829,9 +834,11 @@ export function validateGovernedIntakeMarkdown(
     if (!section.includes(detect.heading)) {
       missing.push(`Defect ladder B: ${detect.heading}`);
     }
-    const preventionHeader = `| ${prevention.columns.join(" | ")} |`;
+    const preventionHeaders = [prevention.columns, ...(prevention.legacyColumns ?? [])].map(
+      (cols) => `| ${cols.join(" | ")} |`,
+    );
     const detectHeader = `| ${detect.columns.join(" | ")} |`;
-    if (!section.includes(preventionHeader)) {
+    if (!preventionHeaders.some((header) => section.includes(header))) {
       missing.push(`prevention columns: ${prevention.columns.join(", ")}`);
     }
     if (!section.includes(detectHeader)) {
