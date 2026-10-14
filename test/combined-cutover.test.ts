@@ -23,8 +23,8 @@ const item = (id: string): Item => {
 const policy = JSON.parse(readFileSync(path.join(REPO, "contracts/governed-intake-triage-policy.v1.json"), "utf8"));
 
 test("combined revision carries every accepted input", () => {
-  assert.equal(contract.version, 26);
-  assert.equal(CURRENT_TRIAGE_REVISION, 26);
+  assert.equal(contract.version, 25);
+  assert.equal(CURRENT_TRIAGE_REVISION, 25);
   // #32 taxonomy
   assert.equal(contract.triageChecklist.triagedLabelPrefix, "metadata:triage-v");
   assert.deepEqual(contract.triageChecklist.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
@@ -68,7 +68,7 @@ test("the stamp reader accepts the new stamp and the legacy triaged:vN stamp", (
 test("the live task form projects the combined revision", () => {
   const live = readFileSync(path.join(REPO, ".github/ISSUE_TEMPLATE/task.yml"), "utf8");
   assert.equal(live, generateTaskYaml(contract));
-  assert.match(live, /governed-triage-checklist: revision=26/);
+  assert.match(live, /governed-triage-checklist: revision=25/);
   assert.match(live, /governed-triage-item: task-profile/);
   assert.match(live, /governed-triage-item: proposal-classification/);
   assert.match(live, /- progress:triage/);

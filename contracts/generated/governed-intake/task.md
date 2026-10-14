@@ -4,7 +4,7 @@ about: Triage-ready issue — the autonomous pipeline authors a plan from this
 labels: agent-review, priority:triage-tbd, progress:triage
 ---
 
-<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 26). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
+<!-- Generated from contracts/governed-intake-body.v1.json (GovernedIntakeBodyV1 version 25). Do not hand-edit; run: node --experimental-strip-types contracts/governed-intake-body.generate.ts -->
 
 ## Work type
 <!-- Defect | Task | Risk reduction | Exploration / design research | Experiment / evidence test | Feature | Mixed -->
@@ -26,7 +26,7 @@ labels: agent-review, priority:triage-tbd, progress:triage
 <!-- One short reason: current harm, urgency, expected value, or time saved (cite docs/guides/issue-priority.md defect scale: frequency x severity x urgency). -->
 
 ## Triage checklist
-<!-- governed-triage-checklist: revision=26 -->
+<!-- governed-triage-checklist: revision=25 -->
 <!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->
 <!-- governed-triage-item: canonical-flow -->
 - [ ] **Canonical flow**: Use `skills/gh-issue-triage-sweep/SKILL.md`. Keep discovery/orchestration in that skill and selected-collection adjudication in `gh-issue-audit`; do not recreate either procedure in issue prose.
@@ -96,16 +96,16 @@ N/A — <reason>
 | Domain | <!-- optimization model --> | <!-- disposition --> | CEO / terminal stop reason |
 
 ### A. Fix the class
-<!-- Required for Defects. Other work types may use N/A per row. Class fix at each §14 rank: catch, flag or repair; prefer the fix ladder; never requires a new refusal. -->
+<!-- Required for Defects. Other work types may use N/A per row. Preventive control at each §14 rank. -->
 
-| Rank | Class fix | Status |
+| Rank | Preventive control | Status |
 |---|---|---|
-| Subspecies | <!-- fix that catches, flags or repairs this occurrence --> | TBD — triage |
-| Species | <!-- class fix that catches, flags or repairs the same mode --> | TBD — triage |
-| Genus | <!-- mechanism fix that catches, flags or repairs this species --> | TBD — triage |
-| Family | <!-- contract/boundary that catches, flags or repairs the mechanism --> | TBD — triage |
+| Subspecies | <!-- control so this occurrence cannot recur --> | TBD — triage |
+| Species | <!-- class control across the same mode --> | TBD — triage |
+| Genus | <!-- mechanism cannot produce this species --> | TBD — triage |
+| Family | <!-- contract/boundary that forbids the mechanism --> | TBD — triage |
 | Order | <!-- architecture that does not share the weakness --> | TBD — triage |
-| Class | <!-- engineering-system change so tools catch, flag or repair it --> | TBD — triage |
+| Class | <!-- engineering-system change so tools cannot emit it --> | TBD — triage |
 | Phylum | <!-- org/process that owns the class --> | TBD — triage |
 | Kingdom | <!-- governance that does not reward this mode --> | TBD — triage |
 | Domain | <!-- objective that does not select for this class --> | TBD — triage |
