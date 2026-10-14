@@ -27,8 +27,8 @@ test("a payload change without a republished manifest fails, naming the file and
     { source: "contracts/generated/governed-intake/feature.md", payloads: ["feature.md"] },
     // Source lives outside the release directory, which still verifies on its own.
     { source: ".github/ISSUE_TEMPLATE/task.yml", payloads: ["task.yml"] },
-    { source: "contracts/governed-intake-body.v1.json", payloads: ["contract.json", "governed-intake-body.v1.json"] },
-    { source: "contracts/governed-intake-triage.compose.ts", payloads: ["compose.ts", "compose.js"] },
+    { source: "contracts/governed-intake-body.v1.json", payloads: ["governed-intake-body.v1.json"] },
+    { source: "contracts/governed-intake-triage.compose.ts", payloads: ["governed-intake-triage.compose.ts", "governed-intake-triage.compose.js"] },
   ];
   for (const { source, payloads } of cases) {
     const dir = copyOfProducer(t);
