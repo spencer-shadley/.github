@@ -952,3 +952,11 @@ test("malformed or non-plain observations are refused without throwing", () => {
     assert.ok(result.reasons.length > 0);
   }
 });
+
+test("own-delivery proof must observe the attempt's own PR reference in the current state", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownHeadCommit, ownMergedCommit]);
+  const result = evaluateOwn(ownObservation(before, current));
+  assert.equal(result.status, "refused");
+  assert.ok(result.reasons.includes("own_delivery_reference_absent"), JSON.stringify(result.reasons));
+});

@@ -258,6 +258,8 @@ export function evaluateOwnDeliveryDirectionEquivalence(
           if (isOwn(entry)) ownReferences.add(id); else reasons.add("related_work_foreign_change");
         }
       }
+      // The proof must be observed, not merely asserted: the own PR reference has to exist in current.
+      if (proofValid && !currentMap.has(`pull_request:${pr.repository.toLowerCase()}#${pr.number}`)) reasons.add("own_delivery_reference_absent");
       if (entriesChanged !== opaqueChanged) reasons.add("related_work_unexplained_drift");
       if (opaqueChanged && ownReferences.size === 0) reasons.add("related_work_unexplained_drift");
     }
