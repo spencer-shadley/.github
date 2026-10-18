@@ -13,7 +13,8 @@
  */
 import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson, type DirectionFacts, type IssueScopeSource } from "./governed-intake-policy-binding.ts";
 import { evaluateTaxonomy, type TaxonomyEvidence, type TaxonomyObservation } from "./governed-intake-taxonomy.evaluate.ts";
-export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.ts";
+export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody, evaluateOwnDeliveryDirectionEquivalence } from "./governed-intake-policy-binding.ts";
+export type { OwnDeliveryObservation, OwnDeliveryExpectation, OwnDeliveryEquivalence, OwnDeliveryProof, DirectionSideObservation, RelatedWorkEntry, RelatedWorkMaterial, DirectionPublication } from "./governed-intake-policy-binding.ts";
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey, type IntakeValidationResult } from "./governed-intake-body.evaluate.ts";
 import {
   evaluateTriageChecklistStructure,
