@@ -36,7 +36,7 @@ import {
 } from "../contracts/governed-intake-triage.compose.ts";
 import { bindTaskProfileContract, type TaskProfileContract, type TaskProfileRecord } from "../contracts/governed-intake-task-profile.evaluate.ts";
 import taskProfileContractJson from "../contracts/governed-intake-task-profile.v1.json" with { type: "json" };
-import { fingerprintDirectionFacts } from "../contracts/governed-intake-policy-binding.ts";
+import { evaluateOwnDeliveryDirectionEquivalence, fingerprintDirectionFacts, type OwnDeliveryObservation } from "../contracts/governed-intake-policy-binding.ts";
 import { admitGovernedIntakeRelease } from "../contracts/governed-intake-release.verify.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -800,4 +800,163 @@ test("public checklist API accepts lifecycle observation and exposes pending tax
   assert.equal(pending.needs_triage, true);
   assert.ok(pending.semantic_reasons!.includes("taxonomy_progress_cardinality"));
   assert.ok(pending.unchecked_item_ids.includes("priority-work-dimensions"));
+});
+
+// OWN-DELIVERY (.github#92): identity-bound own PR/commit references may move related-work
+// material, while every other direction dimension and every foreign reference must stay exact.
+// The fixture uses the staged 9690 shape (PR 9847, merge cc0bf061...) with a fixture-chosen repository.
+const ownSeed = { repository: "spencer-shadley/.github", issueNumber: 19 };
+const ownPr = { repository: "spencer-shadley/code", number: 9847 };
+const ownHead = "1".repeat(40);
+const ownMerged = "cc0bf061386c398e7cc871350d1fd41fda3cf4f1";
+const digestOf = (c: string) => `sha256:${c.repeat(64)}`;
+const ownPublication = { repository: "spencer-shadley/.github", sourceCommit: "a".repeat(40), payloadDigest: "b".repeat(64), revision: contract.version };
+const ownScope = digestOf("5");
+const ownWorkUnitKey = subject.workUnitKey;
+const ownAttempt = { id: "ao-attempt-9847", fence: 3 };
+const foreignIssue = { kind: "issue" as const, repository: "spencer-shadley/code", number: 7472, materialFingerprint: digestOf("7") };
+const foreignPull = { kind: "pull_request" as const, repository: "spencer-shadley/code", number: 7473, materialFingerprint: digestOf("6") };
+const ownPullOpen = { kind: "pull_request" as const, repository: ownPr.repository, number: ownPr.number, materialFingerprint: digestOf("8") };
+const ownPullMerged = { ...ownPullOpen, materialFingerprint: digestOf("9") };
+const ownHeadCommit = { kind: "commit" as const, repository: ownPr.repository, sha: ownHead, materialFingerprint: digestOf("c") };
+const ownMergedCommit = { kind: "commit" as const, repository: ownPr.repository, sha: ownMerged, materialFingerprint: digestOf("d") };
+
+type OwnSide = OwnDeliveryObservation["before"];
+function ownSide(entries: unknown[], over: Partial<OwnSide> & { relatedWorkFingerprint?: string; threads?: unknown[]; source?: string; ownership?: string } = {}): OwnSide {
+  const relatedWorkFingerprint = over.relatedWorkFingerprint ?? digestOf("e");
+  const threads = over.threads ?? [{ ...ownSeed, materialFingerprint: digestOf("a"), decisions: [{ commentId: 1001, state: "accepted", contentFingerprint: digestOf("b") }] }];
+  return {
+    facts: { seed: ownSeed, threads, sourceFingerprint: over.source ?? digestOf("f"), ownershipFingerprint: over.ownership ?? digestOf("0"), relatedWorkFingerprint } as never,
+    coverage: over.coverage ?? "complete",
+    relatedWork: { coverage: "complete", relatedWorkFingerprint, entries: entries as never },
+    scopeFingerprint: over.scopeFingerprint ?? ownScope,
+    publication: over.publication ?? ownPublication,
+  } as OwnSide;
+}
+const ownProof = (over: Record<string, unknown> = {}) => ({
+  schema: "OwnDeliveryDirectionProofV1", version: 1, subject: ownSeed, workUnitKey: ownWorkUnitKey, attempt: ownAttempt,
+  pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: ownHead, reviewedHeadSha: ownHead, mergedSha: ownMerged },
+  ownCommitShas: [ownHead, ownMerged], ...over,
+});
+const ownExpected = { subject: ownSeed, workUnitKey: ownWorkUnitKey, scopeFingerprint: ownScope, attempt: ownAttempt, publication: ownPublication };
+/** Baseline: triage-time facts; current: after the attempt's own PR and commits were observed. */
+const ownObservation = (
+  before: OwnSide, current: OwnSide, proof: Record<string, unknown> = {},
+) => ({ proof: ownProof(proof), before, current }) as unknown as OwnDeliveryObservation;
+const evaluateOwn = (observation: OwnDeliveryObservation, expected: Partial<typeof ownExpected> = {}) =>
+  evaluateOwnDeliveryDirectionEquivalence(observation, { ...ownExpected, ...expected });
+
+test("own-delivery proof accepts only the attempt's own PR and commit references, and the guard still sees the change", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownPullOpen, ownHeadCommit, ownMergedCommit], { relatedWorkFingerprint: digestOf("1") });
+  const result = evaluateOwn(ownObservation(before, current));
+  assert.deepEqual(result.reasons, []);
+  assert.equal(result.status, "own-delivery-only");
+  assert.deepEqual([...result.ownReferences].sort(), [`commit:${ownPr.repository}#${ownHead}`, `commit:${ownPr.repository}#${ownMerged}`, `pull_request:${ownPr.repository}#${ownPr.number}`].sort());
+  // Semantic guard stays strict: the opaque facts fingerprint still changes for own references.
+  assert.notEqual(fingerprintDirectionFacts(before.facts), fingerprintDirectionFacts(current.facts));
+});
+
+test("own PR state change (open to merged) is own material, not foreign drift", () => {
+  const result = evaluateOwn(ownObservation(
+    ownSide([foreignIssue, ownPullOpen]),
+    ownSide([foreignIssue, ownPullMerged], { relatedWorkFingerprint: digestOf("1") }),
+  ));
+  assert.equal(result.status, "own-delivery-only", JSON.stringify(result.reasons));
+});
+
+test("foreign reference additions, removals and changed material are refused", () => {
+  const cases: [string, OwnSide, OwnSide, string][] = [
+    ["foreign added", ownSide([foreignIssue]), ownSide([foreignIssue, foreignPull, ownPullOpen], { relatedWorkFingerprint: digestOf("1") }), "related_work_foreign_change"],
+    ["foreign removed", ownSide([foreignIssue, foreignPull]), ownSide([foreignIssue, ownPullOpen], { relatedWorkFingerprint: digestOf("1") }), "related_work_removed"],
+    ["foreign material changed", ownSide([foreignIssue]), ownSide([{ ...foreignIssue, materialFingerprint: digestOf("9") }, ownPullOpen], { relatedWorkFingerprint: digestOf("1") }), "related_work_foreign_change"],
+    ["same-number pull in another repository", ownSide([]), ownSide([{ ...ownPullOpen, repository: "spencer-shadley/other" }], { relatedWorkFingerprint: digestOf("1") }), "related_work_foreign_change"],
+    ["commit outside own commit set", ownSide([]), ownSide([{ kind: "commit", repository: ownPr.repository, sha: "2".repeat(40), materialFingerprint: digestOf("c") }], { relatedWorkFingerprint: digestOf("1") }), "related_work_foreign_change"],
+  ];
+  for (const [name, before, current, reason] of cases) {
+    const result = evaluateOwn(ownObservation(before, current));
+    assert.equal(result.status, "refused", name);
+    assert.ok(result.reasons.includes(reason), `${name}: ${JSON.stringify(result.reasons)}`);
+  }
+});
+
+test("non-related direction dimensions are preserved exactly", () => {
+  const withThreads = (materialFingerprint: string, decisions: unknown[] = [{ commentId: 1001, state: "accepted", contentFingerprint: digestOf("b") }]) =>
+    [{ ...ownSeed, materialFingerprint, decisions }];
+  const cases: [string, OwnSide][] = [
+    ["seed thread material (title/body/foreign prose)", ownSide([], { threads: withThreads(digestOf("3")) })],
+    ["accepted decision content", ownSide([], { threads: withThreads(digestOf("a"), [{ commentId: 1001, state: "accepted", contentFingerprint: digestOf("4") }]) })],
+    ["decision reversed", ownSide([], { threads: withThreads(digestOf("a"), [{ commentId: 1001, state: "reversed", contentFingerprint: digestOf("b") }]) })],
+    ["new decision", ownSide([], { threads: withThreads(digestOf("a"), [{ commentId: 1001, state: "accepted", contentFingerprint: digestOf("b") }, { commentId: 1002, state: "proposed", contentFingerprint: digestOf("5") }]) })],
+    ["source", ownSide([], { source: digestOf("6") })],
+    ["ownership", ownSide([], { ownership: digestOf("6") })],
+    ["scope (title/body normalized scope)", ownSide([], { scopeFingerprint: digestOf("6") })],
+  ];
+  for (const [name, current] of cases) {
+    const before = ownSide([]);
+    const result = evaluateOwn(ownObservation(before, { ...current, relatedWorkFingerprint: undefined } as never));
+    assert.equal(result.status, "refused", name);
+    assert.ok(result.reasons.some(r => ["non_related_direction_changed", "scope_changed"].includes(r)), `${name}: ${JSON.stringify(result.reasons)}`);
+  }
+});
+
+test("own delivery is refused for wrong subject, attempt, fence, review head, merge commit set or publication", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownPullOpen, ownHeadCommit], { relatedWorkFingerprint: digestOf("1") });
+  const cases: [string, OwnDeliveryObservation, Partial<typeof ownExpected>, string][] = [
+    ["wrong attempt fence", ownObservation(before, current, { attempt: { id: ownAttempt.id, fence: 2 } }), {}, "own_delivery_attempt_mismatch"],
+    ["wrong attempt id", ownObservation(before, current, { attempt: { id: "other", fence: 3 } }), {}, "own_delivery_attempt_mismatch"],
+    ["wrong subject", ownObservation(before, current, { subject: { repository: ownSeed.repository, issueNumber: 20 } }), {}, "own_delivery_subject_mismatch"],
+    ["wrong work unit", ownObservation(before, current), { workUnitKey: digestOf("9") }, "own_delivery_subject_mismatch"],
+    ["reviewed head differs from head", ownObservation(before, current, { pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: ownHead, reviewedHeadSha: "2".repeat(40), mergedSha: ownMerged } }), {}, "own_delivery_review_head_mismatch"],
+    ["merged SHA missing from own commit set", ownObservation(before, current, { ownCommitShas: [ownHead] }), {}, "own_delivery_proof_invalid"],
+    ["malformed head SHA", ownObservation(before, current, { pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: "XYZ", reviewedHeadSha: "XYZ", mergedSha: ownMerged } }), {}, "own_delivery_proof_invalid"],
+    ["current publication revision", ownObservation(before, { ...current, publication: { ...ownPublication, revision: 24 } }), {}, "own_delivery_publication_mismatch"],
+  ];
+  for (const [name, observation, expected, reason] of cases) {
+    const result = evaluateOwn(observation, expected);
+    assert.equal(result.status, "refused", name);
+    assert.ok(result.reasons.includes(reason), `${name}: ${JSON.stringify(result.reasons)}`);
+  }
+});
+
+test("partial, unknown or inconsistent related-work coverage never proves own delivery", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownPullOpen], { relatedWorkFingerprint: digestOf("1") });
+  const partial = { ...current, relatedWork: { ...current.relatedWork, coverage: "incomplete" } } as OwnSide;
+  const unknown = { ...before, relatedWork: { ...before.relatedWork, coverage: "unknown" } } as OwnSide;
+  const incompleteThreads = { ...current, coverage: "incomplete" } as OwnSide;
+  const mismatched = { ...current, relatedWork: { ...current.relatedWork, relatedWorkFingerprint: digestOf("2") } } as OwnSide;
+  const duplicated = ownSide([foreignIssue, foreignIssue, ownPullOpen], { relatedWorkFingerprint: digestOf("1") });
+  const cases: [string, OwnDeliveryObservation, string][] = [
+    ["current related-work partial", ownObservation(before, partial), "related_work_coverage_incomplete"],
+    ["baseline related-work unknown", ownObservation(unknown, current), "related_work_coverage_incomplete"],
+    ["thread coverage incomplete", ownObservation(before, incompleteThreads), "direction_thread_coverage_incomplete"],
+    ["relatedWork material not bound to published fingerprint", ownObservation(before, mismatched), "related_work_binding_mismatch"],
+    ["duplicate entries", ownObservation(before, duplicated), "related_work_entries_invalid"],
+    ["opaque fingerprint moved with no entry change", ownObservation(before, ownSide([foreignIssue], { relatedWorkFingerprint: digestOf("1") })), "related_work_unexplained_drift"],
+  ];
+  for (const [name, observation, reason] of cases) {
+    const result = evaluateOwn(observation);
+    assert.equal(result.status, "refused", name);
+    assert.ok(result.reasons.includes(reason), `${name}: ${JSON.stringify(result.reasons)}`);
+  }
+});
+
+test("malformed or non-plain observations are refused without throwing", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownPullOpen], { relatedWorkFingerprint: digestOf("1") });
+  for (const observation of [{}, null, ownObservation(before, { ...current, facts: undefined } as never)] as unknown[]) {
+    const result = evaluateOwnDeliveryDirectionEquivalence(observation as OwnDeliveryObservation, ownExpected);
+    assert.equal(result.status, "refused");
+    assert.ok(result.reasons.length > 0);
+  }
+});
+
+test("own-delivery proof must observe the attempt's own PR reference in the current state", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownHeadCommit, ownMergedCommit]);
+  const result = evaluateOwn(ownObservation(before, current));
+  assert.equal(result.status, "refused");
+  assert.ok(result.reasons.includes("own_delivery_reference_absent"), JSON.stringify(result.reasons));
 });

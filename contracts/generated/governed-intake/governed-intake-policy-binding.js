@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import policyJson from "./governed-intake-triage-policy.v1.json" with { type: "json" };
 import contractJson from "./governed-intake-body.v1.json" with { type: "json" };
 import { assertTriagePolicy,                                           } from "./governed-intake-triage-policy.evaluate.js";
-import { renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.js";
+import { CURRENT_TRIAGE_REVISION, renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.js";
 import { normalizeLf, validateGovernedWorkUnitKey } from "./governed-intake-body.evaluate.js";
 import { stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.js";
 
@@ -107,4 +107,173 @@ export function fingerprintIssueScope(source                  )         {
   const key = validateGovernedWorkUnitKey(source.body);
   if (!key.ok || !key.key) throw new TypeError(`invalid issue work-unit key:${key.reason}`);
   return digest({ repository: source.repository.toLowerCase(), issueNumber: source.issueNumber, title: source.title.trim(), workUnitKey: key.key, body: normalizeIssueScopeBody(source.body, source) });
+}
+
+/** OWN-DELIVERY (.github#92). The authenticated owner (Code Worker) observes complete material
+ * before and current; this pure evaluator decides only whether the related-work delta is exactly
+ * the attempt's own PR and its own commits. It cannot authenticate caller objects: every
+ * observation must come from the owner's verified timeline and git readbacks.
+ * The semantic guard (fingerprintDirectionFacts / triage compose) is unchanged; this is an
+ * opt-in typed proof that the consumer evaluates alongside it.
+ */
+export const OWN_DELIVERY_PROOF_SCHEMA = "OwnDeliveryDirectionProofV1"         ;
+                                                                                                                           
+                                   
+                                            
+                     
+                                
+                  
+                              
+               
+                                                                                   
+                              
+ 
+                                      
+                                                  
+                                                                                  
+                                 
+                              
+ 
+                                           
+                        
+                                                                      
+                                                  
+                                   
+                                                                                                
+                           
+                                    
+ 
+                                   
+                                           
+             
+                                                       
+                      
+                                         
+                                                                                                                   
+                                                                                   
+                          
+ 
+                                         
+                          
+                                   
+                                    
+ 
+                                         
+                                                       
+                      
+                           
+                                         
+                                                                        
+                                    
+ 
+                                         
+                                          
+                    
+                                                                                
+                          
+ 
+
+const OWN_SHA = /^(?!0{40}$)[0-9a-f]{40}$/;
+const DIGEST = /^sha256:[0-9a-f]{64}$/;
+const REPOSITORY = /^[^/\s]+\/[^/\s]+$/;
+const RELATED_WORK_SENTINEL = `sha256:${"0".repeat(64)}`;
+const ENTRY_KINDS = ["pull_request", "issue", "commit"]         ;
+
+/** Refuses every observation that is not an exact, complete, own-only delta. Never throws. */
+export function evaluateOwnDeliveryDirectionEquivalence(
+  observation                        ,
+  expected                        ,
+)                         {
+  const reasons = new Set        ();
+  const ownReferences = new Set        ();
+  try {
+    const { proof, before, current } = observation;
+    const sameRepository = (a        , b        ) => a.toLowerCase() === b.toLowerCase();
+    const sameSubject = (a                                             , b                                             ) =>
+      sameRepository(a.repository, b.repository) && a.issueNumber === b.issueNumber;
+    const validSubject = (v         )                                                   =>
+      !!v && typeof v === "object" && REPOSITORY.test((v                          ).repository)
+      && Number.isSafeInteger((v                           ).issueNumber) && (v                           ).issueNumber >= 1;
+    const canonicalEqual = (a         , b         ) => canonicalPolicyJson(a) === canonicalPolicyJson(b);
+
+    // Proof: typed, schema-versioned, and bound to the expected subject, work unit and attempt fence.
+    const pr = proof?.pullRequest;
+    const commits = proof?.ownCommitShas;
+    const proofValid = proof?.schema === OWN_DELIVERY_PROOF_SCHEMA && proof.version === 1 && validSubject(proof.subject)
+      && DIGEST.test(proof.workUnitKey) && !!proof.attempt && typeof proof.attempt.id === "string" && proof.attempt.id.trim().length > 0
+      && Number.isSafeInteger(proof.attempt.fence) && proof.attempt.fence >= 1
+      && !!pr && REPOSITORY.test(pr.repository) && Number.isSafeInteger(pr.number) && pr.number >= 1
+      && OWN_SHA.test(pr.headSha) && OWN_SHA.test(pr.reviewedHeadSha) && OWN_SHA.test(pr.mergedSha)
+      && Array.isArray(commits) && commits.every(sha => OWN_SHA.test(sha)) && new Set(commits).size === commits.length
+      && commits.includes(pr.headSha) && commits.includes(pr.mergedSha);
+    if (!proofValid) reasons.add("own_delivery_proof_invalid");
+    if (proofValid) {
+      if (pr.reviewedHeadSha !== pr.headSha) reasons.add("own_delivery_review_head_mismatch");
+      if (!sameSubject(proof.subject, expected.subject) || proof.workUnitKey !== expected.workUnitKey) reasons.add("own_delivery_subject_mismatch");
+      if (proof.attempt.id !== expected.attempt.id || proof.attempt.fence !== expected.attempt.fence) reasons.add("own_delivery_attempt_mismatch");
+    }
+    if (!canonicalEqual(current.publication, expected.publication)
+      || expected.publication.revision !== CURRENT_TRIAGE_REVISION || expected.publication.repository !== "spencer-shadley/.github") {
+      reasons.add("own_delivery_publication_mismatch");
+    }
+
+    const isOwn = (entry                  ) => proofValid && sameRepository(entry.repository, pr.repository)
+      && (entry.kind === "pull_request" ? entry.number === pr.number
+        : entry.kind === "commit" ? commits.includes(entry.sha ?? "") : false);
+    const identity = (entry                  ) => `${entry.kind}:${entry.repository.toLowerCase()}#${entry.kind === "commit" ? entry.sha : entry.number}`;
+    const indexed = (side                          )                                       => {
+      const map = new Map                          ();
+      for (const entry of side.relatedWork.entries) {
+        const valid = ENTRY_KINDS.includes(entry.kind) && REPOSITORY.test(entry.repository) && DIGEST.test(entry.materialFingerprint)
+          && (entry.kind === "commit" ? OWN_SHA.test(entry.sha ?? "") : Number.isSafeInteger(entry.number) && (entry.number          ) >= 1);
+        if (!valid) { reasons.add("related_work_entries_invalid"); return null; }
+        if (map.has(identity(entry))) { reasons.add("related_work_entries_invalid"); return null; }
+        map.set(identity(entry), entry);
+      }
+      return map;
+    };
+
+    let entriesChanged = false;
+    let opaqueChanged = before.facts.relatedWorkFingerprint !== current.facts.relatedWorkFingerprint;
+    for (const side of [before, current]) {
+      if (!validSubject(side.facts?.seed) || !sameSubject(side.facts.seed, expected.subject)) reasons.add("own_delivery_subject_mismatch");
+      if (side.coverage !== "complete") reasons.add("direction_thread_coverage_incomplete");
+      if (side.relatedWork?.coverage !== "complete") reasons.add("related_work_coverage_incomplete");
+      if (side.relatedWork?.relatedWorkFingerprint !== side.facts?.relatedWorkFingerprint) reasons.add("related_work_binding_mismatch");
+      // Title, body and normalized scope are substantive: both sides must equal the expected subject scope.
+      if (side.scopeFingerprint !== expected.scopeFingerprint) reasons.add("scope_changed");
+    }
+    const beforeMap = indexed(before);
+    const currentMap = indexed(current);
+    if (beforeMap && currentMap) {
+      for (const [id] of beforeMap) if (!currentMap.has(id)) reasons.add("related_work_removed");
+      for (const [id, entry] of currentMap) {
+        const prior = beforeMap.get(id);
+        if (!prior) {
+          entriesChanged = true;
+          if (isOwn(entry)) ownReferences.add(id); else reasons.add("related_work_foreign_change");
+        } else if (prior.materialFingerprint !== entry.materialFingerprint) {
+          entriesChanged = true;
+          // Own references may change state (open to merged); foreign references may not.
+          if (isOwn(entry)) ownReferences.add(id); else reasons.add("related_work_foreign_change");
+        }
+      }
+      // The proof must be observed, not merely asserted: the own PR reference has to exist in current.
+      if (proofValid && !currentMap.has(`pull_request:${pr.repository.toLowerCase()}#${pr.number}`)) reasons.add("own_delivery_reference_absent");
+      if (entriesChanged !== opaqueChanged) reasons.add("related_work_unexplained_drift");
+      if (opaqueChanged && ownReferences.size === 0) reasons.add("related_work_unexplained_drift");
+    }
+    // Everything except related-work fingerprint (seed, thread material and decisions,
+    // source, ownership, creation cutoff) must be identical. Sentinel substitution reuses the
+    // one canonical facts hash, so no second direction hashing path exists.
+    const nonRelated = (facts                ) => fingerprintDirectionFacts({ ...facts, relatedWorkFingerprint: RELATED_WORK_SENTINEL });
+    if (nonRelated(before.facts) !== nonRelated(current.facts)) reasons.add("non_related_direction_changed");
+  } catch {
+    reasons.add("own_delivery_observation_invalid");
+  }
+  return {
+    status: reasons.size === 0 ? "own-delivery-only" : "refused",
+    reasons: [...reasons].sort(),
+    ownReferences: [...ownReferences].sort(),
+  };
 }

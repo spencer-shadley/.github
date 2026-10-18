@@ -13,7 +13,8 @@
  */
 import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson,                                            } from "./governed-intake-policy-binding.js";
 import { evaluateTaxonomy,                                                 } from "./governed-intake-taxonomy.evaluate.js";
-export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody } from "./governed-intake-policy-binding.js";
+export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody, evaluateOwnDeliveryDirectionEquivalence } from "./governed-intake-policy-binding.js";
+                                                                                                                                                                                                                                           
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey,                             } from "./governed-intake-body.evaluate.js";
 import {
   evaluateTriageChecklistStructure,
