@@ -5,6 +5,7 @@ import contractJson from "./governed-intake-body.v1.json" with { type: "json" };
 import { assertTriagePolicy,                                           } from "./governed-intake-triage-policy.evaluate.js";
 import { renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.js";
 import { normalizeLf, validateGovernedWorkUnitKey } from "./governed-intake-body.evaluate.js";
+import { stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.js";
 
 /** Canonical JSON ignores object-key order, not array order or substantive values. */
 export function canonicalPolicyJson(value         )         {
@@ -75,11 +76,14 @@ export function fingerprintDirectionFacts(facts                )         {
     ownership: sha(facts.ownershipFingerprint), relatedWork: sha(facts.relatedWorkFingerprint) });
 }
 
-/** Checklist checks and machine completion markers do not change the implementation scope. */
-export function normalizeIssueScopeBody(body        )         {
+/** Checklist checks and bound machine receipt envelopes do not change implementation scope.
+ * Without subject context, direction receipts remain material rather than trusting
+ * their own assertion of which issue they belong to.
+ */
+export function normalizeIssueScopeBody(body        , identity                                                       )         {
   const checklist = contractJson.triageChecklist;
   const escape = (text        )         => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  let text = normalizeLf(body);
+  let text = identity ? stripDirectionReceiptMetadata(normalizeLf(body), identity) : normalizeLf(body);
   const block = new RegExp(`<!--\\s*${escape(checklist.sectionMarkerName)}: revision=([0-9]+)\\s*-->[\\s\\S]*?<!--\\s*\\/${escape(checklist.sectionMarkerName)}\\s*-->`, "g");
   const canonical = renderTriageChecklistBlock({ includeHeading: false, checked: false });
   text = text.replace(block, matched => {
@@ -102,5 +106,5 @@ export function fingerprintIssueScope(source                  )         {
   }
   const key = validateGovernedWorkUnitKey(source.body);
   if (!key.ok || !key.key) throw new TypeError(`invalid issue work-unit key:${key.reason}`);
-  return digest({ repository: source.repository.toLowerCase(), issueNumber: source.issueNumber, title: source.title.trim(), workUnitKey: key.key, body: normalizeIssueScopeBody(source.body) });
+  return digest({ repository: source.repository.toLowerCase(), issueNumber: source.issueNumber, title: source.title.trim(), workUnitKey: key.key, body: normalizeIssueScopeBody(source.body, source) });
 }

@@ -4,6 +4,7 @@
  * consume it instead of re-authoring checklist-state rules.
  */
 import governedIntakeContractJson from "./governed-intake-body.v1.json" with { type: "json" };
+import { stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.ts";
 
 type TriageChecklistItem = {
   id: string;
@@ -200,7 +201,9 @@ function triageOwnedLabels(labels: readonly string[]): string[] {
 }
 
 export async function computeTriageStateFingerprint(body: string, labels: readonly string[]): Promise<string> {
-  const withoutCompletion = normalizeLf(body || "").replace(completionRegex("g"), "");
+  // This checksum is structural integrity, not semantic subject authority. The
+  // scope fingerprint separately binds receipt identity to the observed issue.
+  const withoutCompletion = stripDirectionReceiptMetadata(normalizeLf(body || "")).replace(completionRegex("g"), "");
   const normalizedBody = withoutCompletion
     .split("\n")
     .map((line) => line.replace(/[\t ]+$/g, ""))
