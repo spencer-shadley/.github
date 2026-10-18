@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "450eb6633e30177ca4007cf8ceb80707c88df1fd"
+    "commit": "9e30406075ef12bb3841234a7a3cb7b7979fd555"
   },
-  "payloadDigest": "ec6d7794593e0a9aaae1dbe82f3efd809e0f0124ccc94c85d5adcf48d1544b20",
+  "payloadDigest": "d9ca59986a60bd636fcecb2b3806adc588a408d88e6411a77d330aa5a83a6d23",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -145,13 +145,13 @@
     },
     "verify.js": {
       "path": "verify.js",
-      "sha256": "855229cd34d39397278072c2ca030c2eb134a1002e3a23be2bd591c0f2f7855b",
-      "byteLength": 10287
+      "sha256": "486fb25312bc6ec3d0ed697f712020e9b7c285873d54357508c81eab4aa0e70a",
+      "byteLength": 10367
     },
     "verify.ts": {
       "path": "verify.ts",
-      "sha256": "45d51cfecdb23571dfc086f8313279be28c4d0bb32e338f375d730a626bfd426",
-      "byteLength": 10287
+      "sha256": "531f663eb5d78c3277efce3f7438f496e430cd366b9fddedf14565e2d0015615",
+      "byteLength": 10367
     }
   },
   "build": {
