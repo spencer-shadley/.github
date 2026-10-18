@@ -46,6 +46,7 @@ export const RELEASE_SOURCES = [
   "contracts/governed-intake-triage.compose.ts",
   "contracts/governed-intake-taxonomy.evaluate.ts",
   "contracts/governed-intake-policy-binding.ts",
+  "contracts/governed-intake-receipt-metadata.ts",
   "contracts/governed-intake-task-profile.v1.json",
   "contracts/governed-intake-task-profile.evaluate.ts",
 ] as const;

@@ -31,7 +31,7 @@ import {
   boundTriagePolicyFromProducer,
   currentChecklistRelease,
   evaluateGovernedIntakeTriage as evaluateProducerTriage,
-  fingerprintIssueScope, bindTriagePolicy,
+  fingerprintIssueScope, normalizeIssueScopeBody, bindTriagePolicy,
   type SemanticEvidenceInput,
 } from "../contracts/governed-intake-triage.compose.ts";
 import { bindTaskProfileContract, type TaskProfileContract, type TaskProfileRecord } from "../contracts/governed-intake-task-profile.evaluate.ts";
@@ -523,6 +523,72 @@ test("title and actual scope changes invalidate evidence but checkbox changes do
   assert.equal(fingerprintIssueScope({ ...actualIssue, body: unchecked }), fingerprint);
   assert.notEqual(fingerprintIssueScope({ ...actualIssue, title: "Different outcome", body: original }), fingerprint);
   assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: original.replace("Activate early decomposition", "Remove verification entirely") }), fingerprint);
+});
+
+// The real Code9690 publication appended this closed wire shape after completion.
+// Identity is fixture-bound here; the actual retained before/after bodies are also
+// exercised against the published/candidate APIs in the delivery evidence.
+function directionReceiptSection(overrides: Record<string, unknown> = {}) {
+  return "<!-- triage-direction-receipt-v1 -->\n\n```json\n" + JSON.stringify({
+    schema: "TriageDirectionReceiptV1", version: 1,
+    repository: actualIssue.repository, issueNumber: actualIssue.issueNumber,
+    workUnitKey: subject.workUnitKey, triageRevision: contract.version,
+    directionCheckedAt: "2026-10-18T10:41:46.718Z",
+    evidenceFingerprint: "sha256:18fcc27c4104d3a7386a4e3d03e73c7b4fac8c5dc994ebdcea7428af8b88166d",
+    ...overrides,
+  }, null, 2) + "\n```";
+}
+
+test("canonical bound direction publication after completion preserves implementation scope", () => {
+  const body = validBody();
+  const completed = body + `\n<!-- governed-triage-completion: revision=${contract.version} fingerprint=sha256:${"a".repeat(64)} -->`;
+  const before = fingerprintIssueScope({ ...actualIssue, body });
+  const first = completed + "\n" + directionReceiptSection();
+  assert.equal(fingerprintIssueScope({ ...actualIssue, body: first }), before);
+  const repeated = first + "\n" + directionReceiptSection({ directionCheckedAt: "2026-10-18T12:00:00.000Z" });
+  assert.equal(fingerprintIssueScope({ ...actualIssue, body: repeated }), before);
+  assert.equal(fingerprintIssueScope({ ...actualIssue, body: completed + "\n" + directionReceiptSection().replace("-->\n\n", "-->\n") }), before,
+    "the authenticated initial-body publisher uses the same closed envelope with one separator newline");
+  assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: first + "\nNew direction: delete verification." }), before);
+  assert.ok(normalizeIssueScopeBody(first).includes("<!-- triage-direction-receipt-v1 -->"), "semantic material without independent subject context stays material");
+  assert.ok(!normalizeIssueScopeBody(first, actualIssue).includes("<!-- triage-direction-receipt-v1 -->"));
+});
+
+test("direction metadata does not invalidate the structural completion checksum", async () => {
+  const body = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
+  const labels = dispositionLabels("ordinary");
+  const before = await computeTriageStateFingerprint(body, labels);
+  const after = body + "\n" + renderTriageCompletionMarker(before) + "\n" + directionReceiptSection();
+  assert.equal(await computeTriageStateFingerprint(after, labels), before);
+  assert.notEqual(await computeTriageStateFingerprint(after + "\nNew actual work.", labels), before);
+  assert.notEqual(await computeTriageStateFingerprint(body + "\n" + directionReceiptSection({ newRequirement: "Remove verification" }), labels), before);
+  // Structural integrity is not semantic authority: a well-shaped same-key foreign
+  // receipt cannot bypass the actual subject-bound scope/assessment comparison.
+  assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: body + "\n" + directionReceiptSection({ repository: "foreign/repo" }) }),
+    fingerprintIssueScope({ ...actualIssue, body }));
+});
+
+test("receipt-shaped foreign, malformed, unknown and prose-bearing bytes remain implementation scope", () => {
+  const body = validBody(), before = fingerprintIssueScope({ ...actualIssue, body });
+  const sections = [
+    directionReceiptSection({ repository: "someone/else" }),
+    directionReceiptSection({ issueNumber: actualIssue.issueNumber + 1 }),
+    directionReceiptSection({ workUnitKey: `sha256:${"f".repeat(64)}` }),
+    directionReceiptSection({ version: 2 }),
+    directionReceiptSection({ schema: "DirectionReceiptV2" }),
+    directionReceiptSection({ triageRevision: contract.version + 1 }),
+    directionReceiptSection({ triageRevision: 0 }),
+    directionReceiptSection({ directionCheckedAt: "not-a-date" }),
+    directionReceiptSection({ directionCheckedAt: "2026-02-31T12:00:00.000Z" }),
+    directionReceiptSection({ evidenceFingerprint: "unverified" }),
+    directionReceiptSection({ newRequirement: "Remove verification" }),
+    directionReceiptSection().replace('"version": 1', '"version": "1"'),
+    directionReceiptSection().replace("\n```", "\nHuman decision: change the task.\n```"),
+    directionReceiptSection() + " Additional direction on the fence line.",
+  ];
+  for (const section of sections) {
+    assert.notEqual(fingerprintIssueScope({ ...actualIssue, body: body + "\n" + section }), before, section);
+  }
 });
 test("all consumers share canonical semantic policy and rubric identities", () => {
   const reordered = Object.fromEntries(Object.entries(bound.policy).reverse());
