@@ -41,8 +41,3 @@ bootstrap conventions and no-local-override conformance, not issue-form content 
 channel. File issue-intake ownership/content defects in `.github`; file bootstrap/materialization
 defects in `repo-template`. Other community-health conventions retain their separately documented
 owners; this migration is not a blanket transfer of all repository policy.
-
-The semantic producer cutover is still tracked by [.github#13](https://github.com/spencer-shadley/.github/issues/13).
-Until verified consumer cutover, Code's admitted bundle is compatibility state. Do not relabel its
-manifest as a `.github` release or describe the source migration as completed merely because local
-templates were deleted.

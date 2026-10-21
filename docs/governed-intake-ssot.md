@@ -1,23 +1,15 @@
 # Governed issue-intake single source of truth
 
-Owner: `spencer-shadley/.github` · migration: [#13](https://github.com/spencer-shadley/.github/issues/13)
+Owner: `spencer-shadley/.github`
 
 ## Current state and completion evidence
 
 The live account-wide task form is `.github/ISSUE_TEMPLATE/task.yml` in this repository.
 This producer now composes the merged triage-policy evaluator, delta planner, and body/checklist
 fingerprint checks into the verified portable release, including an early `scope-decomposition`
-checklist item. That is source activation of the producer API. It is not proof that Code, CLI, or
-worker consumers have bound adapter-verified Router/Gateway/graph receipts, and it does not close
-[#13](https://github.com/spencer-shadley/.github/issues/13) or
-[code#6458](https://github.com/spencer-shadley/code/issues/6458). Consumer cutover remains a separate
-readback. Do not relabel a Code payload as produced by `.github`, fabricate a producer commit/digest,
-or delete the compatibility producer before its consumers have a verified replacement.
-
-Read current default-branch source and producer manifests before acting. Do not relabel a Code
-payload as produced by `.github`, fabricate a producer commit/digest, or delete the compatibility
-producer before its consumers have a verified replacement. Completion requires the implementation
-and consumer evidence in #13, not merely closure of a documentation PR.
+checklist item. Consumers read the latest published release at use time and own their adaptation
+to it ([#37](https://github.com/spencer-shadley/.github/issues/37)); no consumer pin or vendored copy
+is authority. Read current default-branch source and producer manifests before acting.
 
 ## Adopted triage-policy source
 
@@ -71,8 +63,8 @@ is not a consumer and necessarily contains the account forms and chooser.
 - **This repo:** live account forms and target owner of governed-intake semantics, revision,
   evaluator/release identity, and deterministic projections.
 - **Code:** fleet constitution, triage orchestration/skills, and consumers of the governed-intake
-  release; compatibility producer only until the verified cutover.
-- **cli-wrappers / github-mcp-worker / other consumers:** verify admitted release/form identity and
+  release.
+- **cli-wrappers / github-mcp-worker / other consumers:** verify the latest published release/form identity and
   perform their owned transport/effect roles; do not re-author the semantic parser or checklist.
 - **Repo Template:** enforce absence of local issue-template overrides; do not materialize one.
 - **Leaf repos:** inherit the account defaults. Preserve a genuine specialized use case through
@@ -106,8 +98,7 @@ normal public/private repositories
 ```
 
 Consumer caches are disposable, non-authoritative dependencies, identified by producer repository,
-commit, and payload digest. Unsupported, stale-under-the-admission-policy, or corrupt releases fail
-closed; preserve the complete pending draft and resolution evidence instead of falling back to an
+commit, and payload digest. Unverifiable or corrupt releases fail closed; preserve the complete pending draft and resolution evidence instead of falling back to an
 editable local template. Do not hand-edit cached payloads, add cross-repository copy jobs, or use
 GitHub Actions to keep duplicate authorities synchronized.
 
