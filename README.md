@@ -34,9 +34,8 @@ needs an explicit caller; storing a workflow here does not automatically run it 
 
 ## Governed issue-intake SSOT
 
-[Issue #13](https://github.com/spencer-shadley/.github/issues/13) is the active cutover to one
-account-wide source of truth. The live form is here; Code still supplies the compatibility semantic
-producer until source and consumer cutover are verified. The terminal shape is:
+This repository is the one account-wide source of truth ([#13](https://github.com/spencer-shadley/.github/issues/13)).
+Consumers read the latest published release; nothing is pinned or vendored ([#37](https://github.com/spencer-shadley/.github/issues/37)). The shape is:
 
 ```text
 this repository
@@ -47,8 +46,7 @@ this repository
   every normal public/private fleet repository
 ```
 
-There is no Code→.github publish copy and no Repo Template→fleet issue-template copy in the terminal
-architecture. Consumer caches are allowed only when they identify this producer by commit/digest and
+There is no Code→.github publish copy and no Repo Template→fleet issue-template copy. Consumer caches are allowed only when they identify this producer by commit/digest and
 are mechanically replaceable; they are never editable authority. Any repository-local
 `.github/ISSUE_TEMPLATE/**` or issue-template `config.yml` is an override and therefore requires
 an explicit durable exception.
