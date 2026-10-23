@@ -27,7 +27,7 @@ test("combined revision carries every accepted input", () => {
   assert.equal(CURRENT_TRIAGE_REVISION, 25);
   // #32 taxonomy
   assert.equal(contract.triageChecklist.triagedLabelPrefix, "metadata:triage-v");
-  assert.deepEqual(contract.triageChecklist.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
+  assert.deepEqual(contract.triageChecklist.pendingLabels, ["priority:triage-tbd"]);
   // #45 proposal classification, wired into completion
   assert.match(item("proposal-classification").text, /type:proposal/);
   assert.ok(item("confirm-receipt").dependsOn?.includes("proposal-classification"));
