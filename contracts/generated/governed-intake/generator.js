@@ -115,7 +115,7 @@ function assertTriageChecklistContract(raw                               ) {
     assert.ok(typeof checklist[field] === "string" && checklist[field].length > 0, `triageChecklist.${field} missing`);
   }
   assert.equal(checklist.triagedLabelPrefix, "metadata:triage-v", "triageChecklist.triagedLabelPrefix must be metadata:triage-v");
-  assert.deepEqual(checklist.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
+  assert.deepEqual(checklist.pendingLabels, ["priority:triage-tbd"]);
   assert.ok(Array.isArray(checklist.pendingLabels));
   assert.ok(Array.isArray(checklist.triageOwnedLabelPatterns));
   assert.deepEqual(checklist.executionSubstrateLabels, []);

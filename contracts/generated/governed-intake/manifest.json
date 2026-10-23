@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "da8ecd226a6fbbb5fb68f881a7274a6ea709e547"
+    "commit": "8d7f4ec7e4839f5e3a6dd8ad455829f593762bd5"
   },
-  "payloadDigest": "8eba76404af71ac792bab42a27932eed923024cef4c8470ee8524bfa823dd161",
+  "payloadDigest": "db5074a5967469a6f19244d19e7ba0acc7dbe25d82361913ef016121a9101aed",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -20,13 +20,13 @@
     },
     "generator.js": {
       "path": "generator.js",
-      "sha256": "ed785147f9e4bd17134be5a257919557a6e9018dcfac6327b3d28f66cdf4fc06",
-      "byteLength": 50924
+      "sha256": "cfd5a5f843c945460705eecd7641de8067b16e08ee8ed8623479926584c9331e",
+      "byteLength": 50905
     },
     "generator.ts": {
       "path": "generator.ts",
-      "sha256": "c18191960214d0ca4578868edbdd702273c873486134fea079dfa42cd9f9bd6b",
-      "byteLength": 50924
+      "sha256": "4c4c59bcbe2b9886b0fe4cc342ab3c00e582530b550793e50db92e60881c67fd",
+      "byteLength": 50905
     },
     "governed-intake-body.evaluate.js": {
       "path": "governed-intake-body.evaluate.js",
@@ -40,8 +40,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "460c139b6b1ed4c96a3c34e726e0c96ad210f84d63411b878bd342f06c7a316f",
-      "byteLength": 39369
+      "sha256": "6ce16c1cec1664d145b72b5bc6ca63553be959547e5c2ad6946ff409164b0813",
+      "byteLength": 39344
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -155,7 +155,7 @@
     }
   },
   "build": {
-    "runtime": "v24.19.0",
+    "runtime": "v24.22.0",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }

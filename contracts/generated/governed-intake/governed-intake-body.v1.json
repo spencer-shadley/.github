@@ -94,8 +94,7 @@
     "fingerprintAlgorithm": "sha256",
     "fingerprintScope": "Normalize LF, remove governed-triage-completion markers, trim trailing horizontal whitespace per line, trim the whole body, then append sorted unique triage-owned labels other than metadata:triage-v* / triaged:v* and SHA-256 the UTF-8 bytes.",
     "pendingLabels": [
-      "priority:triage-tbd",
-      "progress:triage"
+      "priority:triage-tbd"
     ],
     "triagedLabelPrefix": "metadata:triage-v",
     "triageOwnedLabelPatterns": [
