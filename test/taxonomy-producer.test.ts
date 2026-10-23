@@ -75,7 +75,7 @@ test("candidate contract metadata and namespace conforms to revision 25", () => 
   assert.equal(CURRENT_TRIAGE_REVISION, 25);
   assert.equal(GOVERNED_TRIAGE_CHECKLIST.triagedLabelPrefix, "metadata:triage-v");
   assert.equal(CURRENT_TRIAGED_LABEL, "metadata:triage-v25");
-  assert.deepEqual(GOVERNED_TRIAGE_CHECKLIST.pendingLabels, ["priority:triage-tbd", "progress:triage"]);
+  assert.deepEqual(GOVERNED_TRIAGE_CHECKLIST.pendingLabels, ["priority:triage-tbd"]);
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^delivers:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^type:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^source:"));
@@ -164,6 +164,25 @@ test("triage evaluator distinguishes valid current stamp from stale legacy or fo
   assert.equal(duplicate.needs_triage, true);
   assert.ok(duplicate.reasons.includes("duplicate_triaged_stamp"));
   assert.ok(duplicate.reasons.includes("stale_triaged_stamp"));
+});
+
+test("complete triage keeps progress:triage and still stamps the current revision (.github#104 option 1)", async () => {
+  const base = validBody() + "\n" + renderTriageChecklistBlock({ checked: true });
+  const labels = [CURRENT_TRIAGED_LABEL, "progress:triage", "effort:medium"];
+  const fingerprint = await computeTriageStateFingerprint(base, labels);
+  const body = base + "\n" + renderTriageCompletionMarker(fingerprint);
+
+  const state = await evaluateTriageChecklistStructure(body, labels);
+  assert.equal(state.needs_triage, false);
+  assert.deepEqual(state.reasons, []);
+  assert.ok(!state.reasons.includes("pending_marker_present"));
+
+  // priority:triage-tbd remains a pending marker.
+  const tbdLabels = [...labels, "priority:triage-tbd"];
+  const tbdBody = base + "\n" + renderTriageCompletionMarker(await computeTriageStateFingerprint(base, tbdLabels));
+  const tbd = await evaluateTriageChecklistStructure(tbdBody, tbdLabels);
+  assert.equal(tbd.needs_triage, true);
+  assert.ok(tbd.reasons.includes("pending_marker_present"));
 });
 
 test("triage fingerprint excludes triage stamps and includes accepted taxonomy labels", async () => {
