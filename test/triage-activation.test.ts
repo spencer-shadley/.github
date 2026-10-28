@@ -704,10 +704,14 @@ test("environment alternatives stay structured rather than becoming conjunctive 
   assert.ok(result.reasons.includes("execution_environment_projection_mismatch"));
 });
 
-// code#9169: provider and provider-scoped account are hard environment requirements (where state lives).
+// code#11792: account style, harness, provider and complete model IDs combine as hard placement facts.
 for (const [name, allOf, valid] of [
   ["provider", ["environment:fleet-local", "environment:provider:claude-desktop"], true],
-  ["account", ["environment:fleet-local", "environment:provider:claude-desktop", "environment:account:claude-desktop/spencer-main"], true],
+  ["account", ["environment:fleet-local", "environment:account:sshadley-dev"], true],
+  ["combined harness and dev account", ["environment:fleet-local", "environment:harness:grok-bot", "environment:account:sshadley-dev"], true],
+  ["combined all dimensions", ["environment:fleet-local", "environment:harness:grok-bot", "environment:account:spencershadley", "environment:provider:xai", "environment:model:grok-4.7"], true],
+  ["retired provider-scoped account", ["environment:fleet-local", "environment:account:claude-desktop/spencer-main"], false],
+  ["incomplete model ID", ["environment:fleet-local", "environment:model:grok-4.7!"], false],
   ["account without a provider scope", ["environment:fleet-local", "environment:account:spencer-main"], false],
   ["account with a nested path", ["environment:fleet-local", "environment:account:claude-desktop/spencer/main"], false],
   ["account with an empty account id", ["environment:fleet-local", "environment:account:claude-desktop/"], false],
