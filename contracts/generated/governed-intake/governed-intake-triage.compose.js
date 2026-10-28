@@ -337,15 +337,12 @@ export async function evaluateGovernedIntakeTriage(input                     )  
     const cloud = execution.cloudReadiness;
     const environment = execution.environment;
     const spec = bodyContract.triageChecklist.executionSubstrateEvidence;
-    // Provider/account ids are hard "where state lives" requirements. An account id only means
-    // something inside its provider, so the account suffix is exactly `<provider-slug>/<account-slug>`.
-    const slug = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    // One vocabulary governs taxonomy labels and structured allOf/anyOf requirements.
+    // Account style is orthogonal to harness/provider/model (code#11792).
+    const vocabulary = bodyContract.triageChecklist.taxonomy.dimensions.environment;
+    const patterns = vocabulary.dynamicPatterns.map(pattern => new RegExp(pattern));
     const validRequirement = (value         )                  => typeof value === "string"
-      && (value === spec.environment.localLabel
-        || [spec.environment.hostPrefix, spec.environment.hardwarePrefix, spec.environment.providerPrefix].some(prefix =>
-          value.startsWith(prefix) && slug.test(value.slice(prefix.length)))
-        || (value.startsWith(spec.environment.accountPrefix)
-          && (parts => parts.length === 2 && parts.every(part => slug.test(part)))(value.slice(spec.environment.accountPrefix.length).split("/"))));
+      && (vocabulary.labels.includes(value) || patterns.some(pattern => pattern.test(value)));
     const validRequirements = (values         )                     => Array.isArray(values)
       && values.every(validRequirement) && new Set(values).size === values.length;
     if (execution.stage !== spec.stage || !cloud || !nonempty(cloud.reason)
