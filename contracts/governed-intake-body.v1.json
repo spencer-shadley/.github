@@ -581,12 +581,16 @@
             "^environment:host:[a-z0-9]+(?:-[a-z0-9]+)*$",
             "^environment:hardware:[a-z0-9]+(?:-[a-z0-9]+)*$",
             "^environment:provider:[a-z0-9]+(?:-[a-z0-9]+)*$",
-            "^environment:account:[a-z0-9]+(?:-[a-z0-9]+)*/[a-z0-9]+(?:-[a-z0-9]+)*$"
+            "^environment:account:(?:spencershadley|sshadley-dev)$",
+            "^environment:harness:[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "^environment:model:[a-z0-9]+(?:[.-][a-z0-9]+)*$"
           ],
           "hostAuthority": "verified_FleetRegistryReleaseV1_host_id",
           "hardwareAuthority": "governed_requirement_slug",
           "providerAuthority": "governed_provider_id",
-          "accountAuthority": "governed_account_id",
+          "accountAuthority": "governed_account_style_spencershadley_or_sshadley-dev",
+          "harnessAuthority": "governed_harness_slug",
+          "modelAuthority": "governed_model_id",
           "meaning": "hard_execution_requirements_not_blockers_or_permission",
           "andOrRequirements": "structured_execution_contract"
         },

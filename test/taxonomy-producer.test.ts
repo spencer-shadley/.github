@@ -339,7 +339,10 @@ test("accepted taxonomy dimensions participate in completion fingerprint", () =>
     "environment:host:mangekyo",
     "environment:hardware:gpu-h100",
     "environment:provider:claude-desktop",
-    "environment:account:claude-desktop/spencer-main",
+    "environment:account:sshadley-dev",
+    "environment:account:spencershadley",
+    "environment:harness:grok-bot",
+    "environment:model:grok-4.7",
   ];
   for (const label of environments) {
     assert.equal(isTriageOwnedChecklistLabel(label), true);
@@ -353,7 +356,11 @@ test("accepted taxonomy dimensions participate in completion fingerprint", () =>
     "environment:provider:",
     "environment:provider:Claude",
     "environment:provider:claude/desktop",
+    "environment:account:claude-desktop/spencer-main",
     "environment:account:claude-desktop",
+    "environment:account:other",
+    "environment:model:grok-4.7/extra",
+    "environment:model:grok-4.7!",
     "environment:account:claude-desktop/",
     "environment:account:/main",
     "environment:account:claude-desktop/main/extra",
@@ -361,7 +368,7 @@ test("accepted taxonomy dimensions participate in completion fingerprint", () =>
     "environment:account:claude-desktop/Main",
   ]) assert.equal(admitted(label), false, label);
   assert.equal(GOVERNED_TRIAGE_CHECKLIST.taxonomy.dimensions.environment.providerAuthority, "governed_provider_id");
-  assert.equal(GOVERNED_TRIAGE_CHECKLIST.taxonomy.dimensions.environment.accountAuthority, "governed_account_id");
+  assert.equal(GOVERNED_TRIAGE_CHECKLIST.taxonomy.dimensions.environment.accountAuthority, "governed_account_style_spencershadley_or_sshadley-dev");
 
   const blocked = [
     "blocked:time",

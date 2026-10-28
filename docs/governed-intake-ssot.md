@@ -352,3 +352,20 @@ for verified progress/delivery, conserved non-delivery progress, supersession de
 obsolete decisions/backlinks, and independent blocker release predicates (including the actual human
 input for `blocked:human-required`). Adapter authentication of those observations remains the consumer's
 responsibility. Environment requirements retain the separate structured execution-evidence checks.
+
+## Environment vocabulary correction (code#11792)
+
+Account styles are `environment:account:sshadley-dev` and
+`environment:account:spencershadley`. They combine independently with provider,
+harness (for example `environment:harness:grok-bot`) and complete model identifiers
+(for example `environment:model:grok-4.7`). Only evidence-backed hard requirements
+constrain placement; alternatives remain structured `environment.anyOf` groups.
+Provider-scoped account labels are retired under Spencer's commission.
+
+This publication preserves checklist revision 25 and every checklist item/projection.
+It changes the release payload identity, as the provider/account addition in PR #88
+did, and does not invalidate unrelated triage stamps. The broad version-bump wording
+in the contract description is interpreted at checklist/projection scope here, following
+that existing publication precedent and fleet-operability law. The producer's taxonomy
+vocabulary now also validates structured requirements, eliminating the divergent
+provider-scoped parser. Consumers resolve the current release by its full verified identity.
