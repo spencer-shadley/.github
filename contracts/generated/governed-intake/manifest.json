@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "e7189d38e438d0790ce95311c68d7263254df907"
+    "commit": "6dc5e1f4bbd79371fe6b8bf1de464f285e210f84"
   },
-  "payloadDigest": "5f563d50c947e6e4b2770c5fd7e4fc54971522be6e6c5d61a7277e3b4998f5eb",
+  "payloadDigest": "2bf8f63f74818069ea209b1bcb2ba4d38521de13a05d6dbe69c4d33af303b042",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -55,13 +55,13 @@
     },
     "governed-intake-receipt-metadata.js": {
       "path": "governed-intake-receipt-metadata.js",
-      "sha256": "4bbc4c7d348a44b55c8d35c42505c535aadb8fbfbe265bde761854e2256c6b26",
-      "byteLength": 4444
+      "sha256": "68467f5665bee0678bc7f4d725e4cf0dcb50ded5eed06499e9e8e37b716f4e07",
+      "byteLength": 4719
     },
     "governed-intake-receipt-metadata.ts": {
       "path": "governed-intake-receipt-metadata.ts",
-      "sha256": "3ff2fba7020cea5e42d82d0817de7a16af21567df411fdf96a3fec2d6490b181",
-      "byteLength": 4444
+      "sha256": "204b1402978d36acfcc172c93a292340b796abae386ae97430705453b5805730",
+      "byteLength": 4719
     },
     "governed-intake-task-profile.evaluate.js": {
       "path": "governed-intake-task-profile.evaluate.js",
@@ -105,13 +105,13 @@
     },
     "governed-intake-triage-state.evaluate.js": {
       "path": "governed-intake-triage-state.evaluate.js",
-      "sha256": "40b9fd26ff28a37bbbad8632c508de4774062482a9c6fe0db6d6e2a191c476d6",
-      "byteLength": 18565
+      "sha256": "9a1375854381f825802bb5d871a6d6cf039ec98a01bbed91b08c74549a19f20d",
+      "byteLength": 18513
     },
     "governed-intake-triage-state.evaluate.ts": {
       "path": "governed-intake-triage-state.evaluate.ts",
-      "sha256": "387d0cccfa91cfa0f50cff3ed2ae03236c3fdda596673c339ca5fe4ae817e80e",
-      "byteLength": 18565
+      "sha256": "edd5e91c0b74b3b945a33d947e31dd21d7aceda4bfb7807020622b2d71705067",
+      "byteLength": 18513
     },
     "governed-intake-triage-state.migrate.js": {
       "path": "governed-intake-triage-state.migrate.js",
