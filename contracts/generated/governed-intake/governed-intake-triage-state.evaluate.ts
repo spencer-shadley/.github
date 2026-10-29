@@ -4,7 +4,7 @@
  * consume it instead of re-authoring checklist-state rules.
  */
 import governedIntakeContractJson from "./governed-intake-body.v1.json" with { type: "json" };
-import { stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.ts";
+import { stripActorSignatureMetadata, stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.ts";
 
 type TriageChecklistItem = {
   id: string;
@@ -215,6 +215,24 @@ export async function computeTriageStateFingerprint(body: string, labels: readon
   return `sha256:${hex}`;
 }
 
+/** A stamp also matches when the only change since it is structured actor-signature paragraphs (.github#108).
+ * Stamp writers keep rendering the full-body digest, so stamps made before this tolerance keep their verdict.
+ * Candidates: signatures after the completion marker removed (a signed stamp write or later signed edit), then
+ * every signature removed. Any other text change still mismatches.
+ */
+async function signatureTolerantFingerprints(text: string, labels: readonly string[]): Promise<string[]> {
+  const normalized = normalizeLf(text);
+  const marker = completionRegex("").exec(normalized);
+  const variants = new Set<string>();
+  if (marker) {
+    const index = marker.index;
+    variants.add(normalized.slice(0, index) + stripActorSignatureMetadata(normalized.slice(index)));
+  }
+  variants.add(stripActorSignatureMetadata(normalized));
+  variants.delete(normalized);
+  return Promise.all([...variants].map((variant) => computeTriageStateFingerprint(variant, labels)));
+}
+
 type ChecklistSection = { revision: number; content: string; closed: boolean };
 
 function extractChecklistSections(body: string): ChecklistSection[] {
@@ -324,7 +342,11 @@ export async function evaluateTriageChecklistStructure(
   if (structurallyComplete) {
     expectedFingerprint = await computeTriageStateFingerprint(text, labels);
     if (completionFingerprint !== null && completionFingerprint !== expectedFingerprint) {
-      reasons.push("fingerprint_mismatch");
+      if ((await signatureTolerantFingerprints(text, labels)).includes(completionFingerprint)) {
+        expectedFingerprint = completionFingerprint;
+      } else {
+        reasons.push("fingerprint_mismatch");
+      }
     }
   }
 

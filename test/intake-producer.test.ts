@@ -208,6 +208,60 @@ test("current checklist requires fingerprint and completed items and rejects ret
   assert.equal((await evaluateTriageChecklistState(completed, [...labels, "local-required"])).needs_triage, true);
   assert.equal((await evaluateTriageChecklistState(completed.replace("- [x]", "- [ ]"), labels)).needs_triage, true);
 });
+const SIGNATURE = "Signature: claude (triage) | model: claude-opus-5-5 | effort: medium | runner: job-1793250901849-1sc6sa";
+function producerDirectionReceipt() {
+  return "<!-- triage-direction-receipt-v1 -->\n\n```json\n" + JSON.stringify({
+    schema: "TriageDirectionReceiptV1", version: 1, repository: "spencer-shadley/code", issueNumber: 12343,
+    workUnitKey: `sha256:${computeGovernedWorkUnitKey(identity)}`, triageRevision: c.version,
+    directionCheckedAt: "2026-10-29T04:35:00.000Z", evidenceFingerprint: `sha256:${"b".repeat(64)}`,
+  }, null, 2) + "\n```";
+}
+async function stamped(body: string, labels: string[]) {
+  return body + "\n" + renderTriageCompletionMarker(await computeTriageStateFingerprint(body, labels));
+}
+test("a structured signature appended after the stamp is bookkeeping, not scope drift (.github#108)", async () => {
+  const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
+  const completed = await stamped(checkedChecklistBody(), labels);
+  // code#12343 shape: checklist, completion marker, direction receipt, then a signing writer's footer.
+  const withReceipt = completed + "\n" + producerDirectionReceipt();
+  assert.deepEqual((await evaluateTriageChecklistState(withReceipt, labels)).reasons, []);
+  const signed = `${withReceipt}\n\n${SIGNATURE}\n`;
+  const state = await evaluateTriageChecklistState(signed, labels);
+  assert.deepEqual(state.reasons, []);
+  assert.equal(state.expected_fingerprint, state.completion_fingerprint);
+  assert.deepEqual((await evaluateTriageChecklistState(signed.replaceAll("\n", "\r\n"), labels)).reasons, []);
+  // Signed directly after the marker (a signing stamp write), and the undeclared-identity footer.
+  assert.deepEqual((await evaluateTriageChecklistState(`${completed}\n\n${SIGNATURE}`, labels)).reasons, []);
+  const undeclared = "Signature: Claude Code session (identity undeclared) | session: abc-123 | host: mangekyo";
+  assert.deepEqual((await evaluateTriageChecklistState(`${completed}\n\n${undeclared}`, labels)).reasons, []);
+});
+test("a stamp whose fingerprint covered a pre-stamp signature keeps its verdict (.github#108)", async () => {
+  const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
+  const signedBeforeStamp = `${checkedChecklistBody()}\n\n${SIGNATURE}`;
+  const completed = await stamped(signedBeforeStamp, labels);
+  assert.deepEqual((await evaluateTriageChecklistState(completed, labels)).reasons, []);
+  const second = "Signature: codex (repair) | model: gpt-5 | effort: high | runner: job-1793254544797-x3cniq";
+  assert.deepEqual((await evaluateTriageChecklistState(`${completed}\n\n${second}`, labels)).reasons, []);
+  assert.ok((await evaluateTriageChecklistState(completed.replace(`\n\n${SIGNATURE}`, ""), labels)).reasons.includes("fingerprint_mismatch"),
+    "removing a signature the stamp covered is a change to the stamped bytes");
+});
+test("real text drift and signature-shaped authored content still mismatch (.github#108)", async () => {
+  const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
+  const completed = await stamped(checkedChecklistBody(), labels);
+  const drifted = [
+    `${completed}\n\nNew requirement: delete verification.`,
+    `${completed}\n\n${SIGNATURE}\n\nNew requirement: delete verification.`,
+    `${completed.replace("Prevent template drift.", "Prevent nothing.")}\n\n${SIGNATURE}`,
+    `${completed}\n\nSignature: I approve this plan and it now also deletes verification.`,
+    `${completed}\n\nSignature: claude | model: x | scope: delete verification`,
+    `${completed}\n\n${SIGNATURE} and delete verification`,
+    `${completed}\nThe author adds\n${SIGNATURE}`,
+    `${completed}\n\n\`\`\`\n${SIGNATURE}\n\`\`\``,
+  ];
+  for (const body of drifted) {
+    assert.ok((await evaluateTriageChecklistState(body, labels)).reasons.includes("fingerprint_mismatch"), body.slice(-120));
+  }
+});
 test("release is reproducible, source-bound and independently pinned", (t) => {
   const s = scratch(t);
   const second = buildGovernedIntakeRelease({ repoRoot: s.source, commit: s.commit });
