@@ -4,7 +4,7 @@
  * consume it instead of re-authoring checklist-state rules.
  */
 import governedIntakeContractJson from "./governed-intake-body.v1.json" with { type: "json" };
-import { stripActorSignatureMetadata, stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.js";
+import { stripDirectionReceiptMetadata, stripTrailingActorSignatures } from "./governed-intake-receipt-metadata.js";
 
                             
              
@@ -215,22 +215,19 @@ export async function computeTriageStateFingerprint(body        , labels        
   return `sha256:${hex}`;
 }
 
-/** A stamp also matches when the only change since it is structured actor-signature paragraphs (.github#108).
- * Stamp writers keep rendering the full-body digest, so stamps made before this tolerance keep their verdict.
- * Candidates: signatures after the completion marker removed (a signed stamp write or later signed edit), then
- * every signature removed. Any other text change still mismatches.
+/** A stamp also matches when the only change since it is a trailing run of structured actor-signature
+ * paragraphs after the completion marker, with direction receipts ignored as usual (.github#108). Stamp writers
+ * keep rendering the full-body digest, so stamps made before this tolerance keep their verdict. Any other text
+ * change, including one before a trailing signature, still mismatches.
  */
-async function signatureTolerantFingerprints(text        , labels                   )                    {
-  const normalized = normalizeLf(text);
-  const marker = completionRegex("").exec(normalized);
-  const variants = new Set        ();
-  if (marker) {
-    const index = marker.index;
-    variants.add(normalized.slice(0, index) + stripActorSignatureMetadata(normalized.slice(index)));
-  }
-  variants.add(stripActorSignatureMetadata(normalized));
-  variants.delete(normalized);
-  return Promise.all([...variants].map((variant) => computeTriageStateFingerprint(variant, labels)));
+async function signatureTolerantFingerprint(text        , labels                   )                         {
+  const unreceipted = stripDirectionReceiptMetadata(normalizeLf(text));
+  const marker = completionRegex("").exec(unreceipted);
+  if (!marker) return null;
+  const tailStart = marker.index + marker[0].length;
+  const tail = stripTrailingActorSignatures(unreceipted.slice(tailStart));
+  if (tail === unreceipted.slice(tailStart)) return null;
+  return computeTriageStateFingerprint(unreceipted.slice(0, tailStart) + tail, labels);
 }
 
                                                                                
@@ -342,7 +339,7 @@ export async function evaluateTriageChecklistStructure(
   if (structurallyComplete) {
     expectedFingerprint = await computeTriageStateFingerprint(text, labels);
     if (completionFingerprint !== null && completionFingerprint !== expectedFingerprint) {
-      if ((await signatureTolerantFingerprints(text, labels)).includes(completionFingerprint)) {
+      if (await signatureTolerantFingerprint(text, labels) === completionFingerprint) {
         expectedFingerprint = completionFingerprint;
       } else {
         reasons.push("fingerprint_mismatch");

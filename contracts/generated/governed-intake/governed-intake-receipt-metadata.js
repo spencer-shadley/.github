@@ -34,40 +34,43 @@ export function stripDirectionReceiptMetadata(body        , identity            
   });
 }
 
-/** `Signature: <actor> | model: … | …` (cli-wrappers `agent-signature.ts`): the actor, then at least one
- * known `| key: value` field the signature builder emits. Each value is one token, so prose cannot ride a field. */
-const STRUCTURED_SIGNATURE_LINE =
-  /^Signature:[ \t]*[^|\n]*[^|\s][^|\n]*(?:[ \t]*\|[ \t]*(?:model|effort|runner|provider|family|session|host|worktree|ver):[ \t]*[^|\s]+)+[ \t]*$/i;
+/** The line cli-wrappers `agent-signature.ts` builds: `Signature: <who> [(<role>)] | key: value | …`.
+ * `who` and `role` are each at most three plain words (the builder's names, harness sessions and
+ * "unidentified agent"). The builder's undeclared marker "(identity undeclared)" is a role. At least one known
+ * field follows, and each value is one token. Longer prose in any position is authored content.
+ */
+const SIGNATURE_WORDS = String.raw`[A-Za-z0-9._-]+(?: [A-Za-z0-9._-]+){0,2}`;
+const STRUCTURED_SIGNATURE_LINE = new RegExp(
+  String.raw`^Signature: ${SIGNATURE_WORDS}(?: \(${SIGNATURE_WORDS}\))?`
+  + String.raw`(?: \| (?:model|effort|runner|provider|family|session|host|worktree|ver): [^|\s]+)+[ \t]*$`,
+);
 const FENCE_OPEN = /^ {0,3}(`{3,}|~{3,})/;
 
-/** Remove structured actor-signature paragraphs, and the blank separator a signer adds before each (.github#108).
- * Signing writers append them as bookkeeping. A prose "Signature:" line, a line inside a code fence, a line
- * inside a paragraph, and a signature with unknown fields stay authored content. LF input only.
+/** Remove the trailing run of structured actor-signature paragraphs and the blank separator before each (.github#108).
+ * Signing writers append them at the end of the text as bookkeeping. A signature followed by any other text,
+ * a prose "Signature:" line, a line inside a code fence or a paragraph, and an unknown field stay authored
+ * content. LF input only.
  */
-export function stripActorSignatureMetadata(body        )         {
+export function stripTrailingActorSignatures(body        )         {
   const lines = body.split("\n");
-  const out           = [];
+  const fenced            = [];
   let fence                = null;
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
+  for (const line of lines) {
     const marker = FENCE_OPEN.exec(line)?.[1];
+    fenced.push(fence !== null || marker !== undefined);
     if (fence) {
       if (marker && marker[0] === fence[0] && marker.length >= fence.length && line.trim() === marker) fence = null;
-      out.push(line);
-      continue;
-    }
-    if (marker) {
+    } else if (marker) {
       fence = marker;
-      out.push(line);
-      continue;
     }
-    const previousBlank = index === 0 || lines[index - 1].trim() === "";
-    const nextBlank = index === lines.length - 1 || lines[index + 1].trim() === "";
-    if (previousBlank && nextBlank && STRUCTURED_SIGNATURE_LINE.test(line)) {
-      if (out.length > 0 && out[out.length - 1].trim() === "") out.pop();
-      continue;
-    }
-    out.push(line);
   }
-  return out.join("\n");
+  let end = lines.length;
+  for (;;) {
+    while (end > 0 && lines[end - 1].trim() === "") end -= 1;
+    const last = end - 1;
+    if (last < 0 || fenced[last] || !STRUCTURED_SIGNATURE_LINE.test(lines[last])) break;
+    if (last > 0 && lines[last - 1].trim() !== "") break;
+    end = last;
+  }
+  return end === lines.length ? body : lines.slice(0, end).join("\n");
 }
