@@ -2,8 +2,9 @@
  * Pure composition of body, checklist/fingerprint, policy, and delta planning.
  * No network, clock, model invocation, GitHub effects, or custody acquisition.
  *
- * TRUST BOUNDARY: `kind: "adapter-verified"` evidence must be populated by a caller
- * adapter from verified Model Router, Gateway, and Code shared-decomposition receipts.
+ * TRUST BOUNDARY: both supported assessment kinds carry independently read subject
+ * facts and verified receipts where supplied. `agent-assessed` identifies the ordinary
+ * authenticated-agent path; it does not claim specialized adapter or model provenance.
  * This module never treats checked boxes, issue prose, model names, or a caller-authored
  * `eligible` / `servingVerified` flag as qualified identity. Missing or unsupported
  * semantic evidence cannot produce a completed triage result.
@@ -148,29 +149,38 @@ export interface ExecutionEvidence {
   environment: { allOf: string[]; anyOf?: string[][] };
 }
 
-/** Adapter-verified semantic input. There is no `eligible` or `servingVerified` shortcut. */
+/** Subject-bound semantic facts, independent of the transport that collected them.
+ * Neither transport is an authentication or effect grant. Callers independently read
+ * the actual subject and verify any receipts they supply in `trusted`.
+ */
+export interface AssessedSemanticEvidence {
+  workUnitKey: string;
+  scopeFingerprint: string;
+  state: PolicySnapshot["state"];
+  repositoryActive: boolean;
+  /** @deprecated Accepted and ignored (.github#48): effort history no longer gates completion. */
+  priorHighEffort?: boolean;
+  requiresQualifiedAssessment: boolean;
+  assessment: Assessment | null;
+  currentGraphFingerprint: string | null;
+  hasExecutableChildGraph: boolean;
+  finalAttributesScopeFingerprint: string | null;
+  directionEvidenceFresh: boolean;
+  trusted: PolicySnapshot["trusted"];
+  /** Required for revision-23 completion. Missing/older callers remain typed pending. */
+  execution?: ExecutionEvidence;
+  taxonomy?: TaxonomyEvidence;
+}
+
+/** Both paths use the same substantive checks. `agent-assessed` lets an authenticated
+ * agent record its actual assessment without claiming a specialized adapter verified it.
+ * It does not infer evidence from labels, waive subject binding, or invent model provenance.
+ */
 export type SemanticEvidenceInput =
   | { kind: "missing" }
   | { kind: "unsupported"; consumer: string; reason: string }
-  | {
-      kind: "adapter-verified";
-      workUnitKey: string;
-      scopeFingerprint: string;
-      state: PolicySnapshot["state"];
-      repositoryActive: boolean;
-      /** @deprecated Accepted and ignored (.github#48): effort history no longer gates completion. */
-      priorHighEffort?: boolean;
-      requiresQualifiedAssessment: boolean;
-      assessment: Assessment | null;
-      currentGraphFingerprint: string | null;
-      hasExecutableChildGraph: boolean;
-      finalAttributesScopeFingerprint: string | null;
-      directionEvidenceFresh: boolean;
-      trusted: PolicySnapshot["trusted"];
-      /** Required for revision-23 completion. Missing/older adapters remain typed pending. */
-      execution?: ExecutionEvidence;
-      taxonomy?: TaxonomyEvidence;
-    };
+  | (AssessedSemanticEvidence & { kind: "adapter-verified" })
+  | (AssessedSemanticEvidence & { kind: "agent-assessed" });
 
 /**
  * TaskProfileV1 is produced after scope-decomposition, on ordinary/atomic-high executable
@@ -293,7 +303,7 @@ export async function evaluateGovernedIntakeTriage(input: ComposedTriageInput): 
       taskProfile: null,
     };
   }
-  if (evidence.kind !== "adapter-verified") {
+  if (evidence.kind !== "adapter-verified" && evidence.kind !== "agent-assessed") {
     reasons.push("unsupported_consumer");
     const legacyLabelsToRemove = planRetiredProgressLabelCleanup(bound.policy, input.labels);
     return {
