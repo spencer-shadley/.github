@@ -21,8 +21,18 @@ beside that source are tested producer constituents, not a second workflow servi
 builder. This source revision is distinct from the live issue-form checklist revision.
 
 The portable release now includes the policy JSON, pure policy evaluator, delta planner, composition
-API, and their executable JavaScript. Consumers must still bind adapter-verified Router/Gateway/graph
-evidence; a legacy caller with only checked boxes cannot report completed triage.
+API, and their executable JavaScript. Both `adapter-verified` and `agent-assessed` semantic inputs
+use the same evaluator. An authenticated ordinary agent can supply its substantive assessment and
+independently read current subject facts without claiming a specialized Worker or model receipt.
+Any Router/Gateway/graph receipts that are supplied retain their existing validation obligations;
+neither input kind grants GitHub permission, model identity, or effect authority.
+
+Consumers pass that input to `evaluateGovernedIntakeTriage`, or as the third argument to
+`evaluateTriageChecklistState`. They must still bind the actual issue, scope, lifecycle, taxonomy,
+execution and direction evidence. Checked boxes, a completion label, or the `agent-assessed`
+discriminator alone are not semantic evidence. Missing, stale or inconsistent evidence remains
+pending. Persist assessments through the current issue-record contract; changing the producer API
+does not claim that every caller already publishes or consumes those records.
 [code#6458](https://github.com/spencer-shadley/code/issues/6458) remains the end-to-end adoption owner.
 Source tests do not prove deployed model eligibility, generic custody recovery, label cleanup, or
 live form inheritance on public and private repositories.

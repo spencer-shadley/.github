@@ -964,3 +964,65 @@ test("own-delivery proof must observe the attempt's own PR reference in the curr
   assert.equal(result.status, "refused");
   assert.ok(result.reasons.includes("own_delivery_reference_absent"), JSON.stringify(result.reasons));
 });
+
+// code#10219: ordinary authenticated readers must not impersonate a routed adapter.
+for (const disposition of ["ordinary", "atomic-high", "parent"] as const) {
+  test(`agent-assessed ${disposition} uses the same subject-bound semantic evaluator`, async () => {
+    const { body, labels } = await completedBodyAndLabels(dispositionLabels(disposition));
+    const original = await verifiedEvidence(disposition);
+    const evidence = { ...original, kind: "agent-assessed" as const };
+    const expected = await evaluateGovernedIntakeTriage({ body, labels, evidence: original });
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.deepEqual(result, expected);
+    assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+    if (disposition === "ordinary") {
+      assert.deepEqual(evidence.trusted.admissions, []);
+      assert.equal(labels.some(label => label.startsWith("triaged-by-")), false);
+    }
+  });
+}
+
+test("agent-assessed completion is consumed by the public checklist evaluator", async () => {
+  const { evaluateTriageChecklistState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = { ...await verifiedEvidence("ordinary"), kind: "agent-assessed" as const };
+  const result = await evaluateTriageChecklistState(body, labels,
+    { subject: actualIssue, ...observedNoImpact(), evidence });
+  assert.equal(result.needs_triage, false, JSON.stringify(result));
+});
+
+test("agent-assessed evidence does not waive missing assessments or current subject binding", async () => {
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  for (const patch of [
+    { assessment: null },
+    { scopeFingerprint: `sha256:${"0".repeat(64)}` },
+    { workUnitKey: `sha256:${"0".repeat(64)}` },
+    { execution: undefined },
+    { taxonomy: undefined },
+  ]) {
+    const evidence = { ...await verifiedEvidence("ordinary"), ...patch, kind: "agent-assessed" as const };
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.equal(result.needsTriage, true, JSON.stringify(patch));
+    assert.notEqual(result.status, "complete");
+    assert.ok(!result.reasons.includes("unsupported_consumer"), JSON.stringify(result.reasons));
+  }
+});
+
+test("agent-assessed evidence cannot complete an unchecked obligation or a changed lifecycle", async () => {
+  const current = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const evidence = { ...await verifiedEvidence("ordinary"), kind: "agent-assessed" as const };
+  const unchecked = await evaluateGovernedIntakeTriage({
+    body: current.body.replace("- [x]", "- [ ]"), labels: current.labels, evidence });
+  assert.equal(unchecked.needsTriage, true);
+  const reopened = await evaluateGovernedIntakeTriage({ ...current, evidence,
+    taxonomyObservation: { ...taxonomyObservation, lifecycleId: "reopened-event-20" } });
+  assert.equal(reopened.needsTriage, true);
+  assert.notEqual(reopened.status, "complete");
+});
+
+test("transport-neutral assessment never infers semantic evidence from labels alone", async () => {
+  const { evaluateTriageChecklistState } = await import("../contracts/governed-intake-triage-state.evaluate.ts");
+  const { body, labels } = await completedBodyAndLabels(dispositionLabels("ordinary"));
+  const result = await evaluateTriageChecklistState(body, labels);
+  assert.equal(result.needs_triage, true);
+});
