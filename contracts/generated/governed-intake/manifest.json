@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "db94dbc0e39fb665b954b3a80de7df0eb934cbf6"
+    "commit": "a6a0cb0642740f60ed85c25e2c319447215d4937"
   },
-  "payloadDigest": "93294ef6b7b50e91ef840caedee6db4bc51eb062383cca88efd1e7a34c0f37a2",
+  "payloadDigest": "deb057f623050cb0238787192619c91d24ba157a65eabda14dcf30f6de333797",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -40,8 +40,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "e735cf2fcf468edcaf39ce4ff3323127edb897fc72d3c99e86cd144d6f7b0f98",
-      "byteLength": 39589
+      "sha256": "f1352209a86e37483229751e75050a42e4cefd676f0123ad92781b2bd9eeec9b",
+      "byteLength": 39579
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
