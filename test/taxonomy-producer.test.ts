@@ -85,6 +85,8 @@ test("candidate contract metadata and namespace conforms to revision 25", () => 
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^decomp:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^resolution:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^task:"));
+  assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^work:"));
+  assert.ok(!GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^work:untriaged$"));
 });
 
 test("generated projections use progress:triage and ban work:untriaged", () => {

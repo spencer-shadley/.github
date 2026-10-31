@@ -102,7 +102,7 @@
       "^priority:rubric-v1$",
       "^priority:triage-tbd$",
       "^priority:p0-candidate$",
-      "^work:untriaged$",
+      "^work:",
       "^effort:",
       "^tier:",
       "^human-required$",
