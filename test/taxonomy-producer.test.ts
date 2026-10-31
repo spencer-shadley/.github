@@ -85,9 +85,11 @@ test("candidate contract metadata and namespace conforms to revision 25", () => 
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^decomp:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^resolution:"));
   assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^task:"));
+  assert.ok(GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^work:"));
+  assert.ok(!GOVERNED_TRIAGE_CHECKLIST.triageOwnedLabelPatterns.includes("^work:untriaged$")); // retirement-steer: negative-fixture
 });
 
-test("generated projections use progress:triage and ban work:untriaged", () => {
+test("generated projections use progress:triage and ban work:untriaged", () => { // retirement-steer: negative-fixture
   const taskMd = generateTaskMarkdown(contract);
   const taskYml = generateTaskYaml(contract);
   const featMd = generateFeatureMarkdown(contract);
@@ -95,7 +97,7 @@ test("generated projections use progress:triage and ban work:untriaged", () => {
 
   for (const [name, content] of [["task.md", taskMd], ["task.yml", taskYml], ["feature.md", featMd], ["feature.yml", featYml]]) {
     assert.match(content, /progress:triage/, `${name} must include progress:triage`);
-    assert.doesNotMatch(content, /work:untriaged/, `${name} must NOT include work:untriaged`);
+    assert.doesNotMatch(content, /work:untriaged/, `${name} must NOT include work:untriaged`); // retirement-steer: negative-fixture
     assert.match(content, /priority:triage-tbd/, `${name} must include priority:triage-tbd`);
     assert.match(content, /agent-review/, `${name} must include agent-review`);
   }
