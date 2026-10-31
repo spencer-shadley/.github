@@ -3,7 +3,7 @@
   "schemaVersion": "3.0.0",
   "contractId": "repo-template/local-ci-v3",
   "repository": "spencer-shadley/.github",
-  "canonicalBranch": "main",
+  "canonicalBranch": "master",
   "prMergeProfileId": "merge",
   "prBroaderFallback": true,
   "prReceiptBindsCandidate": true,
