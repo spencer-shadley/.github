@@ -20,11 +20,22 @@ import { stripDirectionReceiptMetadata, stripTrailingActorSignatures } from "./g
                                
                                  
                            
+                              
+                                                         
                           
                              
                                      
                                      
                                             
+                               
+  
+
+                                                     
+                                            
+                         
+                                
+                           
+                               
                                
   
 
@@ -72,7 +83,13 @@ import { stripDirectionReceiptMetadata, stripTrailingActorSignatures } from "./g
                            
                                      
                                         
+                                                                                      
+                                                   
                                       
+                                                                                                
+                                              
+                                                                          
+                                                       
                            
                            
                                        
@@ -129,7 +146,7 @@ function normalizeLf(value        )         {
 
 function sectionStartRegex(flags = "g")         {
   return new RegExp(
-    `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName)}:\\s*revision=(\\d+)\\s*-->`,
+    `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName)}:\\s*revision=(\\d+)(?:\\s+state=(complete))?\\s*-->`,
     flags,
   );
 }
@@ -150,7 +167,7 @@ function itemMarkerRegex(flags = "g")         {
 
 function completionRegex(flags = "g")         {
   return new RegExp(
-    `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.completionMarkerName)}:\\s*revision=(\\d+)\\s+fingerprint=(sha256:[0-9a-f]{64})\\s*-->`,
+    `<!--\\s*${escapeRegExp(GOVERNED_TRIAGE_CHECKLIST.completionMarkerName)}:\\s*revision=(\\d+)\\s+fingerprint=(sha256:[0-9a-f]{64})(?:\\s+scope=(v2))?\\s*-->`,
     flags,
   );
 }
@@ -187,11 +204,80 @@ export function renderTriageChecklistBlock(options                              
   return lines.join("\n");
 }
 
-export function renderTriageCompletionMarker(fingerprint        )         {
+/** `scope: "v2"` marks a fingerprint from {@link computeTriageStateFingerprintV2} (code#7594). */
+export function renderTriageCompletionMarker(fingerprint        , options                          = {})         {
   if (!/^sha256:[0-9a-f]{64}$/.test(fingerprint)) {
     throw new Error(`invalid triage completion fingerprint: ${fingerprint}`);
   }
-  return `<!-- ${GOVERNED_TRIAGE_CHECKLIST.completionMarkerName}: revision=${String(CURRENT_TRIAGE_REVISION)} fingerprint=${fingerprint} -->`;
+  const scope = options.scope === "v2" ? " scope=v2" : "";
+  return `<!-- ${GOVERNED_TRIAGE_CHECKLIST.completionMarkerName}: revision=${String(CURRENT_TRIAGE_REVISION)} fingerprint=${fingerprint}${scope} -->`;
+}
+
+const COMPLETED_STATE                                        = GOVERNED_TRIAGE_CHECKLIST.completedState ?? {
+  schema: "TriageChecklistCompletedStateV1",
+  stateAttribute: "state=complete",
+  obligationsMarkerName: "governed-triage-obligations",
+  linkLineTemplate: "Triage checklist done as of triage version {revision} at {completedAt}: [canonical checklist]({checklistUrl})",
+  checklistUrlTemplate: "https://github.com/spencer-shadley/.github/blob/{sourceCommit}/contracts/governed-intake-body.v1.json",
+  checklistUrlFallback: "https://github.com/spencer-shadley/.github/blob/master/contracts/governed-intake-body.v1.json",
+};
+export const TRIAGE_CHECKLIST_COMPLETED_STATE                                                  = COMPLETED_STATE;
+
+                                                            
+
+function obligationsMarkerRegex(flags = "")         {
+  return new RegExp(`<!--\\s*${escapeRegExp(COMPLETED_STATE.obligationsMarkerName)}:\\s*([^>]*?)\\s*-->`, flags);
+}
+
+/** Parses `id=checked,id=unchecked`; returns null for any malformed token or duplicate id. */
+export function parseTriageObligations(value        )                                               {
+  const out                                        = {};
+  const tokens = value.split(",").map((token) => token.trim()).filter(Boolean);
+  if (tokens.length === 0) return null;
+  for (const token of tokens) {
+    const match = /^([a-z0-9]+(?:-[a-z0-9]+)*)=(checked|unchecked)$/.exec(token);
+    if (!match || match[1] in out) return null;
+    out[match[1]] = match[2]                         ;
+  }
+  return out;
+}
+
+/** Commit-pinned link to the producer contract that defines the revision; master when the commit is unknown. */
+export function triageChecklistUrl(sourceCommit                )         {
+  return sourceCommit && /^[0-9a-f]{7,40}$/.test(sourceCommit)
+    ? COMPLETED_STATE.checklistUrlTemplate.replace("{sourceCommit}", sourceCommit)
+    : COMPLETED_STATE.checklistUrlFallback;
+}
+
+function isoUtcSeconds(value               )         {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error(`invalid triage completion timestamp: ${String(value)}`);
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
+/** Renders the TriageChecklistCompletedStateV1 block (Spencer, Oct 30 2026; code#7594). */
+export function renderCompletedTriageChecklistBlock(options   
+                             
+                        
+                    
+                                                                
+                           
+ )         {
+  const revision = options.revision ?? CURRENT_TRIAGE_REVISION;
+  const obligations = options.obligations
+    ?? Object.fromEntries(GOVERNED_TRIAGE_CHECKLIST.items.map((item) => [item.id, "checked"         ]));
+  const tokens = Object.entries(obligations).map(([id, state]) => `${id}=${state}`).join(",");
+  const link = COMPLETED_STATE.linkLineTemplate
+    .replace("{revision}", String(revision))
+    .replace("{completedAt}", isoUtcSeconds(options.completedAt))
+    .replace("{checklistUrl}", options.checklistUrl ?? triageChecklistUrl());
+  return [
+    ...(options.includeHeading === false ? [] : [`## ${GOVERNED_TRIAGE_CHECKLIST.heading}`]),
+    `<!-- ${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName}: revision=${String(revision)} ${COMPLETED_STATE.stateAttribute} -->`,
+    `<!-- ${COMPLETED_STATE.obligationsMarkerName}: ${tokens} -->`,
+    link,
+    `<!-- /${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName} -->`,
+  ].join("\n");
 }
 
 function triageOwnedLabels(labels                   )           {
@@ -200,11 +286,8 @@ function triageOwnedLabels(labels                   )           {
   ))].sort((left, right) => left.localeCompare(right));
 }
 
-export async function computeTriageStateFingerprint(body        , labels                   )                  {
-  // This checksum is structural integrity, not semantic subject authority. The
-  // scope fingerprint separately binds receipt identity to the observed issue.
-  const withoutCompletion = stripDirectionReceiptMetadata(normalizeLf(body || "")).replace(completionRegex("g"), "");
-  const normalizedBody = withoutCompletion
+async function hashTriageStateBody(body        , labels                   )                  {
+  const normalizedBody = body
     .split("\n")
     .map((line) => line.replace(/[\t ]+$/g, ""))
     .join("\n")
@@ -215,22 +298,65 @@ export async function computeTriageStateFingerprint(body        , labels        
   return `sha256:${hex}`;
 }
 
+/** v1 (legacy) scope: the full body, including the checklist text. */
+export async function computeTriageStateFingerprint(body        , labels                   )                  {
+  // This checksum is structural integrity, not semantic subject authority. The
+  // scope fingerprint separately binds receipt identity to the observed issue.
+  const withoutCompletion = stripDirectionReceiptMetadata(normalizeLf(body || "")).replace(completionRegex("g"), "");
+  return hashTriageStateBody(withoutCompletion, labels);
+}
+
+/**
+ * v2 scope (code#7594): each checklist section, open or complete, is replaced by one canonical
+ * revision + per-obligation line before hashing, so collapsing a fully checked checklist to its
+ * completed-state link line keeps the same fingerprint.
+ */
+export async function computeTriageStateFingerprintV2(body        , labels                   )                  {
+  const withoutCompletion = stripDirectionReceiptMetadata(normalizeLf(body || "")).replace(completionRegex("g"), "");
+  return hashTriageStateBody(canonicalizeTriageChecklistSections(withoutCompletion), labels);
+}
+
+/** Replaces every closed checklist section with `governed-triage-checklist revision=N obligations=...`. */
+export function canonicalizeTriageChecklistSections(body        )         {
+  const text = normalizeLf(body || "");
+  let out = "";
+  let cursor = 0;
+  for (const section of extractChecklistSections(text)) {
+    if (!section.closed) continue;
+    const obligations = sectionObligations(section);
+    const tokens = Object.keys(obligations).sort().map((id) => `${id}=${obligations[id]}`).join(",");
+    out += text.slice(cursor, section.start)
+      + `${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName} revision=${String(section.revision)} obligations=${tokens}`;
+    cursor = section.end;
+  }
+  return out + text.slice(cursor);
+}
+
 /** A stamp also matches when the only change since it is a trailing run of structured actor-signature
  * paragraphs after the completion marker, with direction receipts ignored as usual (.github#108). Stamp writers
  * keep rendering the full-body digest, so stamps made before this tolerance keep their verdict. Any other text
  * change, including one before a trailing signature, still mismatches.
  */
-async function signatureTolerantFingerprint(text        , labels                   )                         {
+async function signatureTolerantFingerprint(text        , labels                   , scope              = "v1")                         {
   const unreceipted = stripDirectionReceiptMetadata(normalizeLf(text));
   const marker = completionRegex("").exec(unreceipted);
   if (!marker) return null;
   const tailStart = marker.index + marker[0].length;
   const tail = stripTrailingActorSignatures(unreceipted.slice(tailStart));
   if (tail === unreceipted.slice(tailStart)) return null;
-  return computeTriageStateFingerprint(unreceipted.slice(0, tailStart) + tail, labels);
+  const candidate = unreceipted.slice(0, tailStart) + tail;
+  return scope === "v2" ? computeTriageStateFingerprintV2(candidate, labels) : computeTriageStateFingerprint(candidate, labels);
 }
 
-                                                                               
+                         
+                   
+                             
+                  
+                  
+                                                                                                
+                
+              
+  
 
 function extractChecklistSections(body        )                     {
   const text = normalizeLf(body || "");
@@ -241,21 +367,57 @@ function extractChecklistSections(body        )                     {
     const contentStart = startIndex + start[0].length;
     const tail = text.slice(contentStart);
     const end = sectionEndRegex("").exec(tail);
+    const state = start[2] === "complete" ? "complete"          : "open"         ;
     if (!end) {
-      out.push({ revision: Number(start[1]), content: tail, closed: false });
+      out.push({ revision: Number(start[1]), state, content: tail, closed: false, start: startIndex, end: text.length });
       continue;
     }
-    out.push({ revision: Number(start[1]), content: tail.slice(0, end.index), closed: true });
+    out.push({
+      revision: Number(start[1]),
+      state,
+      content: tail.slice(0, end.index),
+      closed: true,
+      start: startIndex,
+      end: contentStart + end.index + end[0].length,
+    });
   }
   return out;
 }
 
-function checklistItems(section        )   
+function sectionObligations(section                                                          )                                        {
+  const parsed = checklistItems(section);
+  return Object.fromEntries(parsed.observed.map((id) => [
+    id,
+    parsed.unchecked.includes(id) || parsed.malformed.includes(id) ? "unchecked"          : "checked"         ,
+  ]));
+}
+
+const COMPLETED_LINK_PREFIX = COMPLETED_STATE.linkLineTemplate.slice(0, COMPLETED_STATE.linkLineTemplate.indexOf("{revision}"));
+
+function completedChecklistItems(section                                                )   
                      
                       
                       
   {
-  const lines = normalizeLf(section).split("\n");
+  const markers = [...section.content.matchAll(obligationsMarkerRegex("g"))];
+  const obligations = markers.length === 1 ? parseTriageObligations(markers[0][1]) : null;
+  if (!obligations) return { observed: [], unchecked: [], malformed: [COMPLETED_STATE.obligationsMarkerName] };
+  const linkPattern = new RegExp(
+    `^${escapeRegExp(COMPLETED_LINK_PREFIX)}${String(section.revision)} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z: \\[[^\\]]+\\]\\(https?://[^)\\s]+\\)\\s*$`,
+    "m",
+  );
+  const observed = Object.keys(obligations);
+  const unchecked = observed.filter((id) => obligations[id] === "unchecked");
+  return { observed, unchecked, malformed: linkPattern.test(section.content) ? [] : ["completed-state-link"] };
+}
+
+function checklistItems(section                                                          )   
+                     
+                      
+                      
+  {
+  if (section.state === "complete") return completedChecklistItems(section);
+  const lines = normalizeLf(section.content).split("\n");
   const observed           = [];
   const unchecked           = [];
   const malformed           = [];
@@ -285,7 +447,7 @@ export async function evaluateTriageChecklistStructure(
   const currentSections = sections.filter((section) => section.revision === CURRENT_TRIAGE_REVISION);
   const activeSection = currentSections.length === 1 ? currentSections[0] : null;
   const parsedItems = activeSection
-    ? checklistItems(activeSection.content)
+    ? checklistItems(activeSection)
     : { observed: [], unchecked: [], malformed: [] };
   const reasons                          = [];
 
@@ -308,6 +470,7 @@ export async function evaluateTriageChecklistStructure(
   if (completions.length > 1) reasons.push("duplicate_completion_marker");
   const completionRevision = completions.length === 1 ? Number(completions[0][1]) : null;
   const completionFingerprint = completions.length === 1 ? completions[0][2] : null;
+  const completionScope = completions.length === 1 ? (completions[0][3] === "v2" ? "v2"          : "v1"         ) : null;
   if (completionRevision !== null && completionRevision !== CURRENT_TRIAGE_REVISION) {
     reasons.push("completion_revision_mismatch");
   }
@@ -337,9 +500,13 @@ export async function evaluateTriageChecklistStructure(
     && parsedItems.malformed.length === 0,
   );
   if (structurallyComplete) {
-    expectedFingerprint = await computeTriageStateFingerprint(text, labels);
+    // A completed-state body can only carry a v2 fingerprint: the v1 scope hashes the checkbox text it replaced.
+    const scope = completionScope ?? (activeSection?.state === "complete" ? "v2" : "v1");
+    expectedFingerprint = scope === "v2"
+      ? await computeTriageStateFingerprintV2(text, labels)
+      : await computeTriageStateFingerprint(text, labels);
     if (completionFingerprint !== null && completionFingerprint !== expectedFingerprint) {
-      if (await signatureTolerantFingerprint(text, labels) === completionFingerprint) {
+      if (await signatureTolerantFingerprint(text, labels, scope) === completionFingerprint) {
         expectedFingerprint = completionFingerprint;
       } else {
         reasons.push("fingerprint_mismatch");
@@ -360,12 +527,100 @@ export async function evaluateTriageChecklistStructure(
     completion_count: completions.length,
     completion_revision: completionRevision,
     completion_fingerprint: completionFingerprint,
+    completion_fingerprint_scope: completionScope,
     expected_fingerprint: expectedFingerprint,
+    checklist_state: sections.length === 1 ? sections[0].state : null,
+    obligations: activeSection ? sectionObligations(activeSection) : {},
     triaged_labels: triagedLabels,
     pending_labels: pendingLabels,
     execution_substrate_labels: executionSubstrateLabels,
     reasons: [...new Set(reasons)],
   };
+}
+
+/** Parsed checklist identity in either body state; null unless the body has exactly one checklist section. */
+export function parseTriageChecklist(body                           )   
+                   
+                             
+                  
+                                                     
+                             
+                              
+         {
+  const sections = extractChecklistSections(body ?? "");
+  if (sections.length !== 1) return null;
+  const section = sections[0];
+  const link = section.state === "complete"
+    ? / at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z): \[[^\]]+\]\((https?:\/\/[^)\s]+)\)/.exec(section.content)
+    : null;
+  return {
+    revision: section.revision,
+    state: section.state,
+    closed: section.closed,
+    obligations: sectionObligations(section),
+    completedAt: link?.[1] ?? null,
+    checklistUrl: link?.[2] ?? null,
+  };
+}
+
+/**
+ * Completion collapse (Spencer, Oct 30 2026; code#7594): replaces the single current-revision open
+ * checklist whose every item is checked with the completed-state block. Any other body is returned
+ * unchanged with its reason, so the full checklist stays while triage is open.
+ */
+export function collapseTriageChecklist(
+  body        ,
+  options                                                                                     ,
+)                                                                                                     {
+  const text = normalizeLf(body || "");
+  const sections = extractChecklistSections(text);
+  if (sections.length === 1 && sections[0].state === "complete") return { body, collapsed: false, reason: "already_complete" };
+  if (sections.length !== 1 || !sections[0].closed || sections[0].revision !== CURRENT_TRIAGE_REVISION) {
+    return { body, collapsed: false, reason: "not_collapsible" };
+  }
+  const section = sections[0];
+  const parsed = checklistItems(section);
+  const expected = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
+  const complete = parsed.unchecked.length === 0 && parsed.malformed.length === 0
+    && parsed.observed.length === expected.length && expected.every((id) => parsed.observed.includes(id));
+  if (!complete) return { body, collapsed: false, reason: "not_collapsible" };
+  const block = renderCompletedTriageChecklistBlock({
+    completedAt: options.completedAt,
+    checklistUrl: options.checklistUrl ?? triageChecklistUrl(options.sourceCommit),
+    obligations: Object.fromEntries(expected.map((id) => [id, "checked"         ])),
+    includeHeading: false,
+  });
+  return { body: text.slice(0, section.start) + block + text.slice(section.end), collapsed: true, reason: "collapsed" };
+}
+
+/**
+ * Reopen (code#7594): expands a completed-state block, or an older-revision open block, to the full
+ * current-revision open checklist. Items in `reusedItemIds` (the delta planner's reused obligations)
+ * keep their recorded state; without it a same-revision block keeps every recorded state and an older
+ * revision starts unchecked. New items are always unchecked.
+ */
+export function expandTriageChecklist(
+  body        ,
+  options                                        = {},
+)                                      {
+  const text = normalizeLf(body || "");
+  const sections = extractChecklistSections(text);
+  if (sections.length !== 1 || !sections[0].closed) return { body, expanded: false };
+  const section = sections[0];
+  if (section.state === "open" && section.revision === CURRENT_TRIAGE_REVISION) return { body, expanded: false };
+  const prior = sectionObligations(section);
+  const reuse = new Set(options.reusedItemIds ?? (section.revision === CURRENT_TRIAGE_REVISION ? Object.keys(prior) : []));
+  const lines = [
+    `<!-- ${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName}: revision=${String(CURRENT_TRIAGE_REVISION)} -->`,
+    "<!-- This checkbox block is the current triage-state SSOT. Check an item only after current evidence satisfies it. Do not delete or rename item markers. -->",
+  ];
+  for (const item of GOVERNED_TRIAGE_CHECKLIST.items) {
+    const checked = reuse.has(item.id) && prior[item.id] === "checked";
+    lines.push(`<!-- ${GOVERNED_TRIAGE_CHECKLIST.itemMarkerName}: ${item.id} -->`);
+    lines.push(`- [${checked ? "x" : " "}] **${item.title}**: ${item.text}`);
+  }
+  lines.push(`<!-- /${GOVERNED_TRIAGE_CHECKLIST.sectionMarkerName} -->`);
+  return { body: text.slice(0, section.start) + lines.join("\n") + text.slice(section.end), expanded: true };
 }
 
 export function triageProjectionErrorMessage(state                      )         {
