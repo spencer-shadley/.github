@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "575732cbdd828dd44402ff358234f4b0d093abb9"
+    "commit": "7661f1b94096fcdeac4f20f833506de13939c75a"
   },
-  "payloadDigest": "75cdf3741292697af6dce58a91337a116e4112f6b25469167b60056ca9ec1765",
+  "payloadDigest": "fa6ef9ce373e0cb9315db305c3767cfe2116f5d4df91ea63edcacb5d55e87a47",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -45,13 +45,13 @@
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
-      "sha256": "7d9c746f0dbcf6e2e6013960b0d984c1745757ccee2929dea6598a63b422c881",
-      "byteLength": 17145
+      "sha256": "5f29416885092b4f909ad5d0056d353f699aa44eae5c700f649049fe0e3a0115",
+      "byteLength": 17379
     },
     "governed-intake-policy-binding.ts": {
       "path": "governed-intake-policy-binding.ts",
-      "sha256": "ba9e734678201af571c2f4f1df0a1867f7150ca8be492ced48f12fb0fdfcc4b3",
-      "byteLength": 17145
+      "sha256": "24d52dcff78b797b372d113149850088b9c5bc907e971c7433dcc3f9dd0e2696",
+      "byteLength": 17379
     },
     "governed-intake-receipt-metadata.js": {
       "path": "governed-intake-receipt-metadata.js",
@@ -105,13 +105,13 @@
     },
     "governed-intake-triage-state.evaluate.js": {
       "path": "governed-intake-triage-state.evaluate.js",
-      "sha256": "82b7f9ba4d664d190443c724fdc03d07fc44dd573452e3ec6de28516914c9987",
-      "byteLength": 31718
+      "sha256": "788e2ecb318b312939fa1eb29115bd21b59558fc2791d7f43434d0eda0729bc6",
+      "byteLength": 32940
     },
     "governed-intake-triage-state.evaluate.ts": {
       "path": "governed-intake-triage-state.evaluate.ts",
-      "sha256": "3a95ed58ff470de4e576ae03cdb785a032d6af27873a802729bf781bfd3cda98",
-      "byteLength": 31718
+      "sha256": "23a0322a5d569ed4bc875f815f60ae6f77184b3634a47aaafc5293cb7644fc41",
+      "byteLength": 32940
     },
     "governed-intake-triage-state.migrate.js": {
       "path": "governed-intake-triage-state.migrate.js",

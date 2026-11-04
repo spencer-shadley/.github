@@ -623,6 +623,26 @@ export function expandTriageChecklist(
   return { body: text.slice(0, section.start) + lines.join("\n") + text.slice(section.end), expanded: true };
 }
 
+/**
+ * True only for an exact producer-shaped completed-state block of the current revision with every
+ * obligation checked. Scope normalization treats that block as metadata, like the canonical open
+ * block, so collapsing on completion keeps the issue scope fingerprint unchanged (code#7594).
+ */
+export function isCanonicalCompletedTriageChecklistBlock(block: string): boolean {
+  const text = normalizeLf(block);
+  const sections = extractChecklistSections(text);
+  if (sections.length !== 1) return false;
+  const section = sections[0];
+  if (section.state !== "complete" || !section.closed || section.start !== 0 || section.end !== text.length) return false;
+  if (section.revision !== CURRENT_TRIAGE_REVISION) return false;
+  const lines = section.content.split("\n").filter((line) => line.trim() !== "");
+  if (lines.length !== 2 || !obligationsMarkerRegex("").test(lines[0] ?? "")) return false;
+  const parsed = completedChecklistItems(section);
+  const expected = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
+  return parsed.malformed.length === 0 && parsed.unchecked.length === 0
+    && parsed.observed.length === expected.length && parsed.observed.every((id, index) => id === expected[index]);
+}
+
 export function triageProjectionErrorMessage(state: TriageChecklistState): string {
   return `Refused triage completion projection: ${state.current_triaged_label} requires one current complete checklist and matching ${GOVERNED_TRIAGE_CHECKLIST.completionMarkerName} fingerprint; reasons=${state.reasons.join(",") || "unknown"}.`;
 }
