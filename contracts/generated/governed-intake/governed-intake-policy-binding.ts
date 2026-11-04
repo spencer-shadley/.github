@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import policyJson from "./governed-intake-triage-policy.v1.json" with { type: "json" };
 import contractJson from "./governed-intake-body.v1.json" with { type: "json" };
 import { assertTriagePolicy, type BoundTriagePolicy, type TriagePolicy } from "./governed-intake-triage-policy.evaluate.ts";
-import { CURRENT_TRIAGE_REVISION, renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.ts";
+import { CURRENT_TRIAGE_REVISION, isCanonicalCompletedTriageChecklistBlock, renderTriageChecklistBlock } from "./governed-intake-triage-state.evaluate.ts";
 import { normalizeLf, validateGovernedWorkUnitKey } from "./governed-intake-body.evaluate.ts";
 import { stripDirectionReceiptMetadata } from "./governed-intake-receipt-metadata.ts";
 
@@ -84,9 +84,11 @@ export function normalizeIssueScopeBody(body: string, identity?: Pick<IssueScope
   const checklist = contractJson.triageChecklist;
   const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   let text = identity ? stripDirectionReceiptMetadata(normalizeLf(body), identity) : normalizeLf(body);
-  const block = new RegExp(`<!--\\s*${escape(checklist.sectionMarkerName)}: revision=([0-9]+)\\s*-->[\\s\\S]*?<!--\\s*\\/${escape(checklist.sectionMarkerName)}\\s*-->`, "g");
+  const block = new RegExp(`<!--\\s*${escape(checklist.sectionMarkerName)}: revision=([0-9]+)(?:\\s+state=complete)?\\s*-->[\\s\\S]*?<!--\\s*\\/${escape(checklist.sectionMarkerName)}\\s*-->`, "g");
   const canonical = renderTriageChecklistBlock({ includeHeading: false, checked: false });
   text = text.replace(block, matched => {
+    // code#7594: the completed-state link line is the same metadata as the fully checked block it replaced.
+    if (isCanonicalCompletedTriageChecklistBlock(matched)) return "";
     const normalized = matched.replace(/^([ \t]*[-*][ \t]+)\[[xX ]\]/gm, "$1[ ]");
     // Only the exact producer-authored block is metadata. Foreign prose and malformed
     // markers remain substantive scope, even if placed inside a checklist-shaped region.

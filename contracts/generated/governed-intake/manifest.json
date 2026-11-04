@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "a6a0cb0642740f60ed85c25e2c319447215d4937"
+    "commit": "7661f1b94096fcdeac4f20f833506de13939c75a"
   },
-  "payloadDigest": "deb057f623050cb0238787192619c91d24ba157a65eabda14dcf30f6de333797",
+  "payloadDigest": "fa6ef9ce373e0cb9315db305c3767cfe2116f5d4df91ea63edcacb5d55e87a47",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -40,18 +40,18 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "f1352209a86e37483229751e75050a42e4cefd676f0123ad92781b2bd9eeec9b",
-      "byteLength": 39579
+      "sha256": "93e07de9c306a37e34275cd1f8575342974526a46829cf85ccdec98262964fef",
+      "byteLength": 42011
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
-      "sha256": "7d9c746f0dbcf6e2e6013960b0d984c1745757ccee2929dea6598a63b422c881",
-      "byteLength": 17145
+      "sha256": "5f29416885092b4f909ad5d0056d353f699aa44eae5c700f649049fe0e3a0115",
+      "byteLength": 17379
     },
     "governed-intake-policy-binding.ts": {
       "path": "governed-intake-policy-binding.ts",
-      "sha256": "ba9e734678201af571c2f4f1df0a1867f7150ca8be492ced48f12fb0fdfcc4b3",
-      "byteLength": 17145
+      "sha256": "24d52dcff78b797b372d113149850088b9c5bc907e971c7433dcc3f9dd0e2696",
+      "byteLength": 17379
     },
     "governed-intake-receipt-metadata.js": {
       "path": "governed-intake-receipt-metadata.js",
@@ -105,13 +105,13 @@
     },
     "governed-intake-triage-state.evaluate.js": {
       "path": "governed-intake-triage-state.evaluate.js",
-      "sha256": "9a1375854381f825802bb5d871a6d6cf039ec98a01bbed91b08c74549a19f20d",
-      "byteLength": 18513
+      "sha256": "788e2ecb318b312939fa1eb29115bd21b59558fc2791d7f43434d0eda0729bc6",
+      "byteLength": 32940
     },
     "governed-intake-triage-state.evaluate.ts": {
       "path": "governed-intake-triage-state.evaluate.ts",
-      "sha256": "edd5e91c0b74b3b945a33d947e31dd21d7aceda4bfb7807020622b2d71705067",
-      "byteLength": 18513
+      "sha256": "23a0322a5d569ed4bc875f815f60ae6f77184b3634a47aaafc5293cb7644fc41",
+      "byteLength": 32940
     },
     "governed-intake-triage-state.migrate.js": {
       "path": "governed-intake-triage-state.migrate.js",
@@ -155,7 +155,7 @@
     }
   },
   "build": {
-    "runtime": "v24.20.0",
+    "runtime": "v26.13.0",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }
