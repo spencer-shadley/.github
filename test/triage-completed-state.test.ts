@@ -144,6 +144,33 @@ test("issue scope normalization is unchanged by collapse, so assessment bindings
   assert.notEqual(normalizeIssueScopeBody(tampered), normalizeIssueScopeBody(expanded));
 });
 
+test("review: an unterminated obligations marker with a long whitespace run evaluates in linear time", async () => {
+  const collapsed = collapseTriageChecklist(openBody(true), { completedAt }).body;
+  const hostile = collapsed.replace(/<!-- governed-triage-obligations: [^>]*-->/, `<!-- governed-triage-obligations:${" ".repeat(20000)}`);
+  const started = Date.now();
+  const state = await evaluateTriageChecklistStructure(hostile, labels);
+  normalizeIssueScopeBody(hostile);
+  assert.ok(Date.now() - started < 2000, `took ${Date.now() - started}ms`);
+  assert.ok(state.reasons.includes("malformed_checklist"));
+});
+
+test("review: foreign text, edited link text or a foreign URL inside a completed block is malformed and stays in scope", async () => {
+  const expanded = openBody(true);
+  const collapsed = collapseTriageChecklist(expanded, { completedAt }).body;
+  const variants = [
+    collapsed.replace("<!-- governed-triage-obligations:", "Scope prose. <!-- governed-triage-obligations:"),
+    collapsed.replace("[canonical checklist]", "[ship it without review]"),
+    collapsed.replace(/\(https:\/\/github\.com[^)]*\)/, "(https://example.com/x)"),
+    collapsed.replace(/(Triage checklist done as of[^\n]*)/, "$1\nExtra line."),
+  ];
+  for (const variant of variants) {
+    assert.notEqual(variant, collapsed);
+    assert.notEqual(normalizeIssueScopeBody(variant), normalizeIssueScopeBody(expanded));
+    const marked = variant + "\n" + renderTriageCompletionMarker(await computeTriageStateFingerprintV2(variant, labels), { scope: "v2" });
+    assert.ok((await evaluateTriageChecklistStructure(marked, labels)).reasons.includes("malformed_checklist"));
+  }
+});
+
 test("obligation parsing and checklist URLs", () => {
   assert.deepEqual(parseTriageObligations("a=checked,b-c=unchecked"), { a: "checked", "b-c": "unchecked" });
   assert.equal(parseTriageObligations("a=checked,a=checked"), null);
