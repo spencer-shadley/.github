@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "81555dc0f4143fa44a3e9cb87d06677a52fffa13"
+    "commit": "8cbd1768002fa2dbb476b7b35fc88060d5020781"
   },
-  "payloadDigest": "429c81148178ec00cd53c26140fbd9d3017549a2162ad2c5f4559e81fcb34dae",
+  "payloadDigest": "363784c2fbc6df4debce976a90567d392e33809e9078163337e021f57416c97c",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -40,8 +40,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "93e07de9c306a37e34275cd1f8575342974526a46829cf85ccdec98262964fef",
-      "byteLength": 42011
+      "sha256": "824d5689dbc19c7faf646d9588db303b323db04daa171759708a36d1b3bb7a1d",
+      "byteLength": 45307
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -80,13 +80,13 @@
     },
     "governed-intake-taxonomy.evaluate.js": {
       "path": "governed-intake-taxonomy.evaluate.js",
-      "sha256": "bb341d58cf64345cbf78aaff6f3b997b07be3263d6e619b412652c6566278160",
-      "byteLength": 7298
+      "sha256": "2f14ebc842c7942c2d5ba83907ff798d77f5dd4c6872f6a483ab82ec7ffc4e9a",
+      "byteLength": 14870
     },
     "governed-intake-taxonomy.evaluate.ts": {
       "path": "governed-intake-taxonomy.evaluate.ts",
-      "sha256": "f48a3bd50351df117f035d943f5248b7b4b2943cc3f8746873bfd87f4590d641",
-      "byteLength": 7298
+      "sha256": "5e36d832765186950ebf47de74f72208e2f76509d1ec9a498ce550e984d163eb",
+      "byteLength": 14870
     },
     "governed-intake-triage-policy.evaluate.js": {
       "path": "governed-intake-triage-policy.evaluate.js",
@@ -125,13 +125,13 @@
     },
     "governed-intake-triage.compose.js": {
       "path": "governed-intake-triage.compose.js",
-      "sha256": "1a0ee4c8e2296ebe9d0e7215a0735764887aca95e2169d541ecf6b05653b08b3",
-      "byteLength": 28762
+      "sha256": "822e4cc16ddb6b1a04e5b98a87667e6abf6e8f9f25e43ed5b7e6e79c78eb285c",
+      "byteLength": 40981
     },
     "governed-intake-triage.compose.ts": {
       "path": "governed-intake-triage.compose.ts",
-      "sha256": "a527f49862090d0539d2b916b4abffd13bc67458c8672f880159e976b374c26f",
-      "byteLength": 28762
+      "sha256": "848ddd9338cd82277b04ca7d0c0d00c120d51cbc6a3c1ad6abcd83cd51548bac",
+      "byteLength": 40981
     },
     "task.md": {
       "path": "task.md",
@@ -155,7 +155,7 @@
     }
   },
   "build": {
-    "runtime": "v26.13.0",
+    "runtime": "v24.22.1",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }

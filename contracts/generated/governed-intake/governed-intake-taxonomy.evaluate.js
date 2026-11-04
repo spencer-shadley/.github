@@ -135,3 +135,162 @@ export function evaluateTaxonomy(input
   }
   return [...new Set(reasons)];
 }
+
+/** Delivery is a separate result from triage. The independent evidence adapter
+ * (Code#9381) reads and authenticates these records under the existing review
+ * policy; this pure producer checks their current obligation/consumer binding.
+ * Neither this shape nor a caller-authored `verified` flag authenticates a record.
+ */
+                                            
+                     
+                      
+                      
+                           
+                      
+ 
+
+                                                  
+                                                    
+                 
+ 
+
+                                             
+             
+               
+                     
+                                                                                                                 
+                                                 
+ 
+
+                                               
+             
+                          
+                
+                                                                          
+                                                         
+                                                                            
+                                      
+                                                 
+                                                                            
+                                                                                                            
+                                          
+ 
+
+                                          
+                                              
+                                
+                                                 
+                                                                              
+                                              
+ 
+
+                                         
+             
+                          
+                
+                                                                             
+                                                               
+                                                 
+                                                         
+                                                                                  
+                                              
+                                                                              
+                             
+ 
+
+                                         
+                                         
+                                     
+                             
+                                
+                                                    
+                                  
+                                                           
+                           
+                      
+ 
+
+                                                
+                                                    
+                                     
+                          
+                                                  
+                                                                                    
+                                                  
+          
+               
+                               
+                                                                 
+                                                                                
+                                                                                                      
+                                                                     
+      
+ 
+
+                                           
+                                 
+                         
+                          
+                    
+                                                                                                           
+ 
+
+const record = (value         )                                   => value !== null
+  && typeof value === "object" && !Array.isArray(value);
+const referenceIdentity = (value         )          => record(value)
+  && nonempty(value.reference) && nonempty(value.identity);
+
+/** Extend the existing taxonomy owner for explicit delivery admission. Legacy
+ * evaluateTaxonomy remains the triage/lifecycle compatibility surface; its coarse
+ * acceptance field is deliberately not evidence for this delivery result. This
+ * lower-level check assumes a fresh producer-composed tree; arbitrary shaped
+ * caller data is not authenticated. Effect consumers use the public fresh
+ * composition entrypoint with actual Code#9381 observations and their own
+ * existing authority/readback checks, never this result alone.
+ */
+export function evaluateDeliveryAcceptance(
+  tree                        ,
+  observation                                ,
+)                           {
+  const reasons = [...tree.pendingReasons];
+  const observed = observation           ;
+  const subject = record(observed) && record(observed.subject) ? observed.subject : null;
+  const bound = record(observed) && observed.schema === "GovernedDeliveryAcceptanceObservationV1"
+    && subject !== null
+    && Object.entries(tree.subject).every(([key, value]) => subject[key] === value)
+    && observed.treeFingerprint === tree.fingerprint && observed.coverage === "complete"
+    && referenceIdentity(observed.record) && Array.isArray(observed.items);
+  if (!bound) reasons.push("delivery_observation_missing_incomplete_or_stale");
+  const facts = bound ? observed.items              : [];
+  const ids = facts.map(value => record(value) ? value.id : undefined);
+  if (new Set(ids).size !== ids.length || ids.some(id => !tree.nodes.some(node => node.id === id))) {
+    reasons.push("delivery_observation_duplicate_or_unknown_id");
+  }
+  const items = tree.nodes.map(node => {
+    const errors           = [];
+    const matching = facts.filter(value => record(value) && value.id === node.id);
+    const fact = matching[0];
+    if (matching.length !== 1 || !record(fact) || fact.meaningFingerprint !== node.meaningFingerprint) {
+      errors.push("delivery_item_observation_missing_or_meaning_changed");
+    }
+    if (node.applicability.status === "unknown") errors.push("delivery_applicability_unknown");
+    const verifier = record(fact) ? fact.verifier : undefined;
+    if (!referenceIdentity(verifier) || !record(verifier) || !nonempty(verifier.actor)) {
+      errors.push("delivery_independent_verification_record_missing");
+    }
+    const evidence = record(fact) && Array.isArray(fact.evidence) ? fact.evidence : [];
+    if (evidence.length === 0 || evidence.some(value => !record(value)
+      || value.kind !== node.evidenceKind || !referenceIdentity(value))) {
+      errors.push("delivery_required_evidence_missing_or_wrong_kind");
+    }
+    const expected = node.applicability.status === "not-applicable" ? "not-applicable" : "verified";
+    const result = record(fact) ? fact.result : undefined;
+    if (result !== expected) errors.push("delivery_item_unverified");
+    const status                                                      = errors.length === 0 ? expected : result === "failed" ? "failed" : "pending";
+    return { id: node.id, status, reasons: errors };
+  });
+  if (!tree.nodes.some(node => node.applicability.status === "required")) reasons.push("delivery_no_applicable_obligations");
+  if (items.some(item => item.status === "pending" || item.status === "failed")) reasons.push("delivery_obligations_unmet");
+  return { status: reasons.length === 0 ? "verified" : "pending", effectAuthority: false, treeFingerprint: tree.fingerprint,
+    reasons: [...new Set(reasons)], items };
+}

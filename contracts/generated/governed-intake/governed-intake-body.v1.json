@@ -732,5 +732,56 @@
     "yamlPublishTarget": "spencer-shadley/.github:.github/ISSUE_TEMPLATE/task.yml",
     "forbiddenLocalYaml": ".github/ISSUE_TEMPLATE/task.yml"
   },
-  "owner": "spencer-shadley/.github"
+  "owner": "spencer-shadley/.github",
+  "deliveryAcceptance": {
+    "schema": "GovernedDeliveryAcceptanceV1",
+    "revision": 1,
+    "sourceHeading": "Durable fix and acceptance",
+    "description": "Additive delivery composition under .github#119, independent observation under Code#9381, and effects under Code#11145. This does not change checklist meaning or triage validity. A source-only accepted outcome acquires no consumer obligations. Consumer obligations use an explicitly sourced complete inventory. Missing, partial, unknown and unsupported acceptance remains pending with original prose preserved. These pure APIs do not authenticate observations or grant effect authority.",
+    "applicability": [
+      "required",
+      "not-applicable",
+      "unknown"
+    ],
+    "supportedChangeKinds": [
+      "ordinary"
+    ],
+    "pendingChangeKinds": [
+      "migration",
+      "deletion",
+      "new-owner"
+    ],
+    "pendingChangeReason": "The propagation, owner-claim, conservation and retirement branches retain their accepted obligations in .github#119. This initial delivery slice does not yet compose those branches; it cannot admit them as ordinary source-only work.",
+    "consumerPhases": {
+      "current": "runtime",
+      "default": "runtime",
+      "installed": "runtime",
+      "recovery": "runtime",
+      "future-install": "lifecycle",
+      "future-update": "lifecycle",
+      "future-repair": "lifecycle"
+    },
+    "definitions": {
+      "applicability": {
+        "reference": "https://github.com/spencer-shadley/.github/blob/master/contracts/governed-intake-body.v1.json#/deliveryAcceptance/definitions/applicability",
+        "requirement": "Independent evidence verifies the stated exclusion and its reason against the accepted outcome and named consumer. Exclusion does not require invoking an inapplicable runtime or lifecycle entrypoint; an author waiver alone is insufficient."
+      },
+      "source": {
+        "reference": "https://github.com/spencer-shadley/.github/blob/master/contracts/governed-intake-body.v1.json#/deliveryAcceptance/definitions/source",
+        "requirement": "Independent source verification satisfies the accepted source obligation at its current meaning and scope; a merge acknowledgment alone is insufficient."
+      },
+      "behavior": {
+        "reference": "https://github.com/spencer-shadley/.github/blob/master/contracts/governed-intake-body.v1.json#/deliveryAcceptance/definitions/behavior",
+        "requirement": "Independent observed behavior satisfies the named accepted outcome at its current meaning and scope."
+      },
+      "runtime": {
+        "reference": "https://github.com/spencer-shadley/.github/blob/master/contracts/governed-intake-body.v1.json#/deliveryAcceptance/definitions/runtime",
+        "requirement": "The named current, default, installed or recovery consumer actually loads and exhibits the accepted behavior; source presence is not runtime adoption."
+      },
+      "lifecycle": {
+        "reference": "https://github.com/spencer-shadley/.github/blob/master/contracts/governed-intake-body.v1.json#/deliveryAcceptance/definitions/lifecycle",
+        "requirement": "The named existing future install, update or repair entrypoint realizes the accepted behavior; an uninvoked moving source reference is insufficient."
+      }
+    }
+  }
 }
