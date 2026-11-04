@@ -18,6 +18,7 @@ import {
   CURRENT_TRIAGE_REVISION,
   GOVERNED_TRIAGE_CHECKLIST,
 } from "../contracts/governed-intake-triage-state.evaluate.ts";
+import { normalizeIssueScopeBody } from "../contracts/governed-intake-policy-binding.ts";
 
 const ids = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
 const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
@@ -131,6 +132,16 @@ test("an older-revision completed block expands to the current revision with eve
   const parsed = parseTriageChecklist(expandTriageChecklist(older).body);
   assert.equal(parsed?.revision, CURRENT_TRIAGE_REVISION);
   assert.ok(Object.values(parsed?.obligations ?? {}).every((state) => state === "unchecked"));
+});
+
+test("issue scope normalization is unchanged by collapse, so assessment bindings stay valid", () => {
+  const expanded = openBody(true);
+  const collapsed = collapseTriageChecklist(expanded, { completedAt }).body;
+  assert.equal(normalizeIssueScopeBody(collapsed), normalizeIssueScopeBody(expanded));
+  assert.ok(!normalizeIssueScopeBody(collapsed).includes("done as of triage version"));
+  // Foreign prose inside a completed-state block stays substantive scope.
+  const tampered = collapsed.replace(/(Triage checklist done as of[^\n]*)/, "$1\nExtra scope text.");
+  assert.notEqual(normalizeIssueScopeBody(tampered), normalizeIssueScopeBody(expanded));
 });
 
 test("obligation parsing and checklist URLs", () => {
