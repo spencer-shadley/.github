@@ -19,6 +19,7 @@ import {
   GOVERNED_TRIAGE_CHECKLIST,
 } from "../contracts/governed-intake-triage-state.evaluate.ts";
 import { normalizeIssueScopeBody } from "../contracts/governed-intake-policy-binding.ts";
+import { evaluateGovernedIntakeDelivery } from "../contracts/governed-intake-triage.compose.ts";
 
 const ids = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
 const labels = [CURRENT_TRIAGED_LABEL, "effort:medium"];
@@ -29,6 +30,22 @@ const tail = "\n\n## Human-decision state\nNone - agent-executable leaf.\n";
 function openBody(checked: boolean): string {
   return head + renderTriageChecklistBlock({ checked }) + tail;
 }
+
+test("completed legacy triage remains valid while missing delivery acceptance stays separately pending", async () => {
+  const expanded = openBody(true);
+  const marker = renderTriageCompletionMarker(await computeTriageStateFingerprintV2(expanded, labels), { scope: "v2" });
+  const body = collapseTriageChecklist(expanded + "\n" + marker, { completedAt }).body;
+  const before = await evaluateTriageChecklistStructure(body, labels);
+  assert.deepEqual(before.reasons, []); assert.equal(before.needs_triage, false);
+  const delivery = evaluateGovernedIntakeDelivery({
+    subject: { repository: "spencer-shadley/.github", issueNumber: 119, title: "Existing completed triage" },
+    body, labels, lifecycleId: "fixture-current-lifecycle",
+  });
+  assert.equal(delivery.status, "pending");
+  assert.ok(delivery.reasons.includes("delivery_tree_missing_invalid_or_stale"));
+  assert.ok(delivery.reasons.includes("delivery_original_acceptance_missing"));
+  assert.deepEqual(await evaluateTriageChecklistStructure(body, labels), before);
+});
 
 test("collapse replaces a fully checked current checklist with the link line", () => {
   const result = collapseTriageChecklist(openBody(true), { completedAt, sourceCommit: "abc1234" });
