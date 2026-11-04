@@ -225,8 +225,18 @@ export const TRIAGE_CHECKLIST_COMPLETED_STATE                                   
 
                                                             
 
+/** Exact producer rendering only: fixed literals around one character class keep matching linear. */
 function obligationsMarkerRegex(flags = "")         {
-  return new RegExp(`<!--\\s*${escapeRegExp(COMPLETED_STATE.obligationsMarkerName)}:\\s*([^>]*?)\\s*-->`, flags);
+  return new RegExp(`^<!-- ${escapeRegExp(COMPLETED_STATE.obligationsMarkerName)}: ([a-z0-9=,-]+) -->$`, flags);
+}
+
+const CHECKLIST_URL_SHAPE = new RegExp(
+  `^${escapeRegExp(COMPLETED_STATE.checklistUrlTemplate).replace(escapeRegExp("{sourceCommit}"), "[0-9a-f]{7,40}")}$`,
+);
+
+/** Only the producer contract URL (commit-pinned or the master fallback) is a canonical checklist link. */
+function isProducerChecklistUrl(url        )          {
+  return url === COMPLETED_STATE.checklistUrlFallback || CHECKLIST_URL_SHAPE.test(url);
 }
 
 /** Parses `id=checked,id=unchecked`; returns null for any malformed token or duplicate id. */
@@ -392,23 +402,40 @@ function sectionObligations(section                                             
   ]));
 }
 
-const COMPLETED_LINK_PREFIX = COMPLETED_STATE.linkLineTemplate.slice(0, COMPLETED_STATE.linkLineTemplate.indexOf("{revision}"));
+/**
+ * A completed-state section is valid only when it is byte-identical to the producer rendering of its own
+ * parsed revision, obligations, timestamp and producer URL. Any other text inside it (prose, edited link
+ * text, a foreign URL) makes it malformed, so it can neither verify nor be stripped from scope.
+ */
+function parseCompletedSection(section                                                )   
+                                                     
+                      
+                       
+         {
+  const lines = section.content.split("\n");
+  if (lines.length !== 4 || lines[0] !== "" || lines[3] !== "") return null;
+  const marker = obligationsMarkerRegex("").exec(lines[1] ?? "");
+  const obligations = marker ? parseTriageObligations(marker[1]) : null;
+  const link = / at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z): \[[^\]\n]*\]\(([^)\s]+)\)$/.exec(lines[2] ?? "");
+  if (!obligations || !link || !isProducerChecklistUrl(link[2])) return null;
+  const rendered = renderCompletedTriageChecklistBlock({
+    revision: section.revision, obligations, completedAt: link[1], checklistUrl: link[2], includeHeading: false,
+  }).split("\n");
+  return rendered[1] === lines[1] && rendered[2] === lines[2]
+    ? { obligations, completedAt: link[1], checklistUrl: link[2] }
+    : null;
+}
 
 function completedChecklistItems(section                                                )   
                      
                       
                       
   {
-  const markers = [...section.content.matchAll(obligationsMarkerRegex("g"))];
-  const obligations = markers.length === 1 ? parseTriageObligations(markers[0][1]) : null;
-  if (!obligations) return { observed: [], unchecked: [], malformed: [COMPLETED_STATE.obligationsMarkerName] };
-  const linkPattern = new RegExp(
-    `^${escapeRegExp(COMPLETED_LINK_PREFIX)}${String(section.revision)} at \\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z: \\[[^\\]]+\\]\\(https?://[^)\\s]+\\)\\s*$`,
-    "m",
-  );
-  const observed = Object.keys(obligations);
-  const unchecked = observed.filter((id) => obligations[id] === "unchecked");
-  return { observed, unchecked, malformed: linkPattern.test(section.content) ? [] : ["completed-state-link"] };
+  const parsed = parseCompletedSection(section);
+  if (!parsed) return { observed: [], unchecked: [], malformed: ["completed-state-block"] };
+  const observed = Object.keys(parsed.obligations);
+  const unchecked = observed.filter((id) => parsed.obligations[id] === "unchecked");
+  return { observed, unchecked, malformed: [] };
 }
 
 function checklistItems(section                                                          )   
@@ -550,16 +577,14 @@ export function parseTriageChecklist(body                           )
   const sections = extractChecklistSections(body ?? "");
   if (sections.length !== 1) return null;
   const section = sections[0];
-  const link = section.state === "complete"
-    ? / at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z): \[[^\]]+\]\((https?:\/\/[^)\s]+)\)/.exec(section.content)
-    : null;
+  const completed = section.state === "complete" ? parseCompletedSection(section) : null;
   return {
     revision: section.revision,
     state: section.state,
     closed: section.closed,
     obligations: sectionObligations(section),
-    completedAt: link?.[1] ?? null,
-    checklistUrl: link?.[2] ?? null,
+    completedAt: completed?.completedAt ?? null,
+    checklistUrl: completed?.checklistUrl ?? null,
   };
 }
 
@@ -596,8 +621,9 @@ export function collapseTriageChecklist(
 /**
  * Reopen (code#7594): expands a completed-state block, or an older-revision open block, to the full
  * current-revision open checklist. Items in `reusedItemIds` (the delta planner's reused obligations)
- * keep their recorded state; without it a same-revision block keeps every recorded state and an older
- * revision starts unchecked. New items are always unchecked.
+ * keep their recorded state; without it a same-revision block keeps every recorded state (so a fully
+ * checked completed block re-expands fully checked) and an older revision starts unchecked. New items
+ * are always unchecked. A revision-bump reopen passes the delta planner's reused ids.
  */
 export function expandTriageChecklist(
   body        ,
@@ -635,12 +661,13 @@ export function isCanonicalCompletedTriageChecklistBlock(block        )         
   const section = sections[0];
   if (section.state !== "complete" || !section.closed || section.start !== 0 || section.end !== text.length) return false;
   if (section.revision !== CURRENT_TRIAGE_REVISION) return false;
-  const lines = section.content.split("\n").filter((line) => line.trim() !== "");
-  if (lines.length !== 2 || !obligationsMarkerRegex("").test(lines[0] ?? "")) return false;
-  const parsed = completedChecklistItems(section);
+  // Exact re-render comparison (as the open-block path does): any foreign text keeps the block in scope.
+  const parsed = parseCompletedSection(section);
+  if (!parsed) return false;
+  const ids = Object.keys(parsed.obligations);
   const expected = GOVERNED_TRIAGE_CHECKLIST.items.map((item) => item.id);
-  return parsed.malformed.length === 0 && parsed.unchecked.length === 0
-    && parsed.observed.length === expected.length && parsed.observed.every((id, index) => id === expected[index]);
+  return ids.length === expected.length
+    && ids.every((id, index) => id === expected[index] && parsed.obligations[id] === "checked");
 }
 
 export function triageProjectionErrorMessage(state                      )         {
