@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateTaxonomy, type TaxonomyEvidence, type TaxonomyObservation } from "../contracts/governed-intake-taxonomy.evaluate.ts";
 import { CURRENT_TRIAGE_REVISION } from "../contracts/governed-intake-triage-state.evaluate.ts";
+import { createHash } from "node:crypto";
+import * as canonicalComposition from "../contracts/governed-intake-triage.compose.ts";
+import type { ComposedDeliveryInput } from "../contracts/governed-intake-triage.compose.ts";
+import type { DeliveryAcceptanceObservation, DeliveryAcceptanceTree } from "../contracts/governed-intake-taxonomy.evaluate.ts";
 
 const subject = { repository: "spencer-shadley/.github", issueNumber: 32 };
 const labels = ["type:maintenance", "source:human", "effort:medium", "priority:repo:p2", "priority:fleet:p2", "progress:planned", "decomp:unnecessary"];
@@ -150,5 +154,221 @@ for (const surface of ["canonical", "portable"] as const) {
     assert.deepEqual(await evaluate(input), []);
     input.evidence.obsoleteDecision.accepted = false;
     assert.ok((await evaluate(input)).includes("taxonomy_obsolete_decision_required"));
+  });
+}
+
+function deliveryFixture(prose = "- AC1. The accepted source correction is independently verified."): ComposedDeliveryInput {
+  return { subject: { ...subject, title: "Bounded accepted delivery fixture" }, labels: [...labels], lifecycleId: observation.lifecycleId,
+    body: `<!-- governed-work-unit-key: ${evidence.workUnitKey} -->\n\n## Durable fix and acceptance\n\n${prose}\n\n## Human-decision state\nNone.\n`,
+    draft: { schema: "GovernedDeliveryAcceptanceDraftV1", extraction: "complete", changeKind: "ordinary",
+      acceptanceFingerprint: `sha256:${createHash("sha256").update(JSON.stringify(prose)).digest("hex")}`,
+      obligations: [{ id: "AC1", parentId: null, owner: subject.repository,
+        original: { start: 0, end: prose.length, text: prose },
+        acceptedScope: { kind: "source-only", description: "The accepted outcome is this source correction." },
+        evidenceKind: "source", applicability: { status: "required", reason: "Explicit accepted source outcome." }, consumers: [] }] } };
+}
+
+function mappedObservation(tree: DeliveryAcceptanceTree): DeliveryAcceptanceObservation {
+  return { schema: "GovernedDeliveryAcceptanceObservationV1", subject: structuredClone(tree.subject),
+    treeFingerprint: tree.fingerprint, coverage: "complete", record: { reference: "https://example.test/independent-record", identity: "record-revision-7" },
+    items: tree.nodes.map(node => ({ id: node.id, meaningFingerprint: node.meaningFingerprint,
+      result: node.applicability.status === "not-applicable" ? "not-applicable" : "verified",
+      evidence: [{ kind: node.evidenceKind, reference: `https://example.test/evidence/${encodeURIComponent(node.id)}`, identity: `actual-${node.id}` }],
+      verifier: { actor: "independent-fixture-reviewer", reference: "https://example.test/review", identity: "review-revision-2" } })) };
+}
+
+function withConsumers(input: ComposedDeliveryInput): ComposedDeliveryInput {
+  const obligation = input.draft!.obligations[0];
+  obligation.acceptedScope = { kind: "consumers", description: "The accepted current and future consumer behavior." };
+  obligation.consumerInventory = { coverage: "complete", reference: "https://example.test/accepted-consumer-inventory", identity: "inventory-3" };
+  obligation.consumers = (["current", "default", "installed", "recovery", "future-install", "future-update", "future-repair"] as const)
+    .map(phase => ({ id: phase, name: `${phase} named consumer`, entrypoint: `existing-owner/${phase}`,
+      phase, applicability: { status: "required", reason: "This entrypoint is in the accepted outcome." } }));
+  return input;
+}
+
+for (const surface of ["canonical", "portable"] as const) {
+  const api = async () => surface === "canonical" ? canonicalComposition
+    : import("../contracts/generated/governed-intake/governed-intake-triage.compose.js");
+
+  test(`${surface} delivery rejects a caller-authored verified flag despite valid legacy taxonomy`, async () => {
+    const legacy = fixture(); replace(legacy, "progress:planned", "progress:verified");
+    legacy.evidence.acceptance = structuredClone(acceptance);
+    assert.deepEqual(await (surface === "canonical" ? evaluateTaxonomy(legacy)
+      : (await import("../contracts/generated/governed-intake/governed-intake-taxonomy.evaluate.js")).evaluateTaxonomy(legacy)), []);
+    const evaluator = (await api()).evaluateGovernedIntakeDelivery;
+    const input = { ...deliveryFixture(), acceptance: acceptance, verified: true };
+    // Exact-original negative control exercises the previous coarse path. It
+    // reaches the delivery assertion, rather than failing on a new named import.
+    const delivered = typeof evaluator === "function" ? evaluator(input).status === "verified" : evaluateTaxonomy(legacy).length === 0;
+    assert.equal(delivered, false, "a verified flag and PR link cannot establish independent per-obligation delivery");
+  });
+
+  test(`${surface} delivery admits independently mapped source-only work without inventing fleet obligations`, async () => {
+    const owner = await api(); const input = deliveryFixture();
+    const tree = owner.composeGovernedDeliveryAcceptance(input);
+    assert.equal(tree.nodes.length, 1); assert.equal(tree.nodes[0].consumer, null);
+    assert.equal(tree.nodes[0].evidenceKind, "source"); assert.deepEqual(tree.pendingReasons, []);
+    assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "pending");
+    input.observation = mappedObservation(tree);
+    const result = owner.evaluateGovernedIntakeDelivery(input);
+    assert.equal(result.status, "verified"); assert.deepEqual(result.reasons, []);
+    assert.equal(result.effectAuthority, false);
+    assert.equal(result.tree.originalAcceptance, input.draft!.obligations[0].original.text);
+    assert.deepEqual(owner.composeGovernedDeliveryAcceptance(JSON.parse(JSON.stringify(input))), tree);
+  });
+
+  test(`${surface} delivery composes all explicitly named current and future consumers with the required evidence kind`, async () => {
+    const owner = await api(); const input = withConsumers(deliveryFixture());
+    const tree = owner.composeGovernedDeliveryAcceptance(input);
+    assert.equal(tree.nodes.length, 8); assert.deepEqual(tree.pendingReasons, []);
+    for (const node of tree.nodes.slice(1)) {
+      assert.equal(node.parentId, "AC1");
+      assert.equal(node.evidenceKind, node.consumer!.phase.startsWith("future-") ? "lifecycle" : "runtime");
+      assert.equal(node.original.text, tree.originalAcceptance);
+    }
+    input.observation = mappedObservation(tree);
+    assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "verified");
+    for (const phase of ["installed", "future-repair"]) {
+      const missing = structuredClone(input); missing.observation!.items = missing.observation!.items.filter(item => !item.id.endsWith(`/${phase}`));
+      assert.equal(owner.evaluateGovernedIntakeDelivery(missing).status, "pending", phase);
+      const sourceOnly = structuredClone(input); sourceOnly.observation!.items.find(item => item.id.endsWith(`/${phase}`))!.evidence[0].kind = "source";
+      assert.equal(owner.evaluateGovernedIntakeDelivery(sourceOnly).status, "pending", `${phase} cannot use source evidence`);
+    }
+  });
+
+  test(`${surface} delivery preserves original legacy prose and refuses absent, empty or partial extraction`, async () => {
+    const owner = await api(); const input = deliveryFixture("First accepted outcome.\nSecond accepted outcome that was omitted.");
+    const first = "First accepted outcome.";
+    input.draft!.obligations[0].original = { start: 0, end: first.length, text: first };
+    const tree = owner.composeGovernedDeliveryAcceptance(input);
+    assert.ok(tree.pendingReasons.includes("delivery_original_obligations_unmapped"));
+    assert.equal(tree.unmapped[0].text, "\nSecond accepted outcome that was omitted.");
+    for (const mutate of [
+      (i: ComposedDeliveryInput) => { delete i.draft; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations = []; },
+      (i: ComposedDeliveryInput) => { i.draft!.extraction = "partial"; },
+      (i: ComposedDeliveryInput) => { i.draft!.acceptanceFingerprint = "stale"; },
+    ]) {
+      const changed = deliveryFixture(); mutate(changed);
+      const result = owner.evaluateGovernedIntakeDelivery(changed);
+      assert.equal(result.status, "pending"); assert.ok(result.tree.originalAcceptance.includes("AC1."));
+    }
+    for (const fields of [{ body: "" }, { labels: null }, { lifecycleId: null }, { draft: { obligations: [null] } }]) {
+      const unreadable = { ...deliveryFixture(), ...fields } as unknown as ComposedDeliveryInput;
+      assert.equal(owner.evaluateGovernedIntakeDelivery(unreadable).status, "pending", JSON.stringify(fields));
+    }
+  });
+
+  test(`${surface} delivery rejects missing IDs, original-source drift, duplicate IDs and invalid parent graphs`, async () => {
+    const owner = await api();
+    for (const mutate of [
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].id = ""; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].original.text = "A different obligation."; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations.push(structuredClone(i.draft!.obligations[0])); },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].parentId = "missing"; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].parentId = "AC1"; },
+    ]) {
+      const input = deliveryFixture(); mutate(input); const tree = owner.composeGovernedDeliveryAcceptance(input);
+      input.observation = mappedObservation(tree); assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "pending");
+    }
+  });
+
+  test(`${surface} delivery does not infer inventory completeness or applicability`, async () => {
+    const owner = await api();
+    for (const mutate of [
+      (i: ComposedDeliveryInput) => { delete i.draft!.obligations[0].consumerInventory; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].consumerInventory!.coverage = "unknown"; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].consumers = []; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].consumers[0].entrypoint = ""; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].consumers[0].applicability.status = "unknown"; },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].consumers.push(structuredClone(i.draft!.obligations[0].consumers[0])); },
+      (i: ComposedDeliveryInput) => { i.draft!.obligations[0].acceptedScope.kind = "source-only"; },
+    ]) {
+      const input = withConsumers(deliveryFixture()); mutate(input); const tree = owner.composeGovernedDeliveryAcceptance(input);
+      input.observation = mappedObservation(tree); assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "pending");
+    }
+  });
+
+  test(`${surface} delivery keeps unsupported migration deletion and new-owner propagation branches pending`, async () => {
+    const owner = await api();
+    for (const kind of ["migration", "deletion", "new-owner", "unknown"] as const) {
+      const input = deliveryFixture(); input.draft!.changeKind = kind;
+      input.observation = mappedObservation(owner.composeGovernedDeliveryAcceptance(input));
+      assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "pending", kind);
+    }
+    for (const label of ["type:migration", "type:deletion"]) {
+      const input = deliveryFixture(); input.labels = [...input.labels, label];
+      input.observation = mappedObservation(owner.composeGovernedDeliveryAcceptance(input));
+      assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "pending", "labels cannot be hidden by an ordinary draft");
+    }
+  });
+
+  test(`${surface} delivery changes only affected node meaning and permits explicit mapping of unchanged evidence`, async () => {
+    const owner = await api(); const first = "First source outcome."; const second = "Second source outcome.";
+    const input = deliveryFixture(`${first}\n${second}`);
+    input.draft!.obligations[0].original = { start: 0, end: first.length, text: first };
+    input.draft!.obligations.push({ ...structuredClone(input.draft!.obligations[0]), id: "AC2",
+      original: { start: first.length + 1, end: first.length + 1 + second.length, text: second } });
+    const before = owner.composeGovernedDeliveryAcceptance(input); const oldFacts = mappedObservation(before);
+    const expanded = "First source outcome with changed accepted meaning.";
+    const changed = deliveryFixture(`${expanded}\n${second}`);
+    changed.draft!.obligations = structuredClone(input.draft!.obligations);
+    changed.draft!.obligations[0].original = { start: 0, end: expanded.length, text: expanded };
+    changed.draft!.obligations[1].original = { start: expanded.length + 1, end: expanded.length + 1 + second.length, text: second };
+    const after = owner.composeGovernedDeliveryAcceptance(changed);
+    assert.notEqual(after.nodes[0].meaningFingerprint, before.nodes[0].meaningFingerprint);
+    assert.equal(after.nodes[1].meaningFingerprint, before.nodes[1].meaningFingerprint, "position shifts do not change accepted meaning");
+    changed.observation = { ...mappedObservation(after), items: oldFacts.items };
+    const partial = owner.evaluateGovernedIntakeDelivery(changed);
+    assert.equal(partial.status, "pending"); assert.equal(partial.items[0].status, "pending"); assert.equal(partial.items[1].status, "verified");
+    changed.observation.items[0] = mappedObservation(after).items[0];
+    assert.equal(owner.evaluateGovernedIntakeDelivery(changed).status, "verified");
+  });
+
+  test(`${surface} delivery requires explicit independently mapped non-applicability and never admits an all-waived empty outcome`, async () => {
+    const owner = await api(); const input = withConsumers(deliveryFixture());
+    const consumer = input.draft!.obligations[0].consumers[0];
+    consumer.applicability = { status: "not-applicable", reason: "This inventory entry is outside the accepted current scope." };
+    const tree = owner.composeGovernedDeliveryAcceptance(input); input.observation = mappedObservation(tree);
+    assert.equal(tree.nodes[1].evidenceKind, "applicability");
+    assert.equal(input.observation.items[1].evidence[0].kind, "applicability");
+    assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "verified");
+    const authorWaiver = structuredClone(input); delete authorWaiver.observation;
+    assert.equal(owner.evaluateGovernedIntakeDelivery(authorWaiver).status, "pending", "author's exclusion needs an independent mapping");
+    const wrongKind = structuredClone(input); wrongKind.observation!.items[1].evidence[0].kind = "runtime";
+    assert.equal(owner.evaluateGovernedIntakeDelivery(wrongKind).status, "pending", "runtime invocation is not the exclusion evidence");
+    const otherExclusion = structuredClone(input); otherExclusion.draft!.obligations[0].consumers[0].applicability.reason = "A different exclusion claim.";
+    const freshTree = owner.composeGovernedDeliveryAcceptance(otherExclusion);
+    otherExclusion.observation = { ...mappedObservation(freshTree), items: input.observation.items };
+    assert.equal(owner.evaluateGovernedIntakeDelivery(otherExclusion).status, "pending", "changed exclusion meaning cannot reuse the old proof");
+    input.observation.items[1].result = "verified";
+    assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "pending");
+    const waived = deliveryFixture(); waived.draft!.obligations[0].applicability.status = "not-applicable";
+    waived.observation = mappedObservation(owner.composeGovernedDeliveryAcceptance(waived));
+    assert.equal(owner.evaluateGovernedIntakeDelivery(waived).status, "pending");
+  });
+
+  test(`${surface} delivery binds independently observed records to current lifecycle, tree and exact required items`, async () => {
+    const owner = await api(); const input = deliveryFixture(); input.observation = mappedObservation(owner.composeGovernedDeliveryAcceptance(input));
+    for (const mutate of [
+      (i: ComposedDeliveryInput) => { i.lifecycleId = "github-reopen-32"; },
+      (i: ComposedDeliveryInput) => { i.observation!.subject.workUnitKey = "other"; },
+      (i: ComposedDeliveryInput) => { i.observation!.treeFingerprint = "stale"; },
+      (i: ComposedDeliveryInput) => { i.observation!.coverage = "incomplete"; },
+      (i: ComposedDeliveryInput) => { i.observation!.record.identity = ""; },
+      (i: ComposedDeliveryInput) => { i.observation!.items[0].verifier.actor = ""; },
+      (i: ComposedDeliveryInput) => { i.observation!.items[0].evidence = []; },
+      (i: ComposedDeliveryInput) => { i.observation!.items[0].result = "failed"; },
+      (i: ComposedDeliveryInput) => { i.observation!.items.push(structuredClone(i.observation!.items[0])); },
+      (i: ComposedDeliveryInput) => { i.observation!.items.push({ ...structuredClone(i.observation!.items[0]), id: "unknown" }); },
+    ]) {
+      const changed = structuredClone(input); mutate(changed);
+      assert.equal(owner.evaluateGovernedIntakeDelivery(changed).status, "pending");
+    }
+    const first = owner.composeGovernedDeliveryAcceptance(input);
+    first.nodes[0].definition.requirement = "tampered returned snapshot";
+    first.nodes[0].applicability.reason = "tampered reason";
+    assert.equal(owner.evaluateGovernedIntakeDelivery(input).status, "verified", "returned trees cannot mutate the contract or draft");
   });
 }

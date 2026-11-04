@@ -13,7 +13,13 @@
  * payloads; it does not claim deployed Code/CLI/worker activation.
  */
 import { boundTriagePolicyFromProducer, fingerprintIssueScope, fingerprintDirectionFacts, canonicalPolicyJson,                                            } from "./governed-intake-policy-binding.js";
-import { evaluateTaxonomy,                                                 } from "./governed-intake-taxonomy.evaluate.js";
+import { createHash } from "node:crypto";
+import { evaluateTaxonomy, evaluateDeliveryAcceptance,                                                 
+                                                                                         
+                                                                                                       
+} from "./governed-intake-taxonomy.evaluate.js";
+import { sectionContent, normalizeLf } from "./governed-intake-body.evaluate.js";
+                                                                                                                                                                       
 export { boundTriagePolicyFromProducer, bindTriagePolicy, fingerprintIssueScope, normalizeIssueScopeBody, evaluateOwnDeliveryDirectionEquivalence } from "./governed-intake-policy-binding.js";
                                                                                                                                                                                                                                            
 import { validateGovernedIntakeBody, validateGovernedWorkUnitKey,                             } from "./governed-intake-body.evaluate.js";
@@ -548,4 +554,179 @@ export async function evaluateGovernedIntakeTriage(input                     )  
     consumerCutover: COMPOSE_CONSUMER_CUTOVER,
     taskProfile,
   };
+}
+
+/** Additive delivery surface. Calling or completing triage never calls this API
+ * implicitly and never grants delivery or close authority. The caller separately
+ * reads the current subject, extracts its accepted obligations, and supplies the
+ * independent observation mapping owned by Code#9381.
+ */
+                                        
+                                          
+               
+                            
+                      
+                                  
+                                              
+ 
+
+const deliveryRecord = (value         )                                   => value !== null
+  && typeof value === "object" && !Array.isArray(value);
+const deliveryDigest = (value         )         => `sha256:${createHash("sha256").update(canonicalPolicyJson(value), "utf8").digest("hex")}`;
+const deliveryId = (value         )                  => typeof value === "string" && /^[A-Za-z][A-Za-z0-9._-]*$/.test(value);
+const deliverySpec = bodyContract.deliveryAcceptance;
+
+function deliveryApplicability(value         )          {
+  return deliveryRecord(value) && deliverySpec.applicability.includes(value.status          ) && nonempty(value.reason);
+}
+
+function deliveryObligationShape(value         , original        )                                        {
+  if (!deliveryRecord(value) || !deliveryId(value.id) || !(value.parentId === null || deliveryId(value.parentId))
+    || !nonempty(value.owner) || !deliveryRecord(value.original) || !deliveryRecord(value.acceptedScope)
+    || !["source-only", "consumers"].includes(value.acceptedScope.kind          )
+    || !nonempty(value.acceptedScope.description) || !["source", "behavior"].includes(value.evidenceKind          )
+    || !deliveryApplicability(value.applicability) || !Array.isArray(value.consumers)) return false;
+  const span = value.original;
+  return Number.isSafeInteger(span.start) && Number.isSafeInteger(span.end)
+    && (span.start          ) >= 0 && (span.end          ) > (span.start          )
+    && (span.end          ) <= original.length && nonempty(span.text)
+    && original.slice(span.start          , span.end          ) === span.text;
+}
+
+function addDeliveryNode(nodes                          , value                                                    )       {
+  const effective = value.applicability.status === "not-applicable"
+    ? { ...value, evidenceKind: "applicability"         , definition: deliverySpec.definitions.applicability } : value;
+  const { original, consumerInventory, ...meaning } = effective;
+  // Positions and inventory revision identify the current readback, not the
+  // obligation's meaning. Adding another AC may move an unchanged source span.
+  const meaningFingerprint = deliveryDigest({ ...meaning, original: { reference: original.reference, text: original.text },
+    consumerInventoryReference: consumerInventory?.reference ?? null });
+  nodes.push({ ...effective, definition: { ...effective.definition }, meaningFingerprint });
+}
+
+function composeDeliveryObligation(
+  obligation                              , reference        , nodes                          , reasons          ,
+)       {
+  const inventory = obligation.consumerInventory;
+  const base = { id: obligation.id, parentId: obligation.parentId, owner: obligation.owner,
+    original: { start: obligation.original.start, end: obligation.original.end, text: obligation.original.text, reference },
+    acceptedScope: { kind: obligation.acceptedScope.kind, description: obligation.acceptedScope.description },
+    applicability: { status: obligation.applicability.status, reason: obligation.applicability.reason },
+    consumerInventory: inventory && ["complete", "partial", "unknown"].includes(inventory.coverage)
+      && nonempty(inventory.reference) && nonempty(inventory.identity)
+      ? { coverage: inventory.coverage, reference: inventory.reference, identity: inventory.identity } : null };
+  const definition = deliverySpec.definitions[obligation.evidenceKind];
+  addDeliveryNode(nodes, { ...base, definition, evidenceKind: obligation.evidenceKind, consumer: null });
+  if (obligation.acceptedScope.kind === "source-only") {
+    if (obligation.consumers.length > 0 || obligation.consumerInventory !== undefined) reasons.push(`delivery_source_only_has_consumers:${obligation.id}`);
+    return;
+  }
+  if (!inventory || inventory.coverage !== "complete" || !nonempty(inventory.reference) || !nonempty(inventory.identity)
+    || obligation.consumers.length === 0) reasons.push(`delivery_consumer_inventory_incomplete:${obligation.id}`);
+  const seen = new Set        ();
+  for (const consumer of obligation.consumers) {
+    if (!deliveryRecord(consumer) || !deliveryId(consumer.id) || !nonempty(consumer.name) || !nonempty(consumer.entrypoint)
+      || typeof consumer.phase !== "string" || !Object.hasOwn(deliverySpec.consumerPhases, consumer.phase) || !deliveryApplicability(consumer.applicability)) {
+      reasons.push(`delivery_consumer_invalid:${obligation.id}`); continue;
+    }
+    if (seen.has(consumer.id)) reasons.push(`delivery_consumer_duplicate:${obligation.id}/${consumer.id}`);
+    seen.add(consumer.id);
+    const evidenceKind = deliverySpec.consumerPhases[consumer.phase]                           ;
+    const applicability = { status: consumer.applicability.status, reason: consumer.applicability.reason };
+    addDeliveryNode(nodes, { ...base, id: `${obligation.id}/consumer/${consumer.id}`, parentId: obligation.id,
+      applicability, definition: deliverySpec.definitions[evidenceKind], evidenceKind,
+      consumer: { id: consumer.id, name: consumer.name, entrypoint: consumer.entrypoint, phase: consumer.phase, applicability: { ...applicability } } });
+  }
+}
+
+function deliveryParentProblems(nodes                                   )           {
+  const reasons           = [];
+  const byId = new Map(nodes.map(node => [node.id, node]));
+  if (byId.size !== nodes.length) reasons.push("delivery_duplicate_node_id");
+  for (const node of nodes) {
+    const seen = new Set([node.id]);
+    let parent = node.parentId;
+    while (parent !== null) {
+      if (seen.has(parent)) { reasons.push(`delivery_parent_cycle:${node.id}`); break; }
+      seen.add(parent);
+      const ancestor = byId.get(parent);
+      if (!ancestor) { reasons.push(`delivery_parent_missing:${node.id}`); break; }
+      if (ancestor.applicability.status !== "required" && node.applicability.status === "required") {
+        reasons.push(`delivery_parent_applicability_conflict:${node.id}`); break;
+      }
+      parent = ancestor.parentId;
+    }
+  }
+  return reasons;
+}
+
+function unmappedDeliveryText(original        , obligations                                         )                                     {
+  const unmapped                                     = [];
+  let end = 0;
+  for (const span of obligations.map(value => value.original).sort((a, b) => a.start - b.start)) {
+    if (span.start > end && original.slice(end, span.start).trim()) unmapped.push({ start: end, end: span.start, text: original.slice(end, span.start) });
+    end = Math.max(end, span.end);
+  }
+  if (original.slice(end).trim()) unmapped.push({ start: end, end: original.length, text: original.slice(end) });
+  return unmapped;
+}
+
+/** Composition preserves all original acceptance prose. Exact span coverage is a
+ * mechanical floor, not an assertion that semantic extraction or scope judgment
+ * was independent; the evidence owner must verify that mapping separately.
+ */
+export function composeGovernedDeliveryAcceptance(input                       )                         {
+  const reasons           = [];
+  const body = typeof input.body === "string" ? input.body : "";
+  const labels = Array.isArray(input.labels) && input.labels.every(label => typeof label === "string") ? input.labels : [];
+  if (body !== input.body || labels !== input.labels) reasons.push("delivery_source_observation_invalid");
+  const originalAcceptance = sectionContent(normalizeLf(body), deliverySpec.sourceHeading);
+  const acceptanceFingerprint = deliveryDigest(originalAcceptance);
+  const key = validateGovernedWorkUnitKey(body);
+  let scopeFingerprint = "invalid:missing_subject_identity";
+  try { scopeFingerprint = fingerprintIssueScope({ ...input.subject, body }); }
+  catch { reasons.push("delivery_subject_invalid"); }
+  if (!key.ok) reasons.push("delivery_work_unit_missing_or_invalid");
+  if (!nonempty(input.lifecycleId)) reasons.push("delivery_lifecycle_missing");
+  if (!nonempty(originalAcceptance)) reasons.push("delivery_original_acceptance_missing");
+  const subject = { repository: nonempty(input.subject?.repository) ? input.subject.repository : "",
+    issueNumber: Number.isSafeInteger(input.subject?.issueNumber) ? input.subject.issueNumber : 0,
+    workUnitKey: key.key ?? "", scopeFingerprint, lifecycleId: nonempty(input.lifecycleId) ? input.lifecycleId : "" };
+  const draft = input.draft           ;
+  const supportedDraft = deliveryRecord(draft) && draft.schema === "GovernedDeliveryAcceptanceDraftV1"
+    && draft.acceptanceFingerprint === acceptanceFingerprint && Array.isArray(draft.obligations);
+  if (!supportedDraft) reasons.push("delivery_tree_missing_invalid_or_stale");
+  const extraction = supportedDraft && ["complete", "partial", "unknown"].includes(draft.extraction          )
+    ? draft.extraction                                          : "unknown";
+  if (extraction !== "complete") reasons.push("delivery_legacy_extraction_incomplete");
+  if (!supportedDraft || !deliverySpec.supportedChangeKinds.includes(draft.changeKind          )) reasons.push("delivery_change_branch_unsupported");
+  for (const kind of deliverySpec.pendingChangeKinds) {
+    if (labels.includes(`type:${kind}`)) reasons.push(`delivery_change_branch_unsupported:${kind}`);
+  }
+  const candidates            = supportedDraft ? draft.obligations              : [];
+  const obligations                                 = [];
+  for (const value of candidates) {
+    if (deliveryObligationShape(value, originalAcceptance)) obligations.push(value);
+    else reasons.push("delivery_obligation_invalid_or_original_changed");
+  }
+  if (obligations.length === 0) reasons.push("delivery_empty_tree");
+  const unmapped = unmappedDeliveryText(originalAcceptance, obligations);
+  if (unmapped.length > 0) reasons.push("delivery_original_obligations_unmapped");
+  const nodes                           = [];
+  const reference = `https://github.com/${subject.repository}/issues/${subject.issueNumber}#durable-fix-and-acceptance`;
+  for (const obligation of obligations) composeDeliveryObligation(obligation, reference, nodes, reasons);
+  reasons.push(...deliveryParentProblems(nodes));
+  const tree = { schema: "GovernedDeliveryAcceptanceV1"         , subject, originalAcceptance, acceptanceFingerprint,
+    extraction, nodes, unmapped, pendingReasons: unique(reasons) };
+  return { ...tree, fingerprint: deliveryDigest(tree) };
+}
+
+/** Effect callers re-read the current subject and use this fresh composition,
+ * together with the actual independently verified Code#9381 observation mapping.
+ * A cached tree, a caller-shaped observation or a `verified` string is not an
+ * authentication mechanism. This result deliberately confers no effect authority.
+ */
+export function evaluateGovernedIntakeDelivery(input                       )                                                              {
+  const tree = composeGovernedDeliveryAcceptance(input);
+  return { ...evaluateDeliveryAcceptance(tree, input.observation), tree };
 }

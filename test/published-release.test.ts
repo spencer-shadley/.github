@@ -21,6 +21,19 @@ test("published release manifest matches the payload bytes this tree would relea
   assert.ok(result.ok, result.ok ? "" : result.message);
 });
 
+test("the verified portable release executes the same separate pending-delivery result", async () => {
+  assert.equal(checkPublishedReleaseMatchesSource(root).ok, true);
+  const canonical = await import("../contracts/governed-intake-triage.compose.ts");
+  const portable = await import("../contracts/generated/governed-intake/governed-intake-triage.compose.js");
+  const input = { subject: { repository: "spencer-shadley/.github", issueNumber: 119, title: "Preserve legacy accepted work" },
+    body: `<!-- governed-work-unit-key: sha256:${"a".repeat(64)} -->\n## Durable fix and acceptance\n\nUnextracted legacy outcome remains required.\n`,
+    labels: ["type:maintenance"], lifecycleId: "fixture-current-lifecycle" };
+  const result = canonical.evaluateGovernedIntakeDelivery(input);
+  assert.equal(result.status, "pending"); assert.equal(result.effectAuthority, false);
+  assert.equal(result.tree.originalAcceptance, "Unextracted legacy outcome remains required.");
+  assert.deepEqual(portable.evaluateGovernedIntakeDelivery(input), result);
+});
+
 test("a payload change without a republished manifest fails, naming the file and the republish command", (t) => {
   const cases = [
     // Source and payload are the same file: the exact .github#41 shape.
@@ -29,6 +42,7 @@ test("a payload change without a republished manifest fails, naming the file and
     { source: ".github/ISSUE_TEMPLATE/task.yml", payloads: ["task.yml"] },
     { source: "contracts/governed-intake-body.v1.json", payloads: ["governed-intake-body.v1.json"] },
     { source: "contracts/governed-intake-triage.compose.ts", payloads: ["governed-intake-triage.compose.ts", "governed-intake-triage.compose.js"] },
+    { source: "contracts/governed-intake-taxonomy.evaluate.ts", payloads: ["governed-intake-taxonomy.evaluate.ts", "governed-intake-taxonomy.evaluate.js"] },
   ];
   for (const { source, payloads } of cases) {
     const dir = copyOfProducer(t);
