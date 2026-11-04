@@ -171,6 +171,21 @@ test("review: foreign text, edited link text or a foreign URL inside a completed
   }
 });
 
+test("review: an invalid timestamp in a completed block is malformed, never a thrown error", async () => {
+  const collapsed = collapseTriageChecklist(openBody(true), { completedAt }).body;
+  const bad = collapsed.replace("2026-11-03T22:30:00Z", "2026-13-45T99:99:99Z");
+  assert.notEqual(bad, collapsed);
+  const state = await evaluateTriageChecklistStructure(bad, labels);
+  assert.ok(state.reasons.includes("malformed_checklist"));
+  assert.notEqual(normalizeIssueScopeBody(bad), normalizeIssueScopeBody(openBody(true)));
+  assert.equal(parseTriageChecklist(bad)?.completedAt, null);
+  await computeTriageStateFingerprintV2(bad, labels);
+  const longLine = collapsed.replace(/Triage checklist done as of[^\n]*/, "Triage checklist done as of triage version " + "1".repeat(64000));
+  const started = Date.now();
+  await evaluateTriageChecklistStructure(longLine, labels);
+  assert.ok(Date.now() - started < 1000);
+});
+
 test("obligation parsing and checklist URLs", () => {
   assert.deepEqual(parseTriageObligations("a=checked,b-c=unchecked"), { a: "checked", "b-c": "unchecked" });
   assert.equal(parseTriageObligations("a=checked,a=checked"), null);

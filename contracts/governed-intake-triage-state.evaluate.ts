@@ -235,6 +235,8 @@ const CHECKLIST_URL_SHAPE = new RegExp(
 );
 
 /** Only the producer contract URL (commit-pinned or the master fallback) is a canonical checklist link. */
+const COMPLETED_LINK_PREFIX = COMPLETED_STATE.linkLineTemplate.slice(0, COMPLETED_STATE.linkLineTemplate.indexOf("{revision}"));
+
 function isProducerChecklistUrl(url: string): boolean {
   return url === COMPLETED_STATE.checklistUrlFallback || CHECKLIST_URL_SHAPE.test(url);
 }
@@ -416,8 +418,14 @@ function parseCompletedSection(section: Pick<ChecklistSection, "content" | "revi
   if (lines.length !== 4 || lines[0] !== "" || lines[3] !== "") return null;
   const marker = obligationsMarkerRegex("").exec(lines[1] ?? "");
   const obligations = marker ? parseTriageObligations(marker[1]) : null;
-  const link = / at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z): \[[^\]\n]*\]\(([^)\s]+)\)$/.exec(lines[2] ?? "");
+  // Anchored on the fixed template prefix so a hostile line is rejected in linear time.
+  const linkLine = lines[2] ?? "";
+  const link = linkLine.startsWith(COMPLETED_LINK_PREFIX)
+    ? /^\d+ at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z): \[[^\]\n]*\]\(([^)\s]+)\)$/.exec(linkLine.slice(COMPLETED_LINK_PREFIX.length))
+    : null;
   if (!obligations || !link || !isProducerChecklistUrl(link[2])) return null;
+  // A malformed timestamp is a malformed block, never a reader exception (code#7594 review).
+  if (Number.isNaN(Date.parse(link[1]))) return null;
   const rendered = renderCompletedTriageChecklistBlock({
     revision: section.revision, obligations, completedAt: link[1], checklistUrl: link[2], includeHeading: false,
   }).split("\n");
