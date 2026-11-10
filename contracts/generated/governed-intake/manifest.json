@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "8cbd1768002fa2dbb476b7b35fc88060d5020781"
+    "commit": "d93bb83d2c5daa958b715b1e8a9fb8acaf83121d"
   },
-  "payloadDigest": "363784c2fbc6df4debce976a90567d392e33809e9078163337e021f57416c97c",
+  "payloadDigest": "3e82c0c46223fc811a21b20be699dbce3596de78e825433c6962f3c162b4c651",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -45,13 +45,13 @@
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
-      "sha256": "1d1dc9ab9e8a7cbcd1a818a6b57c3b658fcefd45306c333b37a6454721726e1b",
-      "byteLength": 17389
+      "sha256": "7cf9524ec5896eb0649cbcca97e07ea1776dae09dde567d72d26397098b22913",
+      "byteLength": 17354
     },
     "governed-intake-policy-binding.ts": {
       "path": "governed-intake-policy-binding.ts",
-      "sha256": "bf1d5607a9867b34592e229100023edbcf7d9b8512ee8e77d2ec73915ea8f9d7",
-      "byteLength": 17389
+      "sha256": "4431c37ca5fb77666ae29a69b9b944a553b1e79e79b5d75f2d3489516e4e45d9",
+      "byteLength": 17354
     },
     "governed-intake-receipt-metadata.js": {
       "path": "governed-intake-receipt-metadata.js",
@@ -155,7 +155,7 @@
     }
   },
   "build": {
-    "runtime": "v24.22.1",
+    "runtime": "v26.13.0",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }
