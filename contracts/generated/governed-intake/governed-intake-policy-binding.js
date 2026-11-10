@@ -151,7 +151,8 @@ export const OWN_DELIVERY_PROOF_SCHEMA = "OwnDeliveryDirectionProofV1"         ;
                                                        
                       
                                          
-                                                                                                                   
+                                                                                                                        
+                                                                                          
                                                                                    
                           
  
@@ -205,12 +206,11 @@ export function evaluateOwnDeliveryDirectionEquivalence(
       && DIGEST.test(proof.workUnitKey) && !!proof.attempt && typeof proof.attempt.id === "string" && proof.attempt.id.trim().length > 0
       && Number.isSafeInteger(proof.attempt.fence) && proof.attempt.fence >= 1
       && !!pr && REPOSITORY.test(pr.repository) && Number.isSafeInteger(pr.number) && pr.number >= 1
-      && OWN_SHA.test(pr.headSha) && OWN_SHA.test(pr.reviewedHeadSha) && OWN_SHA.test(pr.mergedSha)
+      && OWN_SHA.test(pr.headSha) && OWN_SHA.test(pr.mergedSha)
       && Array.isArray(commits) && commits.every(sha => OWN_SHA.test(sha)) && new Set(commits).size === commits.length
       && commits.includes(pr.headSha) && commits.includes(pr.mergedSha);
     if (!proofValid) reasons.add("own_delivery_proof_invalid");
     if (proofValid) {
-      if (pr.reviewedHeadSha !== pr.headSha) reasons.add("own_delivery_review_head_mismatch");
       if (!sameSubject(proof.subject, expected.subject) || proof.workUnitKey !== expected.workUnitKey) reasons.add("own_delivery_subject_mismatch");
       if (proof.attempt.id !== expected.attempt.id || proof.attempt.fence !== expected.attempt.fence) reasons.add("own_delivery_attempt_mismatch");
     }

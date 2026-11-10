@@ -839,7 +839,7 @@ function ownSide(entries: unknown[], over: Partial<OwnSide> & { relatedWorkFinge
 }
 const ownProof = (over: Record<string, unknown> = {}) => ({
   schema: "OwnDeliveryDirectionProofV1", version: 1, subject: ownSeed, workUnitKey: ownWorkUnitKey, attempt: ownAttempt,
-  pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: ownHead, reviewedHeadSha: ownHead, mergedSha: ownMerged },
+  pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: ownHead, mergedSha: ownMerged },
   ownCommitShas: [ownHead, ownMerged], ...over,
 });
 const ownExpected = { subject: ownSeed, workUnitKey: ownWorkUnitKey, scopeFingerprint: ownScope, attempt: ownAttempt, publication: ownPublication };
@@ -859,6 +859,22 @@ test("own-delivery proof accepts only the attempt's own PR and commit references
   assert.deepEqual([...result.ownReferences].sort(), [`commit:${ownPr.repository}#${ownHead}`, `commit:${ownPr.repository}#${ownMerged}`, `pull_request:${ownPr.repository}#${ownPr.number}`].sort());
   // Semantic guard stays strict: the opaque facts fingerprint still changes for own references.
   assert.notEqual(fingerprintDirectionFacts(before.facts), fingerprintDirectionFacts(current.facts));
+});
+
+test("a carried-forward PR approval settles own delivery: no review-head comparison (code#12928, .github#114)", () => {
+  const before = ownSide([foreignIssue]);
+  const current = ownSide([foreignIssue, ownPullOpen, ownHeadCommit, ownMergedCommit], { relatedWorkFingerprint: digestOf("1") });
+  const earlierReviewedCommit = "2".repeat(40);
+  const carriedForward = { repository: ownPr.repository, number: ownPr.number, headSha: ownHead, reviewedHeadSha: earlierReviewedCommit, mergedSha: ownMerged };
+  for (const [name, proof] of [
+    // The earlier reviewed commit is outside the own commit set too, as after a rebase.
+    ["legacy reviewedHeadSha names an earlier commit", { pullRequest: carriedForward }],
+    ["no review identity supplied", {}],
+  ] as [string, Record<string, unknown>][]) {
+    const result = evaluateOwn(ownObservation(before, current, proof));
+    assert.deepEqual(result.reasons, [], name);
+    assert.equal(result.status, "own-delivery-only", name);
+  }
 });
 
 test("own PR state change (open to merged) is own material, not foreign drift", () => {
@@ -904,7 +920,7 @@ test("non-related direction dimensions are preserved exactly", () => {
   }
 });
 
-test("own delivery is refused for wrong subject, attempt, fence, review head, merge commit set or publication", () => {
+test("own delivery is refused for wrong subject, attempt, fence, merge commit set or publication", () => {
   const before = ownSide([foreignIssue]);
   const current = ownSide([foreignIssue, ownPullOpen, ownHeadCommit], { relatedWorkFingerprint: digestOf("1") });
   const cases: [string, OwnDeliveryObservation, Partial<typeof ownExpected>, string][] = [
@@ -912,9 +928,8 @@ test("own delivery is refused for wrong subject, attempt, fence, review head, me
     ["wrong attempt id", ownObservation(before, current, { attempt: { id: "other", fence: 3 } }), {}, "own_delivery_attempt_mismatch"],
     ["wrong subject", ownObservation(before, current, { subject: { repository: ownSeed.repository, issueNumber: 20 } }), {}, "own_delivery_subject_mismatch"],
     ["wrong work unit", ownObservation(before, current), { workUnitKey: digestOf("9") }, "own_delivery_subject_mismatch"],
-    ["reviewed head differs from head", ownObservation(before, current, { pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: ownHead, reviewedHeadSha: "2".repeat(40), mergedSha: ownMerged } }), {}, "own_delivery_review_head_mismatch"],
     ["merged SHA missing from own commit set", ownObservation(before, current, { ownCommitShas: [ownHead] }), {}, "own_delivery_proof_invalid"],
-    ["malformed head SHA", ownObservation(before, current, { pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: "XYZ", reviewedHeadSha: "XYZ", mergedSha: ownMerged } }), {}, "own_delivery_proof_invalid"],
+    ["malformed head SHA", ownObservation(before, current, { pullRequest: { repository: ownPr.repository, number: ownPr.number, headSha: "XYZ", mergedSha: ownMerged } }), {}, "own_delivery_proof_invalid"],
     ["current publication revision", ownObservation(before, { ...current, publication: { ...ownPublication, revision: 24 } }), {}, "own_delivery_publication_mismatch"],
   ];
   for (const [name, observation, expected, reason] of cases) {
