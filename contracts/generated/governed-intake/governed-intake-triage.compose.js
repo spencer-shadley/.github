@@ -370,13 +370,21 @@ export async function evaluateGovernedIntakeTriage(input                     )  
         || environment.anyOf.some(group => !validRequirements(group) || group.length === 0)))) {
       reasons.push("execution_environment_invalid");
     } else {
-      const requirements = unique([...environment.allOf, ...(environment.anyOf ?? []).flat()]);
       const labels = input.labels.filter(label => label.startsWith("environment:"));
       // Only unconditional facts are labels. Projecting every anyOf alternative would turn
       // an OR into an AND in consumers that combine labels with structured requirements.
       if (labels.length !== new Set(labels).size || labels.some(label => !environment.allOf.includes(label))
         || environment.allOf.some(requirement => !labels.includes(requirement))) reasons.push("execution_environment_projection_mismatch");
-      const needsLocal = requirements.length > 0;
+      // Logical binding identity does not locate the executor. Keep the
+      // existing explicit placement/resource checks without inferring local
+      // placement from provider, account, harness or model requirements.
+      const localResource = (requirement        ) => requirement === spec.environment.localLabel
+        || requirement.startsWith(spec.environment.hostPrefix)
+        || requirement.startsWith(spec.environment.hardwarePrefix);
+      // All allOf facts and every anyOf group are required; within a group one
+      // alternative suffices. A mixed group does not make local access mandatory.
+      const needsLocal = environment.allOf.some(localResource)
+        || (environment.anyOf ?? []).some(group => group.every(localResource));
       if ((cloud?.status === "ready" && needsLocal)
         || (cloud?.status === "not-ready" && !environment.allOf.includes(spec.environment.localLabel))) {
         reasons.push("execution_substrate_environment_mismatch");

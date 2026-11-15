@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "d93bb83d2c5daa958b715b1e8a9fb8acaf83121d"
+    "commit": "84af7fafc9af68ea858f918b268fce92c6ee4025"
   },
-  "payloadDigest": "3e82c0c46223fc811a21b20be699dbce3596de78e825433c6962f3c162b4c651",
+  "payloadDigest": "5362c4f96f5c66c8831a30c411e82f22c3d04faa87b5e0b7aa9fe3941a2e8a5c",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -125,13 +125,13 @@
     },
     "governed-intake-triage.compose.js": {
       "path": "governed-intake-triage.compose.js",
-      "sha256": "822e4cc16ddb6b1a04e5b98a87667e6abf6e8f9f25e43ed5b7e6e79c78eb285c",
-      "byteLength": 40981
+      "sha256": "44c9c2d8fa2d644007ebfadb6a325d226ba525cbe52df61714fdd2b1c9f18bd9",
+      "byteLength": 41593
     },
     "governed-intake-triage.compose.ts": {
       "path": "governed-intake-triage.compose.ts",
-      "sha256": "848ddd9338cd82277b04ca7d0c0d00c120d51cbc6a3c1ad6abcd83cd51548bac",
-      "byteLength": 40981
+      "sha256": "6e9f31e1f1e5e4ac86d97c8c719264762d298633300674c68fda2d9847760b99",
+      "byteLength": 41593
     },
     "task.md": {
       "path": "task.md",
@@ -155,7 +155,7 @@
     }
   },
   "build": {
-    "runtime": "v26.13.0",
+    "runtime": "v24.22.1",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }
