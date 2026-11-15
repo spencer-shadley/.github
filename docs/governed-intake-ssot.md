@@ -290,6 +290,16 @@ and are neither blockers nor permission grants. Model/provider preferences stay 
 fleet DOCTRINE section 66. This vocabulary correction changes no checklist item or projection,
 so checklist revision 25 and item identities remain unchanged.
 
+Account, provider, harness and model requirements constrain compatible bindings; they alone
+do not imply local executor placement. Explicit local/host/hardware resource checks remain
+in force. A cloud agent's actual remote or delegated tool path can establish access only
+through its existing capability owner and live qualification; this correction does not
+assert network, target-device or operating-system parity or remove those requirements.
+All `allOf` facts and each `anyOf` group remain required; one alternative within a group
+suffices. Local access is unavoidable only for an explicit local resource in `allOf` or
+a required group whose every alternative needs that resource class. A mixed logical/resource
+group does not alone force local placement or claim access to its resource alternative.
+
 Missing, unsupported, stale or unknown evidence remains pending; the public checklist API exposes
 `cloud-runnable` as pending for execution-evidence failures. Retired substrate labels are refused,
 with no alias or label-based fallback. Historical revision-22 release bytes remain unchanged until

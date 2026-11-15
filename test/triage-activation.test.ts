@@ -704,6 +704,60 @@ test("environment alternatives stay structured rather than becoming conjunctive 
   assert.ok(result.reasons.includes("execution_environment_projection_mismatch"));
 });
 
+const logicalCloudRequirements = [
+  ["provider", ["environment:provider:openai"], []],
+  ["account", ["environment:account:spencershadley"], []],
+  ["harness", ["environment:harness:codex"], []],
+  ["model", ["environment:model:gpt-6.1-sol"], []],
+  ["combined logical requirements", ["environment:provider:openai", "environment:account:sshadley-dev", "environment:harness:codex", "environment:model:gpt-6.1-sol"], []],
+  ["logical alternatives", ["environment:account:spencershadley"], [["environment:provider:openai", "environment:provider:anthropic"]]],
+  ["mixed resource and logical alternatives", [], [["environment:host:rinnegan", "environment:provider:openai"]]],
+  ["multiple mixed alternative groups", [], [["environment:host:rinnegan", "environment:provider:openai"], ["environment:hardware:camera", "environment:account:spencershadley"]]],
+] as const;
+for (const [name, allOf, anyOf] of logicalCloudRequirements) {
+  test(`cloud-ready execution retains ${name} without requiring local placement`, async () => {
+    const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary"), ...allOf]);
+    const evidence = await verifiedEvidence("ordinary");
+    evidence.execution!.environment = { allOf: [...allOf], anyOf: anyOf.map(group => [...group]) };
+    const before = structuredClone(evidence.execution);
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.equal(result.status, "complete", JSON.stringify(result.reasons));
+    assert.deepEqual(evidence.execution, before, "logical requirements remain binding input facts");
+    assert.equal(labels.includes("environment:fleet-local"), false);
+  });
+}
+
+test("published logical requirement semantics match the actual source", async () => {
+  const portable = await import("../contracts/generated/governed-intake/governed-intake-triage.compose.js");
+  for (const [, allOf, anyOf] of logicalCloudRequirements) {
+    const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary"), ...allOf]);
+    const evidence = await verifiedEvidence("ordinary");
+    evidence.execution!.environment = { allOf: [...allOf], anyOf: anyOf.map(group => [...group]) };
+    assert.deepEqual(await portable.evaluateGovernedIntakeTriage({ subject: actualIssue, ...observedNoImpact(), body, labels, evidence }),
+      await evaluateGovernedIntakeTriage({ body, labels, evidence }));
+  }
+});
+
+for (const [name, allOf, anyOf] of [
+  ["explicit local placement", ["environment:fleet-local"], []],
+  ["exact host", ["environment:host:rinnegan"], []],
+  ["hardware", ["environment:hardware:camera"], []],
+  ["resource alternatives", [], [["environment:host:rinnegan", "environment:hardware:camera"]]],
+  ["mandatory resource group beside a mixed group", [], [["environment:host:rinnegan", "environment:provider:openai"], ["environment:host:mangekyo", "environment:hardware:camera"]]],
+  ["explicit local with a logical alternative", ["environment:fleet-local"], [["environment:host:rinnegan", "environment:provider:openai"]]],
+] as const) {
+  test(`cloud-ready execution still refuses unqualified ${name}`, async () => {
+    const { body, labels } = await completedBodyAndLabels([...dispositionLabels("ordinary"), ...allOf]);
+    const evidence = await verifiedEvidence("ordinary");
+    evidence.execution!.environment = { allOf: [...allOf], anyOf: anyOf.map(group => [...group]) };
+    const before = structuredClone(evidence.execution);
+    const result = await evaluateGovernedIntakeTriage({ body, labels, evidence });
+    assert.equal(result.status, "pending");
+    assert.ok(result.reasons.includes("execution_substrate_environment_mismatch"));
+    assert.deepEqual(evidence.execution, before, "resource and OR requirements are not removed or rewritten");
+  });
+}
+
 // code#11792: account style, harness, provider and complete model IDs combine as hard placement facts.
 for (const [name, allOf, valid] of [
   ["provider", ["environment:fleet-local", "environment:provider:claude-desktop"], true],
