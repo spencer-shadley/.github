@@ -1,6 +1,6 @@
 {
   "schema": "GovernedTaskProfileContractV1",
-  "profileSchemaVersion": "task-profile.v1",
+  "profileSchemaVersion": "task-profile.v2",
   "owner": "spencer-shadley/.github",
   "designOwner": "spencer-shadley/code#6458",
   "purpose": "Provider/model/benchmark-independent semantic description of which kinds of reasoning determine whether one executable work unit succeeds. Triage describes the work; runtime owners interpret it.",
@@ -17,7 +17,8 @@
     { "id": "diagnose", "aliases": "debug, investigate, research, RCA, localize", "question": "How much of success depends on discovering what is wrong/true and why from symptoms, evidence, experiments or system behavior?" },
     { "id": "design", "aliases": "architect, API, schema, protocol, algorithm", "question": "How much of success depends on choosing the technical structure of a future solution among meaningful alternatives?" },
     { "id": "review", "aliases": "review, audit, critique, verify, inspect", "question": "How much of success depends on evaluating an existing artifact/decision against requirements, invariants or quality expectations and identifying flaws?" },
-    { "id": "judgment", "aliases": "decide, prioritize, compare, trade off, synthesize", "question": "How much of success depends on resolving ambiguous tradeoffs or making a semantic decision across multiple reasonable possibilities where there is no single mechanical answer?" }
+    { "id": "judgment", "aliases": "decide, prioritize, compare, trade off, synthesize", "question": "How much of success depends on resolving ambiguous tradeoffs or making a semantic decision across multiple reasonable possibilities where there is no single mechanical answer?" },
+    { "id": "long-horizon", "aliases": "coordinate, orchestrate, sustain, multi-step, long-running, stay on course", "question": "How much of success depends on holding direction, state and intent coherent across a long run of many steps, handoffs or delegated sub-tasks, beyond the difficulty of any single step?" }
   ],
   "scoring": {
     "totalPoints": 10,
@@ -45,7 +46,7 @@
     "threshold": 4,
     "categoryLabels": {
       "implement": "task:implement", "diagnose": "task:diagnose", "design": "task:design",
-      "review": "task:review", "judgment": "task:judgment"
+      "review": "task:review", "judgment": "task:judgment", "long-horizon": "task:long-horizon"
     },
     "mixedLabel": "task:mixed",
     "maxCategoryLabels": 2,
@@ -67,16 +68,18 @@
     "rule": "Opportunistic acquisition during semantic triage only; no bulk backfill; runtime records an explicit fallback and never fabricates or persists a vector; absence never manufactures human-required."
   },
   "examples": [
-    { "id": "TP-IMPL-KNOWN", "scores": { "implement": 10, "diagnose": 0, "design": 0, "review": 0, "judgment": 0 }, "labels": ["task:implement"] },
-    { "id": "TP-IMPL-FEATURE", "scores": { "implement": 8, "diagnose": 0, "design": 2, "review": 0, "judgment": 0 }, "labels": ["task:implement"] },
-    { "id": "TP-IMPL-DESIGN", "scores": { "implement": 6, "diagnose": 0, "design": 4, "review": 0, "judgment": 0 }, "labels": ["task:implement", "task:design"] },
-    { "id": "TP-DIAG-PATCH", "scores": { "implement": 4, "diagnose": 6, "design": 0, "review": 0, "judgment": 0 }, "labels": ["task:implement", "task:diagnose"] },
-    { "id": "TP-DIAG-RCA", "scores": { "implement": 0, "diagnose": 9, "design": 0, "review": 0, "judgment": 1 }, "labels": ["task:diagnose"] },
-    { "id": "TP-REVIEW-PR", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 8, "judgment": 2 }, "labels": ["task:review"] },
-    { "id": "TP-REVIEW-ARCH", "scores": { "implement": 0, "diagnose": 0, "design": 3, "review": 4, "judgment": 3 }, "labels": ["task:review"] },
-    { "id": "TP-DESIGN-NEW", "scores": { "implement": 0, "diagnose": 0, "design": 7, "review": 0, "judgment": 3 }, "labels": ["task:design"] },
-    { "id": "TP-JUDGE-PROPOSALS", "scores": { "implement": 0, "diagnose": 0, "design": 3, "review": 2, "judgment": 5 }, "labels": ["task:judgment"] },
-    { "id": "TP-JUDGE-BACKLOG", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 2, "judgment": 8 }, "labels": ["task:judgment"] },
-    { "id": "TP-MIXED", "scores": { "implement": 3, "diagnose": 3, "design": 2, "review": 0, "judgment": 2 }, "labels": ["task:mixed"] }
+    { "id": "TP-IMPL-KNOWN", "scores": { "implement": 10, "diagnose": 0, "design": 0, "review": 0, "judgment": 0, "long-horizon": 0 }, "labels": ["task:implement"] },
+    { "id": "TP-IMPL-FEATURE", "scores": { "implement": 8, "diagnose": 0, "design": 2, "review": 0, "judgment": 0, "long-horizon": 0 }, "labels": ["task:implement"] },
+    { "id": "TP-IMPL-DESIGN", "scores": { "implement": 6, "diagnose": 0, "design": 4, "review": 0, "judgment": 0, "long-horizon": 0 }, "labels": ["task:implement", "task:design"] },
+    { "id": "TP-DIAG-PATCH", "scores": { "implement": 4, "diagnose": 6, "design": 0, "review": 0, "judgment": 0, "long-horizon": 0 }, "labels": ["task:implement", "task:diagnose"] },
+    { "id": "TP-DIAG-RCA", "scores": { "implement": 0, "diagnose": 9, "design": 0, "review": 0, "judgment": 1, "long-horizon": 0 }, "labels": ["task:diagnose"] },
+    { "id": "TP-REVIEW-PR", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 8, "judgment": 2, "long-horizon": 0 }, "labels": ["task:review"] },
+    { "id": "TP-REVIEW-ARCH", "scores": { "implement": 0, "diagnose": 0, "design": 3, "review": 4, "judgment": 3, "long-horizon": 0 }, "labels": ["task:review"] },
+    { "id": "TP-DESIGN-NEW", "scores": { "implement": 0, "diagnose": 0, "design": 7, "review": 0, "judgment": 3, "long-horizon": 0 }, "labels": ["task:design"] },
+    { "id": "TP-JUDGE-PROPOSALS", "scores": { "implement": 0, "diagnose": 0, "design": 3, "review": 2, "judgment": 5, "long-horizon": 0 }, "labels": ["task:judgment"] },
+    { "id": "TP-JUDGE-BACKLOG", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 2, "judgment": 8, "long-horizon": 0 }, "labels": ["task:judgment"] },
+    { "id": "TP-COORD-STAGE", "scores": { "implement": 0, "diagnose": 1, "design": 0, "review": 1, "judgment": 4, "long-horizon": 4 }, "labels": ["task:judgment", "task:long-horizon"] },
+    { "id": "TP-COORD-RUN", "scores": { "implement": 0, "diagnose": 0, "design": 0, "review": 1, "judgment": 2, "long-horizon": 7 }, "labels": ["task:long-horizon"] },
+    { "id": "TP-MIXED", "scores": { "implement": 3, "diagnose": 3, "design": 2, "review": 0, "judgment": 2, "long-horizon": 0 }, "labels": ["task:mixed"] }
   ]
 }

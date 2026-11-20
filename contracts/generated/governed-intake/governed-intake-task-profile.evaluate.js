@@ -25,9 +25,9 @@
                                       
  
 
-                                                                                                
+                                                                                                                 
 export const TASK_PROFILE_CATEGORY_IDS                                   =
-  ['implement', 'diagnose', 'design', 'review', 'judgment'];
+  ['implement', 'diagnose', 'design', 'review', 'judgment', 'long-horizon'];
 
                               
                         
@@ -49,8 +49,8 @@ const unique =    (values              )      => [...new Set(values)];
 /** Validate producer configuration once; never silently fall back to a private default. */
 export function assertTaskProfileContract(contract                     )       {
   if (!object(contract) || contract.schema !== 'GovernedTaskProfileContractV1'
-    || contract.profileSchemaVersion !== 'task-profile.v1') throw new Error('unsupported_task_profile_contract');
-  if (!Array.isArray(contract.categories) || contract.categories.length !== 5
+    || contract.profileSchemaVersion !== 'task-profile.v2') throw new Error('unsupported_task_profile_contract');
+  if (!Array.isArray(contract.categories) || contract.categories.length !== TASK_PROFILE_CATEGORY_IDS.length
     || contract.categories.map(c => c.id).sort().join(',') !== [...TASK_PROFILE_CATEGORY_IDS].sort().join(',')) {
     throw new Error('invalid_task_profile_categories');
   }
@@ -92,7 +92,7 @@ function canonicalJson(value         )         {
                                       
                                      
 
-/** Rejects model/provider/benchmark/effort/harness fields; accepts only the five-category vector. */
+/** Rejects model/provider/benchmark/effort/harness fields; accepts only the contract's category vector. */
 export function validateTaskProfile(bound                          , value         )                        {
   assertTaskProfileContract(bound.contract);
   const reasons           = [];

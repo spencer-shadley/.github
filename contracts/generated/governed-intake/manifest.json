@@ -4,9 +4,9 @@
   "revision": 25,
   "producer": {
     "repository": "spencer-shadley/.github",
-    "commit": "84af7fafc9af68ea858f918b268fce92c6ee4025"
+    "commit": "44ac6d4097cbc7c035b89cbcc3fb615fb9c8b597"
   },
-  "payloadDigest": "5362c4f96f5c66c8831a30c411e82f22c3d04faa87b5e0b7aa9fe3941a2e8a5c",
+  "payloadDigest": "b330ee39858f191c3bf3e55234847da5e372f5817ba239a2d1346ffa9bca6301",
   "files": {
     "feature.md": {
       "path": "feature.md",
@@ -40,8 +40,8 @@
     },
     "governed-intake-body.v1.json": {
       "path": "governed-intake-body.v1.json",
-      "sha256": "824d5689dbc19c7faf646d9588db303b323db04daa171759708a36d1b3bb7a1d",
-      "byteLength": 45307
+      "sha256": "eb0a6b1268e025f550856160ad9d9d5fa20de19ba321a39e3cebb44f1dc959e9",
+      "byteLength": 45868
     },
     "governed-intake-policy-binding.js": {
       "path": "governed-intake-policy-binding.js",
@@ -65,18 +65,18 @@
     },
     "governed-intake-task-profile.evaluate.js": {
       "path": "governed-intake-task-profile.evaluate.js",
-      "sha256": "f057c9d6b0325446bf554bbcee002de7e996f51f1d52371970dbc440cb74179e",
-      "byteLength": 12484
+      "sha256": "fa1125bb83cbd4dbb49d6dbcc6d06245b7c44186b08e206d0b8925139910c7b2",
+      "byteLength": 12554
     },
     "governed-intake-task-profile.evaluate.ts": {
       "path": "governed-intake-task-profile.evaluate.ts",
-      "sha256": "1197acb9b4f228311a3c86f8cad280504c44c283336b37a143dd906de095be89",
-      "byteLength": 12484
+      "sha256": "833831f50b6ba9e03db703b197b57b0157c06b29190a418216b46d031e7da1d6",
+      "byteLength": 12554
     },
     "governed-intake-task-profile.v1.json": {
       "path": "governed-intake-task-profile.v1.json",
-      "sha256": "ab05f35b94e44548dbfeff42820668bb1bea9816d5d7e23301e7e93a2644bacb",
-      "byteLength": 6169
+      "sha256": "3811c529599c398e08afdfe54919d979a14d17db5faaa86b3ab219fae7dda5e5",
+      "byteLength": 7088
     },
     "governed-intake-taxonomy.evaluate.js": {
       "path": "governed-intake-taxonomy.evaluate.js",
@@ -135,13 +135,13 @@
     },
     "task.md": {
       "path": "task.md",
-      "sha256": "ee82b4f39a31ba2981bdf01ac517c8c269de86c891454b365b5d60eb374f21ac",
-      "byteLength": 23349
+      "sha256": "0e507de5b9a0adf654a3fd248be4a8597da777d1ca567d271ab459f20ac3a046",
+      "byteLength": 23383
     },
     "task.yml": {
       "path": "task.yml",
-      "sha256": "2fe46ed495f9feddcdb993b1ef9db4095cd87f1454e240ffe3f07d01f7d3daa4",
-      "byteLength": 25477
+      "sha256": "7a1c4391477985042db83b9b9c3cb7efb0edd3009851fab14e37aad33d75fbc7",
+      "byteLength": 25511
     },
     "verify.js": {
       "path": "verify.js",
@@ -155,7 +155,7 @@
     }
   },
   "build": {
-    "runtime": "v24.22.1",
+    "runtime": "v26.13.1",
     "compiler": "node:module.stripTypeScriptTypes/strip"
   }
 }
