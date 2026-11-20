@@ -385,7 +385,7 @@ test("ordinary leaf with a bound task profile record projects its derived labels
   const evidence = await verifiedEvidence("ordinary");
   const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson as TaskProfileContract);
   const record: TaskProfileRecord = {
-    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: "high", rationale: "known bounded fix" },
+    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, "long-horizon": 0 }, confidence: "high", rationale: "known bounded fix" },
     workUnitKey: evidence.workUnitKey, scopeFingerprint: evidence.scopeFingerprint, contractIdentity: taskProfileBound.contractIdentity,
   };
   const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record, required: true } });
@@ -399,7 +399,7 @@ test("a task profile whose derived label is not yet reflected on the issue stays
   const evidence = await verifiedEvidence("ordinary");
   const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson as TaskProfileContract);
   const record: TaskProfileRecord = {
-    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: "high", rationale: "known bounded fix" },
+    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, "long-horizon": 0 }, confidence: "high", rationale: "known bounded fix" },
     workUnitKey: evidence.workUnitKey, scopeFingerprint: evidence.scopeFingerprint, contractIdentity: taskProfileBound.contractIdentity,
   };
   const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record, required: true } });
@@ -421,7 +421,7 @@ test("a tracking parent never receives an aggregate task profile", async () => {
   const evidence = await verifiedEvidence("parent");
   const taskProfileBound = await bindTaskProfileContract(taskProfileContractJson as TaskProfileContract);
   const record: TaskProfileRecord = {
-    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: "high", rationale: "invalid on a parent" },
+    profile: { schemaVersion: taskProfileContractJson.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, "long-horizon": 0 }, confidence: "high", rationale: "invalid on a parent" },
     workUnitKey: evidence.workUnitKey, scopeFingerprint: evidence.scopeFingerprint, contractIdentity: taskProfileBound.contractIdentity,
   };
   const result = await evaluateGovernedIntakeTriage({ body, labels, evidence, taskProfile: { record, required: false } });
