@@ -39,7 +39,7 @@ live form inheritance on public and private repositories.
 
 ## Adopted TaskProfileV1 source
 
-The five-category ten-point TaskProfile vector (semantic task truth, not execution policy: no
+The six-category ten-point TaskProfile vector, schema `task-profile.v2` (the sixth category, `long-horizon`, is model-router#2302; the source file keeps its `.v1.json` family name, and a `task-profile.v1` record resolves to `legacy-unprofiled` by the contract-identity rule below) (semantic task truth, not execution policy: no
 model, provider, account, pool, effort setting, harness or benchmark) is authored once in
 [`contracts/governed-intake-task-profile.v1.json`](../contracts/governed-intake-task-profile.v1.json).
 Read its [generated guide](task-profile.md); do not copy category definitions, confidence

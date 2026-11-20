@@ -9,9 +9,10 @@ import {
 
 const contract = rawContract as TaskProfileContract;
 
-test('source contract is well-formed: five categories, ten-point scoring, high/medium/low confidence', () => {
+test('source contract is well-formed: six categories, ten-point scoring, high/medium/low confidence', () => {
   assertTaskProfileContract(contract);
-  assert.equal(contract.categories.length, 5);
+  assert.equal(contract.categories.length, 6);
+  assert.equal(contract.profileSchemaVersion, 'task-profile.v2');
   assert.equal(contract.scoring.totalPoints, 10);
   assert.deepEqual([...contract.confidence.levels], ['high', 'medium', 'low']);
 });
@@ -41,7 +42,7 @@ test('every calibration example round-trips through validate + derive to its pub
 
 test('mixed fallback applies only when no category reaches the threshold, and never combines with a category label', async () => {
   const bound = await bindTaskProfileContract(contract);
-  const mixed = { implement: 3, diagnose: 3, design: 2, review: 0, judgment: 2 };
+  const mixed = { implement: 3, diagnose: 3, design: 2, review: 0, judgment: 2, 'long-horizon': 0 };
   const validated = validateTaskProfile(bound, { schemaVersion: contract.profileSchemaVersion, scores: mixed, confidence: 'low', rationale: 'broad mixed investigation' });
   assert.equal(validated.ok, true);
   if (!validated.ok) return;
@@ -52,7 +53,7 @@ test('rejects a score total that is not exactly 10', async () => {
   const bound = await bindTaskProfileContract(contract);
   const result = validateTaskProfile(bound, {
     schemaVersion: contract.profileSchemaVersion,
-    scores: { implement: 5, diagnose: 0, design: 0, review: 0, judgment: 0 },
+    scores: { implement: 5, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 },
     confidence: 'high', rationale: 'under budget',
   });
   assert.equal(result.ok, false);
@@ -63,7 +64,7 @@ test('rejects non-integer and out-of-range scores', async () => {
   const bound = await bindTaskProfileContract(contract);
   const result = validateTaskProfile(bound, {
     schemaVersion: contract.profileSchemaVersion,
-    scores: { implement: 10.5, diagnose: -1, design: 0, review: 0, judgment: 0 },
+    scores: { implement: 10.5, diagnose: -1, design: 0, review: 0, judgment: 0, 'long-horizon': 0 },
     confidence: 'high', rationale: 'bad scores',
   });
   assert.equal(result.ok, false);
@@ -77,7 +78,7 @@ test('never invents a model/provider/effort/harness/benchmark field', async () =
   const bound = await bindTaskProfileContract(contract);
   const result = validateTaskProfile(bound, {
     schemaVersion: contract.profileSchemaVersion,
-    scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 },
+    scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 },
     confidence: 'high', rationale: 'known fix', model: 'claude-opus-5-5',
   });
   assert.equal(result.ok, false);
@@ -88,14 +89,14 @@ test('rejects an invalid confidence level and a missing/oversized rationale', as
   const bound = await bindTaskProfileContract(contract);
   const badConfidence = validateTaskProfile(bound, {
     schemaVersion: contract.profileSchemaVersion,
-    scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 },
+    scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 },
     confidence: 'certain', rationale: 'known fix',
   });
   assert.equal(badConfidence.ok, false);
   const longRationale = 'x'.repeat(contract.rationale.maxLength + 1);
   const oversized = validateTaskProfile(bound, {
     schemaVersion: contract.profileSchemaVersion,
-    scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 },
+    scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 },
     confidence: 'high', rationale: longRationale,
   });
   assert.equal(oversized.ok, false);
@@ -114,7 +115,7 @@ test('label projection: matches expected add/remove against current labels', asy
   const bound = await bindTaskProfileContract(contract);
   const validated = validateTaskProfile(bound, {
     schemaVersion: contract.profileSchemaVersion,
-    scores: { implement: 6, diagnose: 0, design: 4, review: 0, judgment: 0 },
+    scores: { implement: 6, diagnose: 0, design: 4, review: 0, judgment: 0, 'long-horizon': 0 },
     confidence: 'high', rationale: 'feature + local design',
   });
   assert.equal(validated.ok, true);
@@ -128,7 +129,7 @@ test('label projection: matches expected add/remove against current labels', asy
 test('reuse: unchanged scope/contract reuses; a reconsider trigger forces reconsideration; non-triggers never invalidate', async () => {
   const bound = await bindTaskProfileContract(contract);
   const prior: TaskProfileRecord = {
-    profile: { schemaVersion: contract.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: 'high', rationale: 'known fix' },
+    profile: { schemaVersion: contract.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 }, confidence: 'high', rationale: 'known fix' },
     workUnitKey: 'sha256:unit-1', scopeFingerprint: 'sha256:scope-1', contractIdentity: bound.contractIdentity,
   };
   assert.equal(decideTaskProfileReuse(bound, prior, { workUnitKey: 'sha256:unit-1', scopeFingerprint: 'sha256:scope-1', executableUnit: true, changes: [] }), 'reuse');
@@ -150,7 +151,7 @@ test('runtime resolution: missing/invalid/stale/mismatched-contract record degra
   assert.deepEqual(resolveRuntimeTaskProfile(bound, null, subject), { kind: 'legacy-unprofiled', reason: 'missing', fabricatedVector: false });
   assert.deepEqual(resolveRuntimeTaskProfile(bound, 'unknown', subject), { kind: 'legacy-unprofiled', reason: 'missing', fabricatedVector: false });
 
-  const validProfile: TaskProfile = { schemaVersion: contract.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: 'high', rationale: 'known fix' };
+  const validProfile: TaskProfile = { schemaVersion: contract.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 }, confidence: 'high', rationale: 'known fix' };
   const record: TaskProfileRecord = { profile: validProfile, workUnitKey: subject.workUnitKey, scopeFingerprint: subject.scopeFingerprint, contractIdentity: bound.contractIdentity };
   const resolved = resolveRuntimeTaskProfile(bound, record, subject);
   assert.equal(resolved.kind, 'profiled');
@@ -167,9 +168,46 @@ test('runtime resolution: missing/invalid/stale/mismatched-contract record degra
 
 test('child leaves are profiled independently; nothing here averages or sums parent/child vectors', async () => {
   const bound = await bindTaskProfileContract(contract);
-  const childA = validateTaskProfile(bound, { schemaVersion: contract.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: 'high', rationale: 'leaf a' });
-  const childB = validateTaskProfile(bound, { schemaVersion: contract.profileSchemaVersion, scores: { implement: 0, diagnose: 0, design: 0, review: 0, judgment: 10 }, confidence: 'high', rationale: 'leaf b' });
+  const childA = validateTaskProfile(bound, { schemaVersion: contract.profileSchemaVersion, scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0, 'long-horizon': 0 }, confidence: 'high', rationale: 'leaf a' });
+  const childB = validateTaskProfile(bound, { schemaVersion: contract.profileSchemaVersion, scores: { implement: 0, diagnose: 0, design: 0, review: 0, judgment: 10, 'long-horizon': 0 }, confidence: 'high', rationale: 'leaf b' });
   assert.equal(childA.ok, true); assert.equal(childB.ok, true);
   if (!childA.ok || !childB.ok) return;
   assert.notDeepEqual(deriveTaskLabels(bound, childA.profile), deriveTaskLabels(bound, childB.profile));
+});
+
+test('long-horizon (model-router#2302): a coordinator stage projects both labels, and the label projection never exceeds two', async () => {
+  const bound = await bindTaskProfileContract(contract);
+  const coordinator = contract.examples.find(example => example.id === 'TP-COORD-STAGE');
+  assert.ok(coordinator, 'coordinator-stage calibration example exists');
+  assert.deepEqual(contract.categories.map(c => c.id).slice(-1), ['long-horizon']);
+  const validated = validateTaskProfile(bound, { schemaVersion: contract.profileSchemaVersion, scores: coordinator.scores, confidence: 'medium', rationale: 'distinct executable coordinator stage' });
+  assert.equal(validated.ok, true);
+  if (!validated.ok) return;
+  assert.deepEqual(deriveTaskLabels(bound, validated.profile), ['task:judgment', 'task:long-horizon']);
+  // Structural maximum: with 10 points and threshold 4 at most two categories can qualify.
+  assert.equal(Math.floor(contract.scoring.totalPoints / contract.labelProjection.threshold), contract.labelProjection.maxCategoryLabels);
+});
+
+test('long-horizon: a vector missing the sixth category is rejected, never defaulted', async () => {
+  const bound = await bindTaskProfileContract(contract);
+  const result = validateTaskProfile(bound, {
+    schemaVersion: contract.profileSchemaVersion,
+    scores: { implement: 6, diagnose: 0, design: 2, review: 0, judgment: 2 },
+    confidence: 'high', rationale: 'five-category (v1-shaped) vector',
+  });
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.ok(result.reasons.includes('non_integer_score:long-horizon'));
+});
+
+test('a task-profile.v1 record is legacy history: it resolves to legacy-unprofiled, never human-required or fabricated', async () => {
+  const bound = await bindTaskProfileContract(contract);
+  const subject = { workUnitKey: 'sha256:unit-1', scopeFingerprint: 'sha256:scope-1' };
+  const v1Record = {
+    profile: { schemaVersion: 'task-profile.v1', scores: { implement: 10, diagnose: 0, design: 0, review: 0, judgment: 0 }, confidence: 'high', rationale: 'old' },
+    workUnitKey: subject.workUnitKey, scopeFingerprint: subject.scopeFingerprint, contractIdentity: 'sha256:' + 'a'.repeat(64),
+  } as unknown as TaskProfileRecord;
+  assert.deepEqual(resolveRuntimeTaskProfile(bound, v1Record, subject), { kind: 'legacy-unprofiled', reason: 'unsupported_schema', fabricatedVector: false });
+  // Even a record bound to the new identity but still carrying v1 content is rejected by validation.
+  const hybrid = { ...v1Record, contractIdentity: bound.contractIdentity } as TaskProfileRecord;
+  assert.deepEqual(resolveRuntimeTaskProfile(bound, hybrid, subject), { kind: 'legacy-unprofiled', reason: 'invalid', fabricatedVector: false });
 });
